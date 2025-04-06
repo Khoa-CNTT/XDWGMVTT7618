@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import Header from '../components/Header'
 import MenuItem from '../components/MenuItem'
+import PageWrapper from '../components/PageWrapper';
 
-export const Menu = () => {
+export const Menu = ({ direction }) => {
     const [cart, setCart] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
 
@@ -25,6 +26,7 @@ export const Menu = () => {
     const filteredMenuItems = menuItems.filter(item =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
     //Hàm tìm kiếm
     const handleSearch = (term) => {
         setSearchTerm(term.trim());
@@ -56,39 +58,41 @@ export const Menu = () => {
     //Hàm xóa khỏi giỏ hàng
     const removeFromCart = (item) => {
         setCart(prevCart => {
-          const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
-          if (existingItem && existingItem.quantity > 1) {
-            return prevCart.map(cartItem =>
-              cartItem.id === item.id
-                ? { ...cartItem, quantity: cartItem.quantity - 1 }
-                : cartItem
-            );
-          }
-          return prevCart.filter(cartItem => cartItem.id !== item.id);
+            const existingItem = prevCart.find(cartItem => cartItem.id === item.id);
+            if (existingItem && existingItem.quantity > 1) {
+                return prevCart.map(cartItem =>
+                    cartItem.id === item.id
+                        ? { ...cartItem, quantity: cartItem.quantity - 1 }
+                        : cartItem
+                );
+            }
+            return prevCart.filter(cartItem => cartItem.id !== item.id);
         });
-      };
-      //Hàm thay đổi số lượng
-      const getItemQuantity = (itemId) => {
+    };
+    //Hàm thay đổi số lượng
+    const getItemQuantity = (itemId) => {
         const item = cart.find(cartItem => cartItem.id === itemId);
         return item ? item.quantity : 0;
-      };
+    };
 
     return (
-        <div className='min-h-screen bg-gray-50 flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl overflow-hidden'>
-            <Header 
-                   onSearch={handleSearch}/>
-            <div className="grid grid-cols-2 gap-3 p-4">
-            {filteredMenuItems.map((item) => (
-                <MenuItem
-                    key={item.id}
-                    item={item}
-                    onAddToCart={addToCart}
-                    onRemoveFromCart={removeFromCart}
-                    quantity={getItemQuantity(item.id)}
-                />
-            ))}
+        <PageWrapper direction={direction}>
+            <div className='min-h-screen bg-gray-50 flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl overflow-hidden'>
+                <Header
+                    onSearch={handleSearch} />
+                <div className="grid grid-cols-2 gap-3 p-4">
+                    {filteredMenuItems.map((item) => (
+                        <MenuItem
+                            key={item.id}
+                            item={item}
+                            onAddToCart={addToCart}
+                            onRemoveFromCart={removeFromCart}
+                            quantity={getItemQuantity(item.id)}
+                        />
+                    ))}
+                </div>
             </div>
-        </div>
+        </PageWrapper>
     )
 }
 export default Menu
