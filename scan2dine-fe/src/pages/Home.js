@@ -5,6 +5,8 @@ import imgBtnDanhGia from '../assets/img/btndanhgia2.jpg';
 import imgBtnGoiNV from '../assets/img/btngoinv.jpg';
 import imgBtnThanhToan from '../assets/img/btnthanhtoan2.jpg';
 import { MdArrowBack } from "react-icons/md";
+import { useNavigate } from 'react-router-dom';
+
 
 const Home = () => {
     const [showPaymentForm, setShowPaymentForm] = useState(false);
@@ -12,6 +14,12 @@ const Home = () => {
     const [showReviewForm, setShowReviewForm] = useState(false);
     const [showPhoneForm, setShowPhoneForm] = useState(false);
     const [showSettings, setShowSettings] = useState(false);
+    const navigate = useNavigate();
+
+    const onNavigateToMenu = () => {
+        navigate('/menu');
+    };
+    
 
   return (
     // <div className="min-h-screen bg-gray-50 flex flex-col w-full max-w-full sm:max-w-[800px] sm:mx-auto shadow-2xl">
@@ -52,6 +60,7 @@ const Home = () => {
             src={imgBtnGoiMon}
             alt="Xem Menu - Gọi món"
             className="w-full max-w-[700px] rounded-lg shadow-md"
+            onClick={onNavigateToMenu}
         />
     </div>
 

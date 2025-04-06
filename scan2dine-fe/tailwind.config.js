@@ -9,6 +9,9 @@ module.exports = {
         danger: "#DC2626", // Màu đỏ
         customGray: "#6B7280", // Màu xám
       },
+      fontFamily: {
+        bungee: ["Bungee", "cursive"],
+      },
     },
   },
   plugins: [],
