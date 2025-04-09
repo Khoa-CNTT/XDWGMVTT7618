@@ -3,11 +3,22 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-
+const mongoose = require('mongoose');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
-
+// const customerRoute = require('./routes/customer');
+// const cartdetailRoute = require('./routes/cartdetail');
+// const cartRoute = require('./routes/cart');
+const categoryRoute = require('./routes/category');
+const productRoute = require('./routes/product');
 var app = express();
+
+// connection to mongooseDB
+main().catch(err => console.log(err));
+async function main() {
+  await mongoose.connect('mongodb://127.0.0.1:27017/QLQuayHang');
+  // use `await mongoose.connect('mongodb://user:password@127.0.0.1:27017/test');` if your database has auth enabled
+}
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -21,6 +32,12 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
+// khai báo route sử dụng
+// app.use('/s2d/customer',customerRoute);
+// app.use('/s2d/cartdetail',cartdetailRoute);
+// app.use('/s2d/cart', cartRoute);
+app.use('/s2d/category', categoryRoute);
+app.use('/s2d/product', productRoute);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
