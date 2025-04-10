@@ -11,16 +11,20 @@ var usersRouter = require('./routes/users');
 // const cartRoute = require('./routes/cart');
 const categoryRoute = require('./routes/category');
 const productRoute = require('./routes/product');
+
+const foodstallRoute = require('./routes/foodstall')
 const cors = require('cors');
+
 const dotenv = require('dotenv')
 dotenv.config();
 const mongodb = require('./config/db');
 mongodb();
 
-const foodstallRoute = require('./routes/foodstall')
+
 
 
 var app = express();
+app.use(cors());
 
 // connection to mongooseDB
 // main().catch(err => console.log(err));
@@ -54,6 +58,7 @@ app.use('/s2d/foodstall', foodstallRoute);
 app.use(function (req, res, next) {
   next(createError(404));
 });
+
 
 // error handler
 app.use(function (err, req, res, next) {
