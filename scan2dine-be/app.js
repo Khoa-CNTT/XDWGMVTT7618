@@ -11,14 +11,19 @@ var usersRouter = require('./routes/users');
 // const cartRoute = require('./routes/cart');
 const categoryRoute = require('./routes/category');
 const productRoute = require('./routes/product');
+const dotenv = require('dotenv')
+dotenv.config();
+const mongodb = require('./config/db');
+mongodb();
 var app = express();
 
 // connection to mongooseDB
-main().catch(err => console.log(err));
-async function main() {
-  await mongoose.connect('mongodb://127.0.0.1:27017/QLQuayHang');
-  // use `await mongoose.connect('mongodb://user:password@127.0.0.1:27017/test');` if your database has auth enabled
-}
+// main().catch(err => console.log(err));
+// async function main() {
+//   await mongoose.connect('mongodb://127.0.0.1:27017/QLQuayHang');
+//   // use `await mongoose.connect('mongodb://user:password@127.0.0.1:27017/test');` if your database has auth enabled
+// }
+
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
