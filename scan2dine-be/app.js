@@ -11,10 +11,16 @@ var usersRouter = require('./routes/users');
 // const cartRoute = require('./routes/cart');
 const categoryRoute = require('./routes/category');
 const productRoute = require('./routes/product');
+<<<<<<< HEAD
 const dotenv = require('dotenv')
 dotenv.config();
 const mongodb = require('./config/db');
 mongodb();
+=======
+const foodstallRoute = require('./routes/foodstall')
+
+
+>>>>>>> eb11224b4e8c18e3dbbfab20b7880c7be18eb165
 var app = express();
 
 // connection to mongooseDB
@@ -43,6 +49,7 @@ app.use('/users', usersRouter);
 // app.use('/s2d/cart', cartRoute);
 app.use('/s2d/category', categoryRoute);
 app.use('/s2d/product', productRoute);
+app.use('/s2d/foodstall', foodstallRoute);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
