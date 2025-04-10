@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Header from '../components/Header'
 import MenuItem from '../components/MenuItem'
 import PageWrapper from '../components/PageWrapper';
@@ -7,8 +7,19 @@ export const Menu = ({ direction }) => {
     const [cart, setCart] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
 
+    const [products, setProducts] = useState([]);
+
+    useEffect(() => {
+        fetch('http://localhost:5000/s2d/product')
+            .then(res => res.json())
+            .then(data => setProducts(data))
+            .catch(err => console.error('Error:', err));
+    }, []);
+    // console.log(products);
+
+
     const menuItems = [
-        { id: 1, name: 'Bánh bao trứng sữa', price: 39000, image: '/img/c1.png' },
+        { id: 1, name: 'Bánh bao trứng sữa', price: 39000, image: '../assets/img/btnthanhtoan2.jpg' },
         { id: 2, name: 'Bánh bao kim sa', price: 39000, image: '/img/c2.png' },
         { id: 3, name: 'Bánh bao xá xíu', price: 45000, image: '/img/c3.png' },
         { id: 4, name: 'Bánh bao phô mai xá xíu', price: 49000, image: '/img/c4.png' },
@@ -23,7 +34,7 @@ export const Menu = ({ direction }) => {
     ];
 
     //Hàm lọc 
-    const filteredMenuItems = menuItems.filter(item =>
+    const filteredMenuItems = products.filter(item =>
         item.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 

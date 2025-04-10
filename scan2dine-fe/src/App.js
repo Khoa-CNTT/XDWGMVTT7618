@@ -5,6 +5,7 @@ import Menu from './pages/Menu';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence } from "framer-motion";
 import useDirection from './hooks/useDirection';
+import { Login } from './pages/Login';
 
 
 function App() {
@@ -17,6 +18,7 @@ function App() {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home direction={direction} />} />
         <Route path="/menu" element={<Menu direction={direction} />} />
+        <Route path="/login" element={<Login direction={direction} />} />
       </Routes>
     </AnimatePresence>
   );

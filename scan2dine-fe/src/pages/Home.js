@@ -7,6 +7,7 @@ import imgBtnThanhToan from '../assets/img/btnthanhtoan2.jpg';
 import { MdArrowBack } from "react-icons/md";
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../components/PageWrapper';
+import { Footer } from '../components/Footer';
 
 
 const Home = ({ direction }) => {
@@ -144,9 +145,7 @@ const Home = ({ direction }) => {
                 </div >
 
                 {/* footer */}
-                <footer className="w-full bg-gray-100 text-center text-sm py-3 text-gray-700 font-semibold">
-                    Được phát triển bởi <span className="text-black font-extrabold font-bungee">SCAN<span className="text-red-600">2</span>DINE</span>
-                </footer>
+                <Footer></Footer>
 
             </div >
         </PageWrapper>
