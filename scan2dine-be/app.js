@@ -11,6 +11,7 @@ var usersRouter = require('./routes/users');
 // const cartRoute = require('./routes/cart');
 const categoryRoute = require('./routes/category');
 const productRoute = require('./routes/product');
+
 const foodstallRoute = require('./routes/foodstall')
 const cors = require('cors');
 
@@ -18,6 +19,8 @@ const dotenv = require('dotenv')
 dotenv.config();
 const mongodb = require('./config/db');
 mongodb();
+
+
 
 
 var app = express();
@@ -29,7 +32,7 @@ app.use(cors());
 //   await mongoose.connect('mongodb://127.0.0.1:27017/QLQuayHang');
 //   // use `await mongoose.connect('mongodb://user:password@127.0.0.1:27017/test');` if your database has auth enabled
 // }
-
+app.use(cors());
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -52,13 +55,13 @@ app.use('/s2d/product', productRoute);
 app.use('/s2d/foodstall', foodstallRoute);
 
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   next(createError(404));
 });
 
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};
