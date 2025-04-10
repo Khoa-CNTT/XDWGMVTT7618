@@ -15,7 +15,7 @@ const productSchema = new mongoose.Schema({
   description: { type: String },
   price: { type: String },
   image: { type: String },
-  stall: { type: mongoose.Schema.Types.ObjectId, ref: "Stall" },
+  stall_id: { type: mongoose.Schema.Types.ObjectId, ref: "Stall" },
   orderdetail: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -33,6 +33,11 @@ const foodstallsSchema = new mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
     },
+  ],
+  user: [{ 
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User" 
+    }
   ],
   review: {
     type: mongoose.Schema.Types.ObjectId,
@@ -74,7 +79,7 @@ const reviewSchema = new mongoose.Schema({
   },
   stall: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: " Stall",
+    ref: "Stall",
   },
   content: {
     type: String,
@@ -228,7 +233,7 @@ const paymentSchema = new mongoose.Schema({
   },
   order: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: " Order",
+    ref: "Order",
   },
   payment_method: {
     type: String,
