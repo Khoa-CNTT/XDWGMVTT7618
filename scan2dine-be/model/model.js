@@ -9,20 +9,56 @@ const categorySchema = new mongoose.Schema({
     },
   ],
 });
+// const productSchema = new mongoose.Schema({
+//   pd_name: { type: String },
+//   category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
+//   description: { type: String },
+//   price: { type: String },
+//   image: { type: String },
+//   stall_id: { type: mongoose.Schema.Types.ObjectId, ref: "Stall" },
+//   orderdetail: [
+//     {
+//       type: mongoose.Schema.Types.ObjectId,
+//       ref: "Orderdetail",
+//     },
+//   ],
+// });
+
 const productSchema = new mongoose.Schema({
-  pd_name: { type: String },
-  category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
-  description: { type: String },
-  price: { type: String },
-  image: { type: String },
-  stall_id: { type: mongoose.Schema.Types.ObjectId, ref: "Stall" },
-  orderdetail: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Orderdetail",
-    },
-  ],
+  pd_name: { 
+    type: String,
+    required: true 
+  },
+  category: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "Category",
+    required: true
+  },
+  description: { 
+    type: String,
+    default: ''
+  },
+  price: { 
+    type: Number,  // Đổi từ String sang Number để dễ tính toán
+    required: true
+  },
+  image: { 
+    type: String,
+    required: true
+  },
+  stall_id: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "Stall",
+    required: true 
+  },
+  orderdetail: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Orderdetail"
+  }],
+}, {
+  timestamps: true // Thêm createdAt và updatedAt
 });
+
 const foodstallsSchema = new mongoose.Schema({
   stall_name: {
     type: String,
@@ -34,6 +70,7 @@ const foodstallsSchema = new mongoose.Schema({
       ref: "Product",
     },
   ],
+
   user: [{ 
     type: mongoose.Schema.Types.ObjectId,
     ref: "User" 
@@ -61,12 +98,14 @@ const cartdetailSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Cart",
   },
+
   products: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Product",
     },
   ],
+
   quantity: {
     type: Number,
   },
