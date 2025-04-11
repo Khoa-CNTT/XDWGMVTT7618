@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
 
-function ProductDetail({item, product, onClose, onAddToCart }) {
+function ProductDetail({ item, product, onClose, onAddToCart }) {
     const [quantity, setQuantity] = useState(1);
     const [note, setNote] = useState('');
 
@@ -24,7 +24,7 @@ function ProductDetail({item, product, onClose, onAddToCart }) {
                 </div>
 
                 <img
-                    src={product.image}
+                    src={"http://localhost:8000/" + product.image}
                     alt={product.pd_name}
                     className="w-full h-64 object-cover rounded-lg mb-4"
                 />

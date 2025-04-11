@@ -2,8 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FaArrowLeft } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 
-
-const Header = ({onSearch}) => {
+const Header = ({ onSearch }) => {
     // const [filter, setFilter] = useState('tất cả');
     // useEffect(() => { }, [filter]);
 
@@ -36,7 +35,7 @@ const Header = ({onSearch}) => {
                         type="text"
                         placeholder="Bạn đang cần tìm món gì?"
                         className="flex-1 bg-gray-100 p-2 rounded-lg"
-                    onChange={(e) => onSearch(e.target.value)}
+                        onChange={(e) => onSearch(e.target.value)}
                     />
                 </div>
                 {/* <div className="flex gap-2 overflow-x-auto py-4 scrollbar-none justify-center">

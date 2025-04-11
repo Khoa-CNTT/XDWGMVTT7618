@@ -15,7 +15,7 @@ export const Menu = ({ direction }) => {
                 const response = await api.get('/s2d/product');
                 setMenuItems(response.data);
             } catch (error) {
-                console.error('Error fetching menu items:', error);
+                console.error('Lỗi khi tải danh mục:', error);
             }
         };
 
@@ -26,7 +26,7 @@ export const Menu = ({ direction }) => {
         typeof item.pd_name === 'string' &&
         typeof searchTerm === 'string' &&
         item.pd_name.toLowerCase().includes(searchTerm.toLowerCase())
-    );      
+    );
 
     //Hàm tìm kiếm
     const handleSearch = (term) => {
@@ -63,7 +63,7 @@ export const Menu = ({ direction }) => {
         <PageWrapper direction={direction}>
             <div className='min-h-screen bg-gray-50 flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl overflow-hidden'>
                 <Header onSearch={handleSearch} />
-                <div className="grid grid-cols-2 gap-4 p-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4">
                     {menuItems.length > 0 ? (
                         filteredMenuItems.map((item) => (
                             <MenuItem
@@ -71,7 +71,7 @@ export const Menu = ({ direction }) => {
                                 item={item}
                                 onAddToCart={addToCart}
                                 onRemoveFromCart={removeFromCart}
-                                quantity={getItemQuantity(item._id)}  
+                                quantity={getItemQuantity(item._id)}
                             />
                         ))
                     ) : (
