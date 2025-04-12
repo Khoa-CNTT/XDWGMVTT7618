@@ -54,7 +54,7 @@ export default function CartPage() {
         }
     };
 
-    // Toggle counter expansion
+    // Đếm số lượng sản phẩm
     const toggleCounter = (counterId) => {
         if (expandedCounters.includes(counterId)) {
             setExpandedCounters(expandedCounters.filter(id => id !== counterId));
@@ -63,7 +63,7 @@ export default function CartPage() {
         }
     };
 
-    // Adjust item quantity
+    // Điều chỉnh số lượng sản phẩm
     const adjustQuantity = (counterId, itemId, amount) => {
         setCartItems(cartItems.map(counter => {
             if (counter.id === counterId) {
@@ -116,7 +116,7 @@ export default function CartPage() {
         <div className="min-h-screen bg-gray-50 flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl">
 
             {/* Header */}
-            <div className="bg-primary p-4 text-white flex items-center justify-center sticky top-0 z-20 relative">
+            <div className="bg-primary p-4 text-white flex items-center justify-center sticky top-0 z-20 ">
                 <FaArrowLeft size={24} className="absolute left-4" />
                 <span className="font-medium text-center">Các món đang chọn</span>
             </div>
