@@ -1,7 +1,6 @@
 const { default: mongoose } = require('mongoose');
 const {Product, Category}  = require('../model/model');
-const fs = require('fs');
-const path = require('path');
+
 const categoryController = {
 
     // ADD CATEGORY
@@ -18,7 +17,7 @@ const categoryController = {
     // GET ALL CATEGORY
     getAllCategory: async (req, res) =>{
         try {
-            const categois = await Category.find();
+            const categois = await Category.find().populate({path:"products", select:"pd_name"});
             res.status(200).json(categois);
         } catch (err) {
             res.status(500).json(err);
@@ -38,45 +37,48 @@ const categoryController = {
     // UPDATE CATEGORY
     updateCategory: async(req,res) =>{
         try {
-            const category = await Category.findById(req.params.id);
-            await category.updateOne( {$set: req.body});
-            res.status(200).json("succesfully");
+            const updateCategory = await Category.findByIdAndUpdate(
+                req.params.id,  // id category cần update
+                req.body,       // dữ liệu cập nhật từ req body
+                {new:true}      // trả về catedoty đã đc cập nhật  
+            );
+            if(!updateCategory){
+                res.status(404).json("Not found")
+            }
+            res.status(200).json("succesfully 2");
         } catch (error) {
             res.status(500).json(error);
         }
     },
-    // DELETE CATEGORY
-    deleteCategory : async (req, res) => {
+
+    // delete category khi
+    deleteCategory: async(req,res)=>{
         try {
-            const categoryId = req.params.id;
-    
-            // Tìm các sản phẩm thuộc category
-            const products = await Product.find({ category: categoryId });
-    
-            // Xoá từng ảnh sản phẩm (nếu có)
-            for (const product of products) {
-                if (product.image) {
-                    const imagePath = path.join(__dirname, '../public', product.image);
-                    fs.unlink(imagePath, (err) => {
-                        if (err) {
-                            console.error(`Không thể xóa ảnh của sản phẩm ${product._id}:`, err.message);
-                        }
-                    });
-                }
+            const categoryID = await Category.findById(req.params.id);
+        
+            if (!categoryID) {
+                return res.status(404).json({ message: 'Category not found' });
             }
-    
-            // Xóa toàn bộ sản phẩm thuộc danh mục
-            await Product.deleteMany({ category: categoryId });
-    
-            // Xoá danh mục
-            const deletedCategory = await Category.findByIdAndDelete(categoryId);
-            if (!deletedCategory) {
-                return res.status(404).json({ message: "Category not found" });
+            if (categoryID.products.length == 0){
+                // neu danh muc k co san pham
+                await Category.findByIdAndDelete(req.params.id);
+                res.status(200).json({ message: 'Delete category successfully' });
+            } else{
+                // await Product.updateMany(
+                //     {
+                //         // điều kiện tìm kiếm
+                //         category: req.params.id
+                //     }, {
+                //     $set:{
+                //         category: null
+                //     }
+                // }),
+                // await Category.findByIdAndDelete(req.params.id);
+                res.status(200).json("Không được xóa vì trong danh mục còn sản phẩmphẩm")
             }
-    
-            res.status(200).json({ message: "Category and all related products deleted successfully" });
+
         } catch (error) {
-            res.status(500).json({ error: error.message });
+            res.status(500).json(error)
         }
     }
 }
