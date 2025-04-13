@@ -6,6 +6,7 @@ import { Route, Routes, useLocation } from 'react-router-dom';
 import { AnimatePresence } from "framer-motion";
 import useDirection from './hooks/useDirection';
 import { Login } from './pages/Login';
+import Cart from './pages/Cart';
 
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
         <Route path="/" element={<Home direction={direction} />} />
         <Route path="/menu" element={<Menu direction={direction} />} />
         <Route path="/login" element={<Login direction={direction} />} />
+        <Route path="/cart" element={<Cart direction={direction} />} />
       </Routes>
     </AnimatePresence>
   );

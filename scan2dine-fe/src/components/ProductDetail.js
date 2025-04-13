@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FaTimes } from 'react-icons/fa';
 
-function ProductDetail({item, product, onClose, onAddToCart }) {
+function ProductDetail({ item, product, onClose, onAddToCart }) {
     const [quantity, setQuantity] = useState(1);
     const [note, setNote] = useState('');
 
@@ -17,14 +17,14 @@ function ProductDetail({item, product, onClose, onAddToCart }) {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
             <div className="bg-white rounded-lg w-[90%] max-w-md p-4">
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-medium">{product.pd_name}</h3>
+                    <h3 className="text-xl font-medium capitalize">{product.pd_name}</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
                         <FaTimes size={20} />
                     </button>
                 </div>
 
                 <img
-                    src={product.image}
+                    src={"http://localhost:5000/" + product.image}
                     alt={product.pd_name}
                     className="w-full h-64 object-cover rounded-lg mb-4"
                 />

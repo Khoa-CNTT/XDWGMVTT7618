@@ -7,7 +7,7 @@ export default function useDirection() {
     const [direction, setDirection] = useState(1);
 
     useEffect(() => {
-        const forwardPages = ["/", "/menu", "/checkout"]; // chỉnh theo flow của bạn
+        const forwardPages = ["/", "/menu", "/cart"]; // chỉnh theo flow của bạn
         const prevIndex = forwardPages.indexOf(prevPath.current);
         const currentIndex = forwardPages.indexOf(location.pathname);
 

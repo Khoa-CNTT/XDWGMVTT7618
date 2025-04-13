@@ -9,7 +9,7 @@ const categorySchema = new mongoose.Schema({
     },
   ],
 },
-{collection:'CATEGORY'}
+  { collection: 'CATEGORY' }
 );
 const productSchema = new mongoose.Schema({
   pd_name: { type: String },
@@ -24,6 +24,7 @@ const productSchema = new mongoose.Schema({
       ref: "OrderDetail",
     },
   ],
+
   cartdetail: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "CartDetail"
@@ -40,6 +41,11 @@ const foodstallsSchema = new mongoose.Schema({
       ref: "Product",
     },
   ],
+  user: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  }
+  ],
   review: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Review",
@@ -48,8 +54,8 @@ const foodstallsSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User"
   }
-},
-{collection:'FOODSTALL'});
+},{ collection: 'FOODSTALL'});
+
 const cartSchema = new mongoose.Schema({
   customer: {
     type: mongoose.Schema.Types.ObjectId,
@@ -61,7 +67,7 @@ const cartSchema = new mongoose.Schema({
       ref: "CartDetail",
     },
   ],
-},{collection:'CART'});
+}, { collection: 'CART' });
 const cartdetailSchema = new mongoose.Schema({
   cart: {
     type: mongoose.Schema.Types.ObjectId,
@@ -76,7 +82,7 @@ const cartdetailSchema = new mongoose.Schema({
   quantity: {
     type: Number,
   },
-},{collection:'CARTDETAIL'});
+}, { collection: 'CARTDETAIL' });
 //ĐÁNH GIÁ
 const reviewSchema = new mongoose.Schema({
   customer: {
@@ -91,7 +97,7 @@ const reviewSchema = new mongoose.Schema({
     type: String,
   },
   date: { type: String },
-},{collection:'REVIEW'});
+}, { collection: 'REVIEW' });
 const customerSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -118,7 +124,7 @@ const customerSchema = new mongoose.Schema({
       ref: "Payment",
     },
   ],
-},{collection:'CUSTOMER'});
+}, { collection: 'CUSTOMER' });
 //ĐƠN HÀNG
 const orderSchema = new mongoose.Schema({
   customer: {
@@ -155,7 +161,7 @@ const orderSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Payment",
   },
-},{collection:'ORDER'});
+}, { collection: 'ORDER' });
 //CHI TIẾT ĐƠN HÀNG
 const orderdetailSchema = new mongoose.Schema({
   order: {
@@ -172,7 +178,7 @@ const orderdetailSchema = new mongoose.Schema({
   status: {
     type: String,
   },
-}, {collection:'ORDERDETAIL'});
+}, { collection: 'ORDERDETAIL' });
 const tableSchema = new mongoose.Schema({
   tb_number: {
     type: Number,
@@ -189,7 +195,7 @@ const tableSchema = new mongoose.Schema({
       ref: "Order",
     },
   ],
-},{collection:'TABLE'});
+}, { collection: 'TABLE' });
 const roleSchema = new mongoose.Schema({
   rl_name: {
     type: String,
@@ -200,7 +206,7 @@ const roleSchema = new mongoose.Schema({
       ref: "User",
     },
   ],
-},{collection:'ROLE'});
+}, { collection: 'ROLE' });
 const userSchema = new mongoose.Schema({
   full_name: {
     type: String,
@@ -215,7 +221,7 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Role",
   },
-},{collection:'USER'});
+}, { collection: 'USER' });
 //THÔNG BÁO
 const notificationSchema = new mongoose.Schema({
   oorder: {
@@ -229,7 +235,7 @@ const notificationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
   },
-}, {collection:'NOTIFICATION'});
+}, { collection: 'NOTIFICATION' });
 const paymentSchema = new mongoose.Schema({
   customer: {
     type: mongoose.Schema.Types.ObjectId,
@@ -245,7 +251,7 @@ const paymentSchema = new mongoose.Schema({
   status: {
     types: String,
   },
-}, {collection:'PAYMENT'});
+}, { collection: 'PAYMENT' });
 let Customer = mongoose.model("Customer", customerSchema);
 let Cart = mongoose.model("Cart", cartSchema);
 let Order = mongoose.model("Order", orderSchema);
