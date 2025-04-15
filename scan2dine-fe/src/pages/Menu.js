@@ -51,6 +51,7 @@ export const Menu = ({ direction }) => {
         setSearchTerm(term.trim());
     };
 
+    //Hàm thêm món vào giỏ hàng
     const addToCart = (item) => {
         setCart(prev => {
             const exist = prev.find(p => p._id === item._id);
@@ -62,6 +63,25 @@ export const Menu = ({ direction }) => {
         });
     };
 
+    //Hàm xóa món trong giỏ hàng
+    const removeFromCart = (item) => {
+        setCart(prevCart => {
+            const existingItem = prevCart.find(cartItem => cartItem._id === item._id);
+            if (existingItem && existingItem.quantity > 1) {
+                return prevCart.map(cartItem =>
+                    cartItem._id === item._id
+                        ? { ...cartItem, quantity: cartItem.quantity - 1 }
+                        : cartItem
+                );
+            }
+            return prevCart.filter(cartItem => cartItem._id !== item._id);
+        });
+    };
+    //Hàm lấy số lượng món trong giỏ hàng
+    const getItemQuantity = (itemId) => {
+        const item = cart.find(cartItem => cartItem._id === itemId);
+        return item ? item.quantity : 0;
+      };
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     const totalPrice = cart.reduce((sum, item) => sum + item.quantity * item.price, 0);
 
@@ -89,15 +109,15 @@ export const Menu = ({ direction }) => {
                 <CategoryFilter
                     selectedCategory={selectedCategory}
                     onSelect={setSelectedCategory}></CategoryFilter>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 pb-32">
                     {menuItems.length > 0 ? (
                         filteredMenuItems.map((item) => (
                             <MenuItem
                                 key={item._id}
                                 item={item}
                                 onAddToCart={addToCart}
-                            // onRemoveFromCart={removeFromCart}
-                            // quantity={getItemQuantity(item._id)}
+                                onRemoveFromCart={removeFromCart}
+                                quantity={getItemQuantity(item._id)}
                             />
                         ))
                     ) : (

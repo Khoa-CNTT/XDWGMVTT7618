@@ -21,19 +21,14 @@ export const CategoryFilter = ({ selectedCategory, onSelect }) => {
 
 
     return (
-        <div className="flex overflow-x-auto gap-4 p-4 bg-white scroll-smooth 
-        md:scrollbar-thin md:scrollbar-thumb-gray-300">
+        <div className="flex overflow-x-auto gap-4 p-4 bg-white scroll-smooth md:scrollbar-thin md:scrollbar-thumb-gray-300">
             {categoryList.map((category) => (
                 <div
                     key={category._id}
                     onClick={() => onSelect(category._id)}
-                    className={`font-medium px-4 py-2 rounded-full cursor-pointer whitespace-nowrap
-transition-colors duration-200
-${selectedCategory === category._id
+                    className={`font-medium px-4 py-2 rounded-full cursor-pointer whitespace-nowrap transition-colors duration-200 ${selectedCategory === category._id
                             ? 'bg-primary text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-primary hover:text-white'}
-`}
-                >
+                            : 'bg-gray-100 text-gray-700 hover:bg-primary hover:text-white'}`}>
                     {category.cate_name}
                 </div>
             ))}
