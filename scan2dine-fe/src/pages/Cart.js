@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { FaArrowLeft, FaChevronDown, FaPlus, FaMinus, FaStore } from "react-icons/fa";
+import { useNavigate } from 'react-router-dom';
 
-export default function CartPage() {
+export default function Cart({ onNavigateToHome }) {
+    const navigate = useNavigate();
     const [editingCounter, setEditingCounter] = useState(null);
     const [expandedCounters, setExpandedCounters] = useState([1, 2]); // Initially expand all
 
@@ -117,7 +119,12 @@ export default function CartPage() {
 
             {/* Header */}
             <div className="bg-primary p-4 text-white flex items-center justify-center sticky top-0 z-20 ">
-                <FaArrowLeft size={24} className="absolute left-4" />
+                <button
+                    onClick={() => navigate('/menu')}
+                    className="text-white hover:text-gray-200 absolute left-4">
+                    <FaArrowLeft size={20} />
+                </button>
+                {/* <FaArrowLeft size={24} className="absolute left-4" /> */}
                 <span className="font-medium text-center">Các món đang chọn</span>
             </div>
 

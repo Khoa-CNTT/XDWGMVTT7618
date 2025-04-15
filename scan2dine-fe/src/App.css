@@ -36,3 +36,10 @@
     transform: rotate(360deg);
   }
 }
+.flying-img {
+  position: fixed;
+  width: 100px;
+  z-index: 1000;
+  transition: transform 1s ease-in-out, opacity 1s ease-in-out;
+  pointer-events: none;
+}
