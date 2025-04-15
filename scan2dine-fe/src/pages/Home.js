@@ -102,16 +102,16 @@ const Home = ({ direction }) => {
                     <div className="flex justify-between items-center gap-4">
 
                         {/* Đơn hàng của bạn */}
-                        <div className="w-1/4 flex justify-center">
+                        {/* <div className="w-1/4 flex justify-center">
                             <img
                                 src={imgBtnDanhGia}
                                 alt="Đánh giá"
                                 className="w-full max-w-[250px] aspect-square rounded-lg shadow-md cursor-pointer hover:scale-105 transition-transform duration-200"
                                 onClick={() => setShowReviewForm(true)}
                             />
-                        </div>
+                        </div> */}
                         {/* Gọi thanh toán*/}
-                        <div className="w-1/4 flex justify-center">
+                        <div className="w-1/3 flex justify-center">
                             <img
                                 src={imgBtnThanhToan}
                                 alt="Gọi thanh toán"
@@ -121,7 +121,7 @@ const Home = ({ direction }) => {
                         </div>
 
                         {/* Gọi nhân viên */}
-                        <div className="w-1/4 flex justify-center">
+                        <div className="w-1/3 flex justify-center">
                             <img
                                 src={imgBtnGoiNV}
                                 alt="Gọi nhân viên"
@@ -131,7 +131,7 @@ const Home = ({ direction }) => {
                         </div>
 
                         {/* Đánh giá */}
-                        <div className="w-1/4 flex justify-center">
+                        <div className="w-1/3 7flex justify-center">
                             <img
                                 src={imgBtnDanhGia}
                                 alt="Đánh giá"
