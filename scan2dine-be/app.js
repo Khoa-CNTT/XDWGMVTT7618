@@ -6,9 +6,9 @@ var logger = require('morgan');
 const mongoose = require('mongoose');
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
-// const customerRoute = require('./routes/customer');
-// const cartdetailRoute = require('./routes/cartdetail');
-// const cartRoute = require('./routes/cart');
+const customerRoute = require('./routes/customer');
+const cartdetailRoute = require('./routes/cartdetail');
+const cartRoute = require('./routes/cart');
 const categoryRoute = require('./routes/category');
 const productRoute = require('./routes/product');
 
@@ -47,9 +47,9 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 // khai báo route sử dụng
-// app.use('/s2d/customer',customerRoute);
-// app.use('/s2d/cartdetail',cartdetailRoute);
-// app.use('/s2d/cart', cartRoute);
+app.use('/s2d/customer',customerRoute);
+app.use('/s2d/cartdetail',cartdetailRoute);
+app.use('/s2d/cart', cartRoute);
 app.use('/s2d/category', categoryRoute);
 app.use('/s2d/product', productRoute);
 app.use('/s2d/foodstall', foodstallRoute);

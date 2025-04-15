@@ -17,14 +17,19 @@ const productSchema = new mongoose.Schema({
   description: { type: String },
   price: { type: String },
   image: { type: String },
-  stall_id: { type: mongoose.Schema.Types.ObjectId, ref: "Stall" },
+  stall: { type: mongoose.Schema.Types.ObjectId, ref: "Stall" },
   orderdetail: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Orderdetail",
+      ref: "OrderDetail",
     },
   ],
-}, { collection: 'PRODUCT' });
+
+  cartdetail: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "CartDetail"
+  }],
+},{collection:'PRODUCT'});
 const foodstallsSchema = new mongoose.Schema({
   stall_name: {
     type: String,
@@ -45,8 +50,12 @@ const foodstallsSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Review",
   },
-},
-  { collection: 'FOODSTALL' });
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  }
+},{ collection: 'FOODSTALL'});
+
 const cartSchema = new mongoose.Schema({
   customer: {
     type: mongoose.Schema.Types.ObjectId,
@@ -55,7 +64,7 @@ const cartSchema = new mongoose.Schema({
   cartdetail: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Cartdetail",
+      ref: "CartDetail",
     },
   ],
 }, { collection: 'CART' });
@@ -82,7 +91,7 @@ const reviewSchema = new mongoose.Schema({
   },
   stall: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Stall",
+    ref: " Stall",
   },
   content: {
     type: String,
@@ -98,13 +107,11 @@ const customerSchema = new mongoose.Schema({
     type: Number,
     // required: true
   },
-  cart: [
-    {
+  cart:{
       type: mongoose.Types.ObjectId,
       // liên kết với bảng cart
       ref: "Cart",
     },
-  ],
   order: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -217,7 +224,7 @@ const userSchema = new mongoose.Schema({
 }, { collection: 'USER' });
 //THÔNG BÁO
 const notificationSchema = new mongoose.Schema({
-  order: {
+  oorder: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Order",
   },
@@ -249,7 +256,7 @@ let Customer = mongoose.model("Customer", customerSchema);
 let Cart = mongoose.model("Cart", cartSchema);
 let Order = mongoose.model("Order", orderSchema);
 let Orderdetail = mongoose.model("Orderdetail", orderdetailSchema);
-let Cartdetail = mongoose.model("CartDetail", cartdetailSchema);
+let CartDetail = mongoose.model("CartDetail", cartdetailSchema);
 let Category = mongoose.model("Category", categorySchema);
 let Foodstall = mongoose.model("Stall", foodstallsSchema);
 let Product = mongoose.model("Product", productSchema);
@@ -264,7 +271,7 @@ module.exports = {
   Customer,
   Cart,
   Order,
-  Cartdetail,
+  CartDetail,
   Category,
   Foodstall,
   Review,

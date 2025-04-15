@@ -58,9 +58,6 @@ const productController ={
     },
 
 
-
-
-
     updateProduct: async (req, res) => {
         try {
             const productId = req.params.id;
@@ -121,9 +118,6 @@ const productController ={
     },
 
     
-
-
-
 
     
     // ------------------------------------
