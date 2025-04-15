@@ -17,13 +17,13 @@ const foodstallController ={
     // ADD 
     addFoodstall: async (req, res) => {
         try {
-          const { stall_name, location ,review,owner_id} = req.body;
+          const { stall_name, location ,review,owner_id,user,stall_id} = req.body;
       
           if (!stall_name || !location) {
             return res.status(400).json({ message: "Vui lòng nhập đủ 'name' và 'location'" });
           }
       
-          const newFoodstall = new Foodstall({ stall_name, location ,review,owner_id});
+          const newFoodstall = new Foodstall({ stall_name, location ,review,owner_id,user,stall_id});
           await newFoodstall.save();
           res.status(201).json(newFoodstall);
         } catch (error) {
@@ -31,33 +31,26 @@ const foodstallController ={
         }
       },
       // DELETE
-      deleteFoodstall : async (req, res) => {
+      deleteFoodstall: async(req,res)=>{
         try {
-          const stallId = req.params.id;
-      
-          // Bước 1: Lấy danh sách sản phẩm thuộc quầy này
-          const products = await Product.find({ stall_id: stallId });
-      
-          // Bước 2: Xóa từng sản phẩm và cập nhật category
-          for (const product of products) {
-            // Gỡ product ra khỏi category tương ứng
-            await Category.findByIdAndUpdate(product.category, {
-              $pull: { products: product._id },
-            });
-      
-            // Xóa sản phẩm
-            await Product.findByIdAndDelete(product._id);
-          }
-      
-          // Bước 3: Xóa foodstall
-          await Foodstall.findByIdAndDelete(stallId);
-      
-          res.status(200).json({ message: "Đã xóa quầy hàng và các sản phẩm liên quan!" });
-        } catch (err) {
-          console.error("Lỗi khi xóa foodstall:", err);
-          res.status(500).json({ error: "Lỗi máy chủ!" });
+            const deleteStall  = await Foodstall.findByIdAndDelete(req.params.id);
+
+            if(!deleteStall){
+                res.status(404).json({message: "not found"})
+            }
+            
+            if(deleteStall){
+                await Product.deleteMany({stall: req.params.id})
+            }
+            res.status(200).json({
+                message: "Foodstall and related foods deleted successfully",
+                foodstall: deleteStall 
+            })
+        } catch (error) {
+            console.error("Error in addCartdetail:", error);
+            res.status(500).json({ message: "Server error", error: error.message || error });
         }
-      },
+    },
       // UPDATE
       updateFoodstall : async (req, res) => {
         try {

@@ -17,7 +17,7 @@ const productSchema = new mongoose.Schema({
   description: { type: String },
   price: { type: String },
   image: { type: String },
-  stall: { type: mongoose.Schema.Types.ObjectId, ref: "Stall" },
+  stall_id: { type: mongoose.Schema.Types.ObjectId, ref: "Stall" },
   orderdetail: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -217,7 +217,7 @@ const userSchema = new mongoose.Schema({
   password: {
     type: String,
   },
-  role: {
+  role_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Role",
   },
