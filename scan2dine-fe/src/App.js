@@ -7,6 +7,8 @@ import { AnimatePresence } from "framer-motion";
 import useDirection from './hooks/useDirection';
 import { Login } from './pages/Login';
 import Cart from './pages/Cart';
+import { EmployeePage } from './pages/EmployeePage';
+import { AdminPage } from './pages/AdminPage';
 
 
 function App() {
@@ -21,6 +23,8 @@ function App() {
         <Route path="/menu" element={<Menu direction={direction} />} />
         <Route path="/login" element={<Login direction={direction} />} />
         <Route path="/cart" element={<Cart direction={direction} />} />
+        <Route path="/employee" element={<EmployeePage direction={direction} />} />
+        <Route path="/admin" element={<AdminPage direction={direction} />} />
       </Routes>
     </AnimatePresence>
   );

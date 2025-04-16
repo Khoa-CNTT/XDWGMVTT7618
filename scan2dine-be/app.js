@@ -11,6 +11,7 @@ const cartdetailRoute = require('./routes/cartdetail');
 const cartRoute = require('./routes/cart');
 const categoryRoute = require('./routes/category');
 const productRoute = require('./routes/product');
+const tableRoute = require('./routes/table');
 
 const foodstallRoute = require('./routes/foodstall')
 const cors = require('cors');
@@ -47,12 +48,13 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 // khai báo route sử dụng
-app.use('/s2d/customer',customerRoute);
-app.use('/s2d/cartdetail',cartdetailRoute);
+app.use('/s2d/customer', customerRoute);
+app.use('/s2d/cartdetail', cartdetailRoute);
 app.use('/s2d/cart', cartRoute);
 app.use('/s2d/category', categoryRoute);
 app.use('/s2d/product', productRoute);
 app.use('/s2d/foodstall', foodstallRoute);
+app.use('/s2d/table', tableRoute);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
