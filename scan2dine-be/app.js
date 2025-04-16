@@ -4,6 +4,7 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const mongoose = require('mongoose');
+//-------------------------------------------
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 const customerRoute = require('./routes/customer');
@@ -11,9 +12,15 @@ const cartdetailRoute = require('./routes/cartdetail');
 const cartRoute = require('./routes/cart');
 const categoryRoute = require('./routes/category');
 const productRoute = require('./routes/product');
+<<<<<<< HEAD
 const tableRoute = require('./routes/table');
 
 const foodstallRoute = require('./routes/foodstall')
+=======
+const roleRouter = require('./routes/role');
+const foodstallRoute = require('./routes/foodstall');
+const userRouter = require('./routes/user');
+>>>>>>> 16e9ba51f5a8ccf713acaa5717ad0938ad8a013e
 const cors = require('cors');
 
 const dotenv = require('dotenv')
@@ -33,7 +40,7 @@ app.use(cors());
 //   await mongoose.connect('mongodb://127.0.0.1:27017/QLQuayHang');
 //   // use `await mongoose.connect('mongodb://user:password@127.0.0.1:27017/test');` if your database has auth enabled
 // }
-app.use(cors());
+// app.use(cors());
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -54,7 +61,12 @@ app.use('/s2d/cart', cartRoute);
 app.use('/s2d/category', categoryRoute);
 app.use('/s2d/product', productRoute);
 app.use('/s2d/foodstall', foodstallRoute);
+<<<<<<< HEAD
 app.use('/s2d/table', tableRoute);
+=======
+app.use('/s2d/role', roleRouter);
+app.use('/s2d/user', userRouter);
+>>>>>>> 16e9ba51f5a8ccf713acaa5717ad0938ad8a013e
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {

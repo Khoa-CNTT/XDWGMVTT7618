@@ -14,7 +14,7 @@ import { AdminPage } from './pages/AdminPage';
 function App() {
   const location = useLocation();
   const direction = useDirection();
-
+  const [cart, setCart] = useState([]);
 
   return (
     <AnimatePresence mode="wait">
@@ -22,6 +22,7 @@ function App() {
         <Route path="/" element={<Home direction={direction} />} />
         <Route path="/menu" element={<Menu direction={direction} />} />
         <Route path="/login" element={<Login direction={direction} />} />
+
         <Route path="/cart" element={<Cart direction={direction} />} />
         <Route path="/employee" element={<EmployeePage direction={direction} />} />
         <Route path="/admin" element={<AdminPage direction={direction} />} />

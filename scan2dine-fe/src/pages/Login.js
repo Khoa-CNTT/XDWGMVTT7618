@@ -3,15 +3,50 @@ import { MdVisibility, MdVisibilityOff, MdKey, MdInfo } from 'react-icons/md'
 import { Footer } from '../components/Footer'
 import { FaUser } from "react-icons/fa";
 import { navigate, useNavigate } from 'react-router-dom';
+import api from '../server/api';
 
 export const Login = () => {
+
     //state trạng thái hiển thị mật khẩu
     const [showPassword, setShowPassword] = useState(false);
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [error, setError] = useState('');
     const navigate = useNavigate();
-    const handleLogin = () => {
-        navigate('/');
-    }
 
+    // const handleLogin = () => {
+    //     navigate('/');
+    // }
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        try {
+            const response = await api.post('/auth/login', {
+                username,
+                password
+            });
+
+            const { token, role } = response.data;
+            localStorage.setItem('token', token);
+            localStorage.setItem('role', role);
+
+            // Role-based navigation
+            switch (role) {
+                case 'employee':
+                    navigate('/employee-dashboard');
+                    break;
+                case 'owner':
+                    navigate('/owner-dashboard');
+                    break;
+                case 'admin':
+                    navigate('/admin-dashboard');
+                    break;
+                default:
+                    setError('Vai trò được chỉ định không hợp lệ');
+            }
+        } catch (error) {
+            setError('Tên người dùng hoặc mật khẩu không hợp lệ');
+        }
+    };
     return (
         <div className="flex justify-center items-center min-h-screen bg-gray-100 px-4">
             <div className="w-full max-w-[400px] rounded-2xl border border-gray-300 shadow-lg bg-white p-6 space-y-6">
@@ -24,13 +59,6 @@ export const Login = () => {
                         <span className="text-black">DINE</span>
                     </h1>
                 </div>
-
-                {/* Avatar */}
-                {/* <div className="flex justify-center">
-                    <div className="rounded-full border border-gray-300 p-4 w-20 h-20 flex items-center justify-center shadow-sm bg-gray-100">
-                        <FaRegCircleUser size={40} className="text-gray-500" />
-                    </div>
-                </div> */}
 
                 {/* Login Form */}
                 <form className="space-y-4" onSubmit={handleLogin}>
