@@ -1,6 +1,7 @@
 const { User, Role, Foodstall } = require('../model/model');
 const { deleteFoodstall } = require('./foodstallController');
-
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 const userController = {
     // get user
     getAllUser: async (req, res) => {
@@ -105,6 +106,68 @@ const userController = {
             console.error('Lỗi khi xoá user:', error);
             res.status(500).json({ error: error.message });
         }
-    }
+    },
+
+    // đăng kí
+    register: async (req, res) => {
+        try {
+            const { full_name, email, password, role_id } = req.body;
+    
+            console.log("Received data:", req.body);
+    
+            // Kiểm tra nếu role_id có phải là ObjectId hợp lệ không
+            if (!mongoose.Types.ObjectId.isValid(role_id)) {
+                return res.status(400).json({ message: "Invalid role_id" });
+            }
+    
+            // Kiểm tra email đã tồn tại chưa
+            const existingUser = await User.findOne({ email });
+            if (existingUser) {
+                return res.status(400).json({ message: 'Email đã được sử dụng' });
+            }
+    
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const newUser = new User({ full_name, email, password: hashedPassword, role_id });
+            await newUser.save();
+    
+            // Gán user vào role
+            await Role.findByIdAndUpdate(role_id, {
+                $push: { user: newUser._id }
+            });
+    
+            res.status(201).json({ message: 'Đăng ký thành công', user: newUser });
+        } catch (error) {
+            console.error('Lỗi trong hàm register:', error);
+            res.status(500).json({ error: error.message });
+        }
+    },
+    // đăng nhập 
+    login: async (req, res) => {
+        try {
+            const { full_name, password } = req.body;
+
+            // Tìm user theo full_name
+            // const user = await User.findOne({ full_name });
+            const user = await User.findOne({ full_name }).populate('role_id');
+            if (!user) {
+                return res.status(404).json({ message: 'Tên đăng nhập không tồn tại' });
+            }
+
+            // So sánh mật khẩu
+            const isMatch = await bcrypt.compare(password, user.password);
+            if (!isMatch) {
+                return res.status(401).json({ message: 'Mật khẩu không đúng' });
+            }
+
+            // Nếu đúng, trả về user 
+            res.status(200).json({
+                message: 'Đăng nhập thành công',
+                user,
+                // role: user.role_id?.rl_name || null
+            });
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
 }
 module.exports = userController;
