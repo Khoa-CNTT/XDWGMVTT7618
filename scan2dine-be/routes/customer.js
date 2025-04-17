@@ -11,5 +11,7 @@ router.get("/", customerController.getAllCustomer);
 router.patch('/:id', customerController.updateCustomer);
 //DELETE CUSTOMER
 router.delete('/:id', customerController.deleteCustomer);
+//Check Phone
+router.post("/check-phone", customerController.checkCustomerByPhone);
 
 module.exports = router;

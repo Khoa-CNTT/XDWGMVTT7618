@@ -82,6 +82,31 @@ const customerController = {
       res.status(500).json(error);
     }
   },
+  // KIỂM TRA SỐ ĐIỆN THOẠI KHÁCH HÀNG
+  checkCustomerByPhone: async (req, res) => {
+    try {
+      const phone = req.body.phone;
+
+      // Kiểm tra số điện thoại có tồn tại trong database không
+      const existingCustomer = await Customer.findOne({ phone });
+
+      if (existingCustomer) {
+        // Nếu đã có => trả về thông tin khách hàng
+        res.status(200).json({
+          message: "Customer exists",
+          customer: existingCustomer,
+        });
+      } else {
+        // Nếu chưa có => yêu cầu nhập tên để tạo mới
+        res.status(404).json({
+          message: "Customer not found. Please enter your name.",
+        });
+      }
+    } catch (error) {
+      res.status(500).json({ message: "Internal server error", error });
+    }
+  },
+
 };
 
 module.exports = customerController;

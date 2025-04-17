@@ -31,7 +31,7 @@ export const Menu = ({ direction }) => {
     const navigate = useNavigate();
     //Hàm chuyển hướng đến trang menu
     const onNavigateToHome = () => {
-        navigate('/');
+        navigate('/home');
     };
 
     //Hàm lọc 

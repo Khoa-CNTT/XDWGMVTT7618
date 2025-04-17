@@ -9,6 +9,7 @@ import { Login } from './pages/Login';
 import Cart from './pages/Cart';
 import { EmployeePage } from './pages/EmployeePage';
 import { AdminPage } from './pages/AdminPage';
+import CustomerLogin from './pages/FillInfo';
 
 
 function App() {
@@ -19,7 +20,10 @@ function App() {
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
-        <Route path="/" element={<Home direction={direction} />} />
+
+        <Route path="/" element={<CustomerLogin direction={direction} />} />
+        <Route path="/home" element={<Home direction={direction} />} />
+
         <Route path="/menu" element={<Menu direction={direction} />} />
         <Route path="/login" element={<Login direction={direction} />} />
 

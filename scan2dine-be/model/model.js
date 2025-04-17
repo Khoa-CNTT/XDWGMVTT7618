@@ -29,7 +29,7 @@ const productSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "CartDetail"
   }],
-},{collection:'PRODUCT'});
+}, { collection: 'PRODUCT' });
 const foodstallsSchema = new mongoose.Schema({
   stall_name: {
     type: String,
@@ -54,7 +54,7 @@ const foodstallsSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "User"
   }
-},{ collection: 'FOODSTALL'});
+}, { collection: 'FOODSTALL' });
 
 const cartSchema = new mongoose.Schema({
   customer: {
@@ -107,11 +107,11 @@ const customerSchema = new mongoose.Schema({
     type: Number,
     // required: true
   },
-  cart:{
-      type: mongoose.Types.ObjectId,
-      // liên kết với bảng cart
-      ref: "Cart",
-    },
+  cart: {
+    type: mongoose.Types.ObjectId,
+    // liên kết với bảng cart
+    ref: "Cart",
+  },
   order: [
     {
       type: mongoose.Schema.Types.ObjectId,
@@ -211,6 +211,9 @@ const userSchema = new mongoose.Schema({
   full_name: {
     type: String,
   },
+  user_name: {
+    type: String,
+  },
   email: {
     type: String,
   },
@@ -222,6 +225,7 @@ const userSchema = new mongoose.Schema({
     ref: "Role",
   },
 }, { collection: 'USER' });
+
 //THÔNG BÁO
 const notificationSchema = new mongoose.Schema({
   oorder: {
