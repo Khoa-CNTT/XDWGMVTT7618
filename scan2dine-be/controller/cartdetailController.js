@@ -1,42 +1,51 @@
+
 const { Cart, Product, CartDetail } = require('../model/model');
+const { increaseCartQuantity, decreaseCartQuantity } = require('../service/cartservice');
+
 
 const cartdetailCoontroller = {
-    // add cartdetial
     addCartdetail: async (req, res) => {
         try {
-            const { cart, products } = req.body;
+            const { cart, products, quantity } = req.body;
 
-            // 1. Kiểm tra sản phẩm đã có trong cartdetail chưa
-            let existingCartDetail = await CartDetail.findOne({
-                cart: cart,
-                products: products
-            });
-
-            if (existingCartDetail) {
-                // 2. Nếu có rồi → cập nhật quantity tăng lên 1
-                existingCartDetail.quantity += 1;
-                await existingCartDetail.save();
-                return res.status(200).json(existingCartDetail);
+            if (!cart || !products) {
+                return res.status(400).json({ message: "Thiếu cartID hoặc productsId" });
             }
 
-            // 3. Nếu chưa có → tạo mới cartdetail
-            const newCartdetail = new CartDetail({ ...req.body, quantity: 1 });
-            const saveCartdeail = await newCartdetail.save();
+            const upProduttoCartdetail = await increaseCartQuantity(cart, products, quantity || 1);
 
-            // 4. Cập nhật cart và product
+            // Cập nhật Cart nếu có
             if (cart) {
-                await Cart.findByIdAndUpdate(cart, {
-                    $push: { cartdetail: saveCartdeail._id }
+                const cartID = await Cart.findById(cart);
+                if (!cartID) {
+                    return res.status(404).json({ message: 'Cart không tìm thấy.' });
+                }
+
+                await cartID.updateOne({
+                    $addToSet: { cartdetail: upProduttoCartdetail.detail._id }
                 });
+
+                console.log("Cart updated:", cartID);
             }
 
+            // Cập nhật Product nếu có
             if (products) {
-                await Product.findByIdAndUpdate(products, {
-                    $push: { cartdetail: saveCartdeail._id }
+                const product = await Product.findById(products);
+                if (!product) {
+                    return res.status(404).json({ message: 'Product không tìm thấy.' });
+                }
+
+                await product.updateOne({
+                    $addToSet: { cartdetail: upProduttoCartdetail.detail._id }
                 });
+
+                console.log("Product updated:", product);
             }
 
-            res.status(200).json(saveCartdeail);
+            res.status(200).json({
+                message: upProduttoCartdetail.updated ? "Tăng số lượng sản phẩm trong giỏ hàng" : "Thêm sản phẩm vào giỏ hàng",
+                detail: upProduttoCartdetail
+            });
         } catch (error) {
             console.error("Error in addCartdetail:", error);
             res.status(500).json({ message: "Server error", error: error.message || error });
@@ -142,6 +151,39 @@ const cartdetailCoontroller = {
             res.status(500).json({ message: "Server error", error: error.message || error });
         }
 
+    },
+    downQuantity: async (req, res) => {
+        try {
+            const { cart, products, quantity } = req.body;
+
+            if (!cart || !products) {
+                return res.status(400).json({ message: "Thiếu cartID hoặc productsId" });
+            }
+
+            const downQuantity = await decreaseCartQuantity(cart, products, quantity || 1);
+
+            // Nếu số lượng về 0 thì xoá luôn CartDetail và xoá liên kết
+            if (downQuantity.quantity === 0) {
+                await CartDetail.findByIdAndDelete(downQuantity._id);
+                await Cart.findByIdAndUpdate(cart, { $pull: { cartdetail: downQuantity._id } });
+                await Product.findByIdAndUpdate(products, { $pull: { cartdetail: downQuantity._id } });
+
+                return res.status(200).json({
+                    message: "Sản phẩm đã bị xoá khỏi giỏ hàng",
+                    detail: downQuantity
+                });
+            }
+
+            // Nếu vẫn còn quantity > 0
+            res.status(200).json({
+                message: "Giảm số lượng sản phẩm trong giỏ hàng",
+                detail: downQuantity
+            });
+
+        } catch (error) {
+            console.error("Error in downQuantity:", error);
+            res.status(500).json({ message: "Server error", error: error.message || error });
+        }
     }
 }
 
