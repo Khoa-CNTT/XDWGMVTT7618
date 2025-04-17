@@ -81,11 +81,35 @@ export const Menu = ({ direction }) => {
     const getItemQuantity = (itemId) => {
         const item = cart.find(cartItem => cartItem._id === itemId);
         return item ? item.quantity : 0;
-      };
+    };
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     const totalPrice = cart.reduce((sum, item) => sum + item.quantity * item.price, 0);
 
+    //Thao tác giỏ hàng
+    const userId = localStorage.getItem('userId');
 
+    useEffect(() => {
+        const fetchCart = async () => {
+            try {
+                const res = await fetch('http://localhost:5000/api/cart/getOrCreateCart', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId }),
+                });
+
+                if (res.ok) {
+                    const cart = await res.json();
+                    localStorage.setItem('cartId', cart._id);
+                } else {
+                    console.error('Lỗi khi lấy giỏ hàng');
+                }
+            } catch (err) {
+                console.error('Lỗi mạng:', err.message);
+            }
+        };
+
+        fetchCart();
+    }, [userId]);  // Chạy lại khi userId thay đổi
 
     return (
         <PageWrapper direction={direction}>

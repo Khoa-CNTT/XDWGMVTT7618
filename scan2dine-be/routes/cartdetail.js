@@ -4,6 +4,6 @@ var router = express.Router();
 
 router.post('/', cartdetailCoontroller.addCartdetail);
 router.get('/', cartdetailCoontroller.getCartdetail)
-router.delete('/:id', cartdetailCoontroller.deleteCartdetai);
+router.delete('/:id', cartdetailCoontroller.deleteCartdetail);
 router.patch('/:id', cartdetailCoontroller.updateCartdetail);
 module.exports = router;

@@ -20,7 +20,6 @@ const BannerSlider = () => {
   const images = [img1, img2, img3];//đưa vào data để phát triển thêm
 
   return (
-    // <div className="w-[1200px] h-[600px]">
     <div className="w-full max-w-2xl mx-auto ">
       <Slider {...settings}>
         {images.map((img, index) => (

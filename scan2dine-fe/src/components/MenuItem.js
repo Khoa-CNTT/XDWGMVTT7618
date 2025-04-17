@@ -13,14 +13,14 @@ export const MenuItem = ({ item, quantity, onRemoveFromCart, onAddToCart }) => {
   const createFlyingEffect = () => {
     const button = buttonRef.current;
     const cartIcon = document.getElementById('cart-icon');
-    
+
     console.log('Button:', button);
     console.log('Cart Icon:', cartIcon);
 
     if (button && cartIcon) {
       const buttonRect = button.getBoundingClientRect();
       const cartRect = cartIcon.getBoundingClientRect();
-      
+
       console.log('Button position:', buttonRect);
       console.log('Cart position:', cartRect);
 
@@ -52,11 +52,43 @@ export const MenuItem = ({ item, quantity, onRemoveFromCart, onAddToCart }) => {
     }
   };
 
-  const handleAddToCart = (e) => {
+  // const handleAddToCart = (e) => {
+  //   e.stopPropagation();
+  //   createFlyingEffect();
+  //   onAddToCart(item);
+  // };
+  const handleAddToCart = async (e) => {
     e.stopPropagation();
-    createFlyingEffect();
-    onAddToCart(item);
+
+    const cartId = localStorage.getItem('cartId');  // Lấy cartId từ localStorage
+
+    try {
+      const response = await fetch('http://localhost:5000/s2d/cartdetail', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          cart: '67ff57e169776d7f317054a9',  // cartId người dùng đang sử dụng
+          products: item._id,  // ID sản phẩm cần thêm
+          quantity: 1,  // Số lượng sản phẩm
+          price: item.price,  // Giá sản phẩm
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Đã thêm sản phẩm vào giỏ:', data);
+        // updateQuantity(item._id);  // Nếu có hàm để cập nhật số lượng hiển thị trên UI
+      } else {
+        const err = await response.json();
+        console.error('Lỗi khi thêm vào giỏ:', err.message);
+      }
+    } catch (err) {
+      console.error('Lỗi mạng:', err.message);
+    }
   };
+
 
   const handleRemoveFlyingItem = (id) => {
     setFlyingItems((prev) => prev.filter((item) => item.id !== id));
@@ -67,7 +99,7 @@ export const MenuItem = ({ item, quantity, onRemoveFromCart, onAddToCart }) => {
     <>
       <div className="bg-white p-2 relative mt-2 transition duration-300 hover:shadow-lg hover:scale-[1.02] rounded-lg">
         <div className="cursor-pointer p-3" onClick={() => setShowDetail(true)}>
-        <img
+          <img
             src={'http://localhost:5000/' + item.image}
             alt={item.pd_name}
             className="w-[160px] h-[160px] object-cover mx-auto rounded-md "
