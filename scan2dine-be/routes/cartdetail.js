@@ -1,9 +1,10 @@
 var express = require('express');
-const cartdetailCoontroller = require('../controller/cartdetailController');
+const cartdetailController = require('../controller/cartdetailController');
 var router = express.Router();
 
-router.post('/', cartdetailCoontroller.addCartdetail);
-router.get('/', cartdetailCoontroller.getCartdetail)
-router.delete('/:id', cartdetailCoontroller.deleteCartdetail);
-router.patch('/:id', cartdetailCoontroller.updateCartdetail);
+router.post('/', cartdetailController.addCartdetail);
+router.get('/', cartdetailController.getCartdetail)
+router.delete('/:id', cartdetailController.deleteCartdetail);
+router.patch('/:id', cartdetailController.updateCartdetail);
+
 module.exports = router;

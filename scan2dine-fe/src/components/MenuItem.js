@@ -1,41 +1,59 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import ProductDetail from './ProductDetail';
 import FlyItem from './FlyItem';
+import api from '../server/api';
 import { FaPlus, FaMinus } from 'react-icons/fa';
-import { useContext } from 'react';
+import { addToCartDetail, removeFromCartDetail } from '../server/cartService';
 
-export const MenuItem = ({ item, quantity, onRemoveFromCart, onAddToCart }) => {
+export const MenuItem = ({ item, onRemoveFromCart, onAddToCart }) => {
   const [showDetail, setShowDetail] = useState(false);
   const buttonRef = useRef(null);
   const [flyingItems, setFlyingItems] = useState([]);
+  const [localQuantity, setLocalQuantity] = useState(0);
 
-  // Function để tạo hiệu ứng bay
+  useEffect(() => {
+    const fetchCartQuantity = async () => {
+      try {
+        const cartId = localStorage.getItem('cartId');
+        if (cartId) {
+          const response = await api.get('/s2d/cartdetail');
+          const cartItem = response.data.find(
+            detail => detail.products._id === item._id && detail.cart._id === cartId
+          );
+          if (cartItem) {
+            setLocalQuantity(cartItem.quantity);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching cart quantity:', error);
+      }
+    };
+    fetchCartQuantity();
+  }, [item._id]);
+
   const createFlyingEffect = () => {
     const button = buttonRef.current;
     const cartIcon = document.getElementById('cart-icon');
-
+    
     console.log('Button:', button);
     console.log('Cart Icon:', cartIcon);
 
     if (button && cartIcon) {
       const buttonRect = button.getBoundingClientRect();
       const cartRect = cartIcon.getBoundingClientRect();
-
+      
       console.log('Button position:', buttonRect);
       console.log('Cart position:', cartRect);
 
       const startPosition = {
         x: buttonRect.left + buttonRect.width / 2,
-        y: buttonRect.top + buttonRect.height / 2
+        y: buttonRect.top + buttonRect.height / 2,
       };
 
       const endPosition = {
         x: cartRect.left + cartRect.width / 2,
-        y: cartRect.top + cartRect.height / 2
+        y: cartRect.top + cartRect.height / 2,
       };
-
-      console.log('Start:', startPosition);
-      console.log('End:', endPosition);
 
       const id = Date.now();
       setFlyingItems((prev) => [
@@ -52,48 +70,32 @@ export const MenuItem = ({ item, quantity, onRemoveFromCart, onAddToCart }) => {
     }
   };
 
-  // const handleAddToCart = (e) => {
-  //   e.stopPropagation();
-  //   createFlyingEffect();
-  //   onAddToCart(item);
-  // };
-  const handleAddToCart = async (e) => {
-    e.stopPropagation();
-
-    const cartId = localStorage.getItem('cartId');  // Lấy cartId từ localStorage
-
-    try {
-      const response = await fetch('http://localhost:5000/s2d/cartdetail', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          cart: '67ff57e169776d7f317054a9',  // cartId người dùng đang sử dụng
-          products: item._id,  // ID sản phẩm cần thêm
-          quantity: 1,  // Số lượng sản phẩm
-          price: item.price,  // Giá sản phẩm
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('Đã thêm sản phẩm vào giỏ:', data);
-        // updateQuantity(item._id);  // Nếu có hàm để cập nhật số lượng hiển thị trên UI
-      } else {
-        const err = await response.json();
-        console.error('Lỗi khi thêm vào giỏ:', err.message);
-      }
-    } catch (err) {
-      console.error('Lỗi mạng:', err.message);
-    }
-  };
-
-
   const handleRemoveFlyingItem = (id) => {
     setFlyingItems((prev) => prev.filter((item) => item.id !== id));
   };
 
+  const handleAddToCart = async (e) => {
+    e.stopPropagation();
+    try {
+      await addToCartDetail(item._id);
+      setLocalQuantity(prev => prev + 1);
+      createFlyingEffect();
+      onAddToCart(item);
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+    }
+  };
+
+  const handleRemoveFromCart = async (e) => {
+    e.stopPropagation();
+    try {
+      await removeFromCartDetail(item._id);
+      setLocalQuantity(prev => Math.max(0, prev - 1));
+      onRemoveFromCart(item);
+    } catch (error) {
+      console.error('Error removing from cart:', error);
+    }
+  };
 
   return (
     <>
@@ -102,7 +104,7 @@ export const MenuItem = ({ item, quantity, onRemoveFromCart, onAddToCart }) => {
           <img
             src={'http://localhost:5000/' + item.image}
             alt={item.pd_name}
-            className="w-[160px] h-[160px] object-cover mx-auto rounded-md "
+            className="w-[160px] h-[160px] object-cover mx-auto rounded-md"
           />
           <div className="mt-2 flex flex-col justify-center h-12">
             <h3 className="font-medium text-sm capitalize line-clamp-2 leading-snug">
@@ -112,22 +114,21 @@ export const MenuItem = ({ item, quantity, onRemoveFromCart, onAddToCart }) => {
         </div>
 
         <div className="flex items-center justify-between px-1 mt-auto">
-          <div className=" px-3 py-1 rounded-full mr-3 flex-shrink-0">
-            <p className="text-primary fnt-medium whitespace-nowrap">{parseInt(item.price).toLocaleString()}đ</p>
+          <div className="px-3 py-1 rounded-full mr-3 flex-shrink-0">
+            <p className="text-primary fnt-medium whitespace-nowrap">
+              {parseInt(item.price).toLocaleString()}đ
+            </p>
           </div>
           <div className="flex items-center gap-1">
-            {quantity > 0 && (
+            {localQuantity > 0 && (
               <>
                 <button
                   className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-gray-400 flex items-center justify-center"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemoveFromCart(item);
-                  }}
+                  onClick={handleRemoveFromCart}
                 >
                   <FaMinus className="text-white w-[60%] h-[60%]" />
                 </button>
-                <span className="w-3 text-center text-black font-semibold">{quantity}</span>
+                <span className="w-3 text-center text-black font-semibold">{localQuantity}</span>
               </>
             )}
             <button

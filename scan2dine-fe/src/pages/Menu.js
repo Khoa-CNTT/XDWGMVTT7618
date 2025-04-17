@@ -6,26 +6,35 @@ import CartBar from '../components/Carbar';
 import { FaArrowLeft } from 'react-icons/fa';
 import { CategoryFilter } from '../components/CategoryFilter';
 import { useNavigate } from 'react-router-dom';
-
+import { removeFromCartDetail } from '../server/cartService';  
 
 export const Menu = ({ direction }) => {
     const [cart, setCart] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [menuItems, setMenuItems] = useState([]);
-
-
+    const [userId, setUserId] = useState(localStorage.getItem('userId'));
     //lấy dữ liệu từ BE
     useEffect(() => {
-        const fetchMenuItems = async () => {
+        const fetchData = async () => {
             try {
                 const getProduct = await api.get('/s2d/product');
                 setMenuItems(getProduct.data);
+
+                const cartId = localStorage.getItem('cartId');
+                if (cartId) {
+                    const cartResponse = await api.get('/s2d/cartdetail');
+                    const cartItems = cartResponse.data.filter(item =>
+                        item.cart._id === cartId
+                    );
+                    setCart(cartItems);
+                }
             } catch (error) {
-                console.error('Lỗi khi tải danh mục sản phẩm:', error);
+                console.error('Error fetching data:', error);
             }
         };
-        fetchMenuItems();
+        fetchData();
     }, []);
+
 
     //nút back
     const navigate = useNavigate();
@@ -43,8 +52,6 @@ export const Menu = ({ direction }) => {
         typeof item.pd_name === 'string' &&
         item.pd_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-
-
 
     //Hàm tìm kiếm
     const handleSearch = (term) => {
@@ -64,34 +71,49 @@ export const Menu = ({ direction }) => {
     };
 
     //Hàm xóa món trong giỏ hàng
-    const removeFromCart = (item) => {
-        setCart(prevCart => {
-            const existingItem = prevCart.find(cartItem => cartItem._id === item._id);
-            if (existingItem && existingItem.quantity > 1) {
-                return prevCart.map(cartItem =>
-                    cartItem._id === item._id
-                        ? { ...cartItem, quantity: cartItem.quantity - 1 }
-                        : cartItem
-                );
-            }
-            return prevCart.filter(cartItem => cartItem._id !== item._id);
-        });
+    const removeFromCart = async (item) => {
+        try {
+            await removeFromCartDetail(item._id);
+            setCart(prevCart => {
+                const updatedCart = prevCart.map(cartItem => {
+                    if (cartItem.products._id === item._id) {
+                        const newQuantity = cartItem.quantity - 1;
+                        if (newQuantity <= 0) {
+                            return null; // Will be filtered out
+                        }
+                        return {
+                            ...cartItem,
+                            quantity: newQuantity
+                        };
+                    }
+                    return cartItem;
+                }).filter(Boolean); // Remove null items
+
+                return updatedCart;
+            });
+        } catch (error) {
+            console.error('Error removing from cart:', error);
+        }
     };
+
     //Hàm lấy số lượng món trong giỏ hàng
     const getItemQuantity = (itemId) => {
         const item = cart.find(cartItem => cartItem._id === itemId);
         return item ? item.quantity : 0;
     };
-    const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-    const totalPrice = cart.reduce((sum, item) => sum + item.quantity * item.price, 0);
 
-    //Thao tác giỏ hàng
-    const userId = localStorage.getItem('userId');
+    // Update state khi cart thay đổi
+    const totalItems = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    const totalPrice = cart.reduce((sum, item) => {
+        const price = item.products?.price || 0;
+        const quantity = item.quantity || 0;
+        return sum + (price * quantity);
+    }, 0);
 
     useEffect(() => {
         const fetchCart = async () => {
             try {
-                const res = await fetch('http://localhost:5000/api/cart/getOrCreateCart', {
+                const res = await fetch('http://localhost:5000/s2d/cart/getOrCreateCart', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId }),
@@ -149,7 +171,11 @@ export const Menu = ({ direction }) => {
                     )}
                 </div>
                 {cart.length > 0 && (
-                    <CartBar cart={cart} totalItems={totalItems} totalPrice={totalPrice} />
+                    <CartBar
+                        cart={cart}
+                        totalItems={totalItems}
+                        totalPrice={totalPrice}
+                    />
                 )}
             </div>
         </PageWrapper>
