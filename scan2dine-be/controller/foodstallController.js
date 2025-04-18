@@ -1,5 +1,5 @@
-const { default: mongoose } = require('mongoose');
-const { Product, Category, Foodstall } = require('../model/model');
+const { default: mongoose } = require("mongoose");
+const { Product, Category, Foodstall } = require("../model/model");
 const foodstallController = {
   //  GET ALL FOODSTALL
   getAllFoodstall: async (req, res) => {
@@ -14,16 +14,26 @@ const foodstallController = {
       res.status(500).json({ error: err.message });
     }
   },
-  // ADD 
+  // ADD
   addFoodstall: async (req, res) => {
     try {
-      const { stall_name, location, review, owner_id, user, stall_id } = req.body;
+      const { stall_name, location, review, owner_id, user, stall_id } =
+        req.body;
 
       if (!stall_name || !location) {
-        return res.status(400).json({ message: "Vui lòng nhập đủ 'name' và 'location'" });
+        return res
+          .status(400)
+          .json({ message: "Vui lòng nhập đủ 'name' và 'location'" });
       }
 
-      const newFoodstall = new Foodstall({ stall_name, location, review, owner_id, user, stall_id });
+      const newFoodstall = new Foodstall({
+        stall_name,
+        location,
+        review,
+        owner_id,
+        user,
+        stall_id,
+      });
       await newFoodstall.save();
       res.status(201).json(newFoodstall);
     } catch (error) {
@@ -31,42 +41,35 @@ const foodstallController = {
     }
   },
   // DELETE
-  deleteFoodstall : async (stallId) => {
+  deleteFoodstall: async (stallId) => {
     try {
-        // Tìm foodstall cần xóa
-        const foodstall = await Foodstall.findById(stallId);
-        if (!foodstall) {
-            return { message: "Foodstall not found" };
-        }
+      // Tìm foodstall cần xóa
+      const foodstall = await Foodstall.findById(stallId);
+      if (!foodstall) {
+        return { message: "Foodstall not found" };
+      }
 
-        // Tìm các sản phẩm liên quan đến foodstall này
-        const productsToDelete = await Product.find({ stall_id: stallId });
-        if (productsToDelete.length > 0) {
-            // Xóa các sản phẩm liên quan
-            await Product.deleteMany({ stall_id: stallId });
+      // Tìm các sản phẩm liên quan đến foodstall này
+      const productsToDelete = await Product.find({ stall_id: stallId });
+      if (productsToDelete.length > 0) {
+        // Xóa các sản phẩm liên quan
+        await Product.deleteMany({ stall_id: stallId });
 
-            // Cập nhật Category để loại bỏ sản phẩm đã xóa khỏi danh sách của Category
-            await Category.updateMany(
-                { products: { $in: productsToDelete.map(p => p._id) } },
-                { $pull: { products: { $in: productsToDelete.map(p => p._id) } } }
-            );
-        }
+        // Cập nhật Category để loại bỏ sản phẩm đã xóa khỏi danh sách của Category
+        await Category.updateMany(
+          { products: { $in: productsToDelete.map((p) => p._id) } },
+          { $pull: { products: { $in: productsToDelete.map((p) => p._id) } } }
+        );
+      }
 
-        // Xóa foodstall
-        await foodstall.deleteOne();
-        return { message: "Foodstall and related products deleted successfully" };
-
+      // Xóa foodstall
+      await foodstall.deleteOne();
+      return { message: "Foodstall and related products deleted successfully" };
     } catch (error) {
-        console.error("Error in deleteFoodstall:", error);
-        return { error: error.message || error };
+      console.error("Error in deleteFoodstall:", error);
+      return { error: error.message || error };
     }
   },
-
-
-
-
-
-
 
   // deleteFoodstall: async (req, res) => {
   //   try {
@@ -130,7 +133,17 @@ const foodstallController = {
       console.error("Lỗi cập nhật quầy hàng:", error);
       res.status(500).json({ error: "Lỗi máy chủ khi cập nhật quầy hàng." });
     }
-  }
+  },
+  getAStall: async (req, res) => {
+    try {
+      const showAStall = await Foodstall.findById(req.params.id).populate({
+        path: "products",
+        select: "pd_name",
+      });
+      res.status(200).json(showAStall);
+    } catch (error) {
+      res.status(500).json(error);
+    }
+  },
 };
 module.exports = foodstallController;
-
