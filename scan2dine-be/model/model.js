@@ -200,7 +200,7 @@ const tableSchema = new mongoose.Schema({
   ],
 }, { collection: 'TABLE' });
 const roleSchema = new mongoose.Schema({
-  rl_name: {
+  role_name: {
     type: String,
   },
   user: [

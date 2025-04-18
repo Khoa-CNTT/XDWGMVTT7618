@@ -73,34 +73,34 @@ const userController = {
     deleteUser: async (req, res) => {
         try {
             const userId = req.params.id;
-    
+
             // Tìm user
             const user = await User.findById(userId);
             if (!user) return res.status(404).json({ message: 'User not found' });
-    
+
             // Xoá user khỏi Role
             await Role.findByIdAndUpdate(user.role_id, {
                 $pull: { user: userId }
             });
-    
+
             // Kiểm tra nếu user là chủ quầy (Foodstall)
             const foodstall = await Foodstall.findOne({ user: userId });
             if (foodstall) {
                 const stallId = foodstall._id;
-    
+
                 // Gọi hàm để xoá quầy và sản phẩm liên quan
                 const foodstallDeletionResult = await deleteFoodstall(stallId);
                 if (foodstallDeletionResult.error) {
                     return res.status(500).json({ error: foodstallDeletionResult.error });
                 }
             }
-    
+
             // Xoá liên kết Review nếu có (khi nào có thì mở hàm)
             // await Review.deleteMany({ user: userId });
-    
+
             // Cuối cùng xoá user
             await User.findByIdAndDelete(userId);
-    
+
             res.status(200).json({ message: 'User and related data deleted successfully' });
         } catch (error) {
             console.error('Lỗi khi xoá user:', error);
@@ -112,29 +112,29 @@ const userController = {
     register: async (req, res) => {
         try {
             const { full_name, email, password, role_id } = req.body;
-    
+
             console.log("Received data:", req.body);
-    
+
             // Kiểm tra nếu role_id có phải là ObjectId hợp lệ không
             if (!mongoose.Types.ObjectId.isValid(role_id)) {
                 return res.status(400).json({ message: "Invalid role_id" });
             }
-    
+
             // Kiểm tra email đã tồn tại chưa
             const existingUser = await User.findOne({ email });
             if (existingUser) {
                 return res.status(400).json({ message: 'Email đã được sử dụng' });
             }
-    
+
             const hashedPassword = await bcrypt.hash(password, 10);
             const newUser = new User({ full_name, email, password: hashedPassword, role_id });
             await newUser.save();
-    
+
             // Gán user vào role
             await Role.findByIdAndUpdate(role_id, {
                 $push: { user: newUser._id }
             });
-    
+
             res.status(201).json({ message: 'Đăng ký thành công', user: newUser });
         } catch (error) {
             console.error('Lỗi trong hàm register:', error);
@@ -163,7 +163,7 @@ const userController = {
             res.status(200).json({
                 message: 'Đăng nhập thành công',
                 user,
-                // role: user.role_id?.rl_name || null
+                role_name: user.role_id?.role_name || null
             });
         } catch (error) {
             res.status(500).json({ error: error.message });
