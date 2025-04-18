@@ -9,36 +9,34 @@ export const Login = () => {
 
     //state trạng thái hiển thị mật khẩu
     const [showPassword, setShowPassword] = useState(false);
-    const [username, setUsername] = useState('');
+    const [full_name, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
 
-    // const handleLogin = () => {
-    //     navigate('/');
-    // }
+    //Ấn nút đăng nhập
     const handleLogin = async (e) => {
         e.preventDefault();
         try {
-            const response = await api.post('/auth/login', {
-                username,
+            const response = await api.post('/s2d/user/login', {
+                full_name,
                 password
             });
 
-            const { token, role } = response.data;
-            localStorage.setItem('token', token);
-            localStorage.setItem('role', role);
+            localStorage.setItem('user', JSON.stringify(response.data)); // hoặc lưu token, role gì bạn cần
 
-            // Role-based navigation
-            switch (role) {
-                case 'employee':
-                    navigate('/employee-dashboard');
+            const { role_name } = response.data;
+
+            // Điều hướng theo roll
+            switch (role_name) {
+                case "1":
+                    navigate('/employee');
                     break;
-                case 'owner':
+                case '2':
                     navigate('/owner-dashboard');
                     break;
-                case 'admin':
-                    navigate('/admin-dashboard');
+                case '3':
+                    navigate('/admin');
                     break;
                 default:
                     setError('Vai trò được chỉ định không hợp lệ');
@@ -68,6 +66,8 @@ export const Login = () => {
                             <input
                                 type="text"
                                 placeholder="Nhập tên đăng nhập"
+                                value={full_name}
+                                onChange={(e) => setUsername(e.target.value)}
                                 className="w-full p-3 pl-10 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary bg-white"
                             />
                             <span className="absolute left-3 top-4 text-gray-400">
@@ -82,6 +82,8 @@ export const Login = () => {
                             <input
                                 type={showPassword ? "text" : "password"}
                                 placeholder="••••••••"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                                 className="w-full p-3 pl-10 pr-10 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary bg-white"
                             />
                             {/* Icon password (bên trái) */}
@@ -105,15 +107,18 @@ export const Login = () => {
                     >
                         Đăng nhập
                     </button>
+                    {error && (
+                        <div className="text-red-500 text-sm text-center">{error}</div>
+                    )}
                     {/* Info Icon dưới nút và căn phải, có message khi hover */}
-                    <div className="flex justify-end mt-2 relative group">
-                        <MdInfo className="text-gray-500 cursor-pointer hover:text-primary" size={20} />
+                    {/* <div className="flex justify-end mt-2 relative group">
+                        <MdInfo className="text-gray-500 cursor-pointer hover:text-primary" size={20} /> */}
 
-                        {/* Message khi hover vào icon info*/}
-                        <div className="absolute bottom-full right-0 mb-2 w-max px-3 py-1 text-sm text-black bg-orange-50 rounded shadow-lg opacity-0 group-hover:opacity-100 transition duration-200">
+                    {/* Message khi hover vào icon info*/}
+                    {/* <div className="absolute bottom-full right-0 mb-2 w-max px-3 py-1 text-sm text-black bg-orange-50 rounded shadow-lg opacity-0 group-hover:opacity-100 transition duration-200">
                             Nếu bạn quên mật khẩu hãy <a><span className='text-primary'>liên hệ quản trị viên</span></a>
                         </div>
-                    </div>
+                    </div> */}
                 </form>
 
                 {/* Footer (nằm bên trong khối border luôn) */}
