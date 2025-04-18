@@ -5,14 +5,29 @@ const customerController = {
   //  ADD CUSTOMER
   addCustomer: async (req, res) => {
     try {
-      // req.body là chỉ chấp nhận những trg có trong customer
+      const { phone, name } = req.body;
+      const checkphone = await Customer.findOne({ phone });
+      if (checkphone) {
+        return res.status(200).json({
+          message: "Khách hàng đã tồn tại",
+          customer: checkphone,
+        });
+      }
+      // nếu chưa tồn tại thì tạo mới
       const newCustomer = new Customer(req.body);
-      // lưu customer
+      const cart = await creatCart();
+      newCustomer.cart = cart._id;
       const saveCustomer = await newCustomer.save();
-      // tra ve thong tin cua customer duoc luu
+      // Gắn lại customerId vào cart (đảm bảo schema Cart có trường customer)
+      await Cart.findByIdAndUpdate(cart._id, {
+        customer: saveCustomer._id,
+      });
       res.status(200).json(saveCustomer);
     } catch (error) {
-      res.status(500).json(error);
+      console.error("Error in creating customer:", error);
+      res
+        .status(500)
+        .json({ message: "Lỗi server", error: error.message || error });
     }
   },
 
@@ -106,7 +121,6 @@ const customerController = {
       res.status(500).json({ message: "Internal server error", error });
     }
   },
-
 };
 
 module.exports = customerController;

@@ -1,5 +1,5 @@
 const { Cart, Product, CartDetail } = require('../model/model');
-const { increaseCartQuantity, decreaseCartQuantity } = require('../service/cartservice');
+const { increaseCartQuantity, decreaseCartQuantity } = require('../service/cartdetailService');
 
 const cartdetailController = {
     addCartdetail: async (req, res) => {
