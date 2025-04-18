@@ -130,7 +130,15 @@ const foodstallController = {
       console.error("Lỗi cập nhật quầy hàng:", error);
       res.status(500).json({ error: "Lỗi máy chủ khi cập nhật quầy hàng." });
     }
-  }
+  },
+  getAStall: async(req, res)=>{
+    try {
+        const showAStall  = await Foodstall.findById(req.params.id).populate({path:"products", select: "pd_name"});
+        res.status(200).json(showAStall);
+    } catch (error) {
+        res.status(500).json(error)
+    }
+},
 };
 module.exports = foodstallController;
 

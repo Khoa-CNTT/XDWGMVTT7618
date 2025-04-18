@@ -7,4 +7,6 @@ router.get('/', foodstallController.getAllFoodstall);
 router.post("/", foodstallController.addFoodstall); 
 router.delete("/:id", foodstallController.deleteFoodstall);
 router.put("/:id", foodstallController.updateFoodstall);
+// GET A STALL
+router.get('/:id', foodstallController.getAStall);
 module.exports = router;
