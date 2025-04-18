@@ -47,7 +47,7 @@ const CustomerLogin = ({ onSuccess }) => {
         }
 
         try {
-            const res = await api.post("/s2d/customer", { phone, name });
+            const res = await api.post("/s2d/customer/", { phone, name });
             localStorage.setItem("customer", JSON.stringify({ phone, name }));
             setMessage(`Đăng ký thành công! Xin chào ${res.data.name}`);
             setIsExisting(true);

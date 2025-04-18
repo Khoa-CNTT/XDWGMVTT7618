@@ -17,6 +17,8 @@ import React, { useState } from 'react'
 import { SideBar } from '../components/SideBar';
 import { Breadcrumb } from '../components/Breadcrumb';
 import Dashboard from '../components/DashBoard';
+import TableManagementSystem from '../components/A_TableManager';
+import { Navigate, Route, Routes } from 'react-router-dom';
 export const AdminPage = () => {
 
     // Trạng thái để theo dõi trang đang được hiển thị
@@ -28,7 +30,7 @@ export const AdminPage = () => {
             case 'tổng quan hệ thống':
                 return <Dashboard></Dashboard>
             case 'quản lý bàn':
-            // return renderTablesContent();
+                return <TableManagementSystem></TableManagementSystem>;
             default:
             // return <DashBoard />;
         }
@@ -45,7 +47,12 @@ export const AdminPage = () => {
 
                 {/* Nội dung chính của các trang*/}
                 <main className="flex-1 overflow-y-auto bg-gray-100">
-                    {renderContent()}
+                    <Routes>
+                        <Route path="/" element={<Navigate to="dashboard" />} />
+                        <Route path="dashboard" element={<Dashboard />} />
+                        <Route path="tables" element={<TableManagementSystem />} />
+                        {/* Add more routes if needed */}
+                    </Routes>
                 </main>
             </div>
 
