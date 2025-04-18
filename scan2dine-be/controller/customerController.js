@@ -1,6 +1,6 @@
 const { default: mongoose } = require("mongoose");
 const { Customer, Cart } = require("../model/model");
-
+const { creatCart } = require("../service/cartService");
 const customerController = {
   //  ADD CUSTOMER
   addCustomer: async (req, res) => {
