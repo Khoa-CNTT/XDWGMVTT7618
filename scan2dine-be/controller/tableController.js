@@ -1,4 +1,4 @@
-const {Order, Table} = require('../models/model');
+const {Order, Table} = require('../model/model');
 
 const tableController = {
     // add table
