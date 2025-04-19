@@ -31,30 +31,26 @@ export const getOrCreateCart = async () => {
 
 export const addToCartDetail = async (productId, quantity = 1) => {
   try {
-    const cartId = localStorage.getItem('cartId');
+    let cartId = localStorage.getItem('cartId');
+    const userId = localStorage.getItem('userId');
+
     if (!cartId) {
-      throw new Error('No cart found');
+      // Sửa lại endpoint và body request
+      const res = await api.post('/s2d/cart', { 
+        userId: userId,
+        status: "1" 
+      });
+      cartId = res.data._id;
+      localStorage.setItem('cartId', cartId);
     }
 
-    // Kiểm tra sản phẩm đã tồn tại trong giỏ hàng chưa
-    const cartResponse = await api.get('/s2d/cartdetail');
-    const existingItem = cartResponse.data.find(
-      item => item.products._id === productId && item.cart._id === cartId
-    );
+    // Thêm sản phẩm vào giỏ hàng
+    return await api.post('/s2d/cartdetail', {
+      cart: cartId,
+      products: productId,
+      quantity: quantity
+    });
 
-    if (existingItem) {
-      // Nếu sản phẩm đã tồn tại, cập nhật số lượng
-      return await api.patch(`/s2d/cartdetail/${existingItem._id}`, {
-        quantity: existingItem.quantity + quantity  // Cộng thêm số lượng mới
-      });
-    } else {
-      // Nếu sản phẩm chưa tồn tại, thêm mới với số lượng được chỉ định
-      return await api.post('/s2d/cartdetail', {
-        cart: cartId,
-        products: productId,
-        quantity: quantity
-      });
-    }
   } catch (error) {
     console.error('Error adding to cart:', error);
     throw error;
@@ -63,15 +59,28 @@ export const addToCartDetail = async (productId, quantity = 1) => {
 
 export const removeFromCartDetail = async (productId) => {
   try {
-    const cartId = await getOrCreateCart();
-    const response = await axios.delete(`${API_URL}/cartdetail/${cartId}`, {
-      data: {
-        products: productId
-      }
+    const cartId = localStorage.getItem('cartId');
+    if (!cartId) throw new Error('No cart found');
+
+    // Get current cart details
+    const res = await api.get('/s2d/cartdetail');
+    const item = res.data.find(
+      (detail) => detail.products._id === productId && detail.cart._id === cartId
+    );
+
+    if (!item) throw new Error('Product not found in cart');
+
+    // If quantity is 1, delete the item
+    if (item.quantity <= 1) {
+      return await api.delete(`/s2d/cartdetail/${item._id}`);
+    }
+
+    // Otherwise decrease quantity by 1
+    return await api.patch(`/s2d/cartdetail/${item._id}`, {
+      quantity: item.quantity - 1
     });
-    return response.data;
   } catch (error) {
-    console.error('Error in removeFromCartDetail:', error);
+    console.error('Error removing from cart:', error);
     throw error;
   }
 };
