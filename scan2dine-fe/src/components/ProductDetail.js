@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import FlyItem from './FlyItem';
+import { addToCartDetail } from '../server/cartService';
 
 function ProductDetail({ item, product, onClose, onAddToCart }) {
     const [quantity, setQuantity] = useState(1);
@@ -20,39 +21,47 @@ function ProductDetail({ item, product, onClose, onAddToCart }) {
         setFlyingItems(prev => prev.filter(item => item.id !== id));
     };
 
-    const createFlyingEffect = () => {
+    const createFlyingEffect = async () => {
         const productImage = document.querySelector('.product-detail-image');
         const cartIcon = document.querySelector('.cart-icon');
 
         if (productImage && cartIcon) {
-            const imgRect = productImage.getBoundingClientRect();
-            const cartRect = cartIcon.getBoundingClientRect();
 
-            const startPosition = {
-                x: imgRect.left + (imgRect.width / 4),
-                y: imgRect.top + (imgRect.height / 4)
-            };
+            try {
+                // Add to cart once with the total quantity
+                await addToCartDetail(product._id, quantity);
 
-            const endPosition = {
-                x: cartRect.left + (cartRect.width / 2),
-                y: cartRect.top + (cartRect.height / 2)
-            };
+                // Create flying effect
+                const imgRect = productImage.getBoundingClientRect();
+                const cartRect = cartIcon.getBoundingClientRect();
 
-            const id = Date.now();
-            setFlyingItems(prev => [...prev, {
-                id,
-                imageUrl: `${process.env.REACT_APP_API_URL}${product.image}`,
-                startPosition,
-                endPosition
-            }]);
-            for (let i = 0; i < quantity; i++) {
-                onAddToCart(product);
+                const startPosition = {
+                    x: imgRect.left + (imgRect.width / 4),
+                    y: imgRect.top + (imgRect.height / 4)
+                };
+
+                const endPosition = {
+                    x: cartRect.left + (cartRect.width / 2),
+                    y: cartRect.top + (cartRect.height / 2)
+                };
+
+                const id = Date.now();
+                setFlyingItems(prev => [...prev, {
+                    id,
+                    imageUrl: `${process.env.REACT_APP_API_URL}/${product.image}`,
+                    startPosition,
+                    endPosition
+                }]);
+
+                setTimeout(() => {
+                    onClose();
+                }, 800);
+            } catch (error) {
+                console.error('Error adding to cart:', error);
             }
-            setTimeout(() => {
-                onClose();
-            }, 800);
         }
     };
+
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
             <div className="bg-white rounded-3xl w-[90%] max-w-md p-6">
@@ -64,7 +73,7 @@ function ProductDetail({ item, product, onClose, onAddToCart }) {
                 </div>
 
                 <img
-                    src={"http://localhost:5000/" + product.image}
+                    src={`${process.env.REACT_APP_API_URL}/${product.image}`}
                     alt={product.pd_name}
                     className="product-detail-image w-[250px] h-[250px] object-cover rounded-3xl mx-auto mb-4"
                 />

@@ -6,5 +6,7 @@ router.post('/', cartdetailController.addCartdetail);
 router.get('/', cartdetailController.getCartdetail)
 router.delete('/:id', cartdetailController.deleteCartdetai);
 router.patch('/:id', cartdetailController.updateCartdetail);
+router.post('/', cartdetailController.downQuantity);
+router.post('/confirm', cartdetailController.confirmOrder);
 
 module.exports = router;
