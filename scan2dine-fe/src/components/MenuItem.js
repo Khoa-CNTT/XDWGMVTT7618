@@ -1,62 +1,33 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import ProductDetail from './ProductDetail';
 import FlyItem from './FlyItem';
-import api from '../server/api';
 import { FaPlus, FaMinus } from 'react-icons/fa';
-import { addToCartDetail, removeFromCartDetail } from '../server/cartService';
 
-export const MenuItem = ({ item, onRemoveFromCart, onAddToCart }) => {
+export const MenuItem = ({ item, onAddToCart, onRemoveFromCart, quantity }) => {
   const [showDetail, setShowDetail] = useState(false);
-  const buttonRef = useRef(null);
   const [flyingItems, setFlyingItems] = useState([]);
-  const [localQuantity, setLocalQuantity] = useState(0);
-
-  useEffect(() => {
-    const fetchCartQuantity = async () => {
-      try {
-        const cartId = localStorage.getItem('cartId');
-        if (cartId) {
-          const response = await api.get('/s2d/cartdetail');
-          const cartItem = response.data.find(
-            detail => detail.products._id === item._id && detail.cart._id === cartId
-          );
-          if (cartItem) {
-            setLocalQuantity(cartItem.quantity);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching cart quantity:', error);
-      }
-    };
-    fetchCartQuantity();
-  }, [item._id]);
+  const buttonRef = useRef(null);
 
   const createFlyingEffect = () => {
     const button = buttonRef.current;
     const cartIcon = document.getElementById('cart-icon');
 
-    console.log('Button:', button);
-    console.log('Cart Icon:', cartIcon);
-
     if (button && cartIcon) {
       const buttonRect = button.getBoundingClientRect();
       const cartRect = cartIcon.getBoundingClientRect();
 
-      console.log('Button position:', buttonRect);
-      console.log('Cart position:', cartRect);
-
       const startPosition = {
-        x: buttonRect.left + buttonRect.width / 2,
-        y: buttonRect.top + buttonRect.height / 2,
+        x: buttonRect.left + buttonRect.width / 4,
+        y: buttonRect.top + buttonRect.height / 4,
       };
 
       const endPosition = {
-        x: cartRect.left + cartRect.width / 2,
-        y: cartRect.top + cartRect.height / 2,
+        x: cartRect.left + cartRect.width / 1,
+        y: cartRect.top + cartRect.height / 1,
       };
 
-      const id = Date.now();
-      setFlyingItems((prev) => [
+      const id = `${item._id}-${Date.now()}`; // Đảm bảo ID duy nhất
+      setFlyingItems(prev => [
         ...prev,
         {
           id,
@@ -65,36 +36,11 @@ export const MenuItem = ({ item, onRemoveFromCart, onAddToCart }) => {
           endPosition,
         },
       ]);
-    } else {
-      console.error('Button or cart icon not found');
     }
   };
 
   const handleRemoveFlyingItem = (id) => {
-    setFlyingItems((prev) => prev.filter((item) => item.id !== id));
-  };
-
-  const handleAddToCart = async (e) => {
-    e.stopPropagation();
-    try {
-      await addToCartDetail(item._id);
-      setLocalQuantity(prev => prev + 1);
-      createFlyingEffect();
-      onAddToCart(item);
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-    }
-  };
-
-  const handleRemoveFromCart = async (e) => {
-    e.stopPropagation();
-    try {
-      await removeFromCartDetail(item._id);
-      setLocalQuantity(prev => Math.max(0, prev - 1));
-      onRemoveFromCart(item);
-    } catch (error) {
-      console.error('Error removing from cart:', error);
-    }
+    setFlyingItems(prev => prev.filter(item => item.id !== id));
   };
 
   return (
@@ -115,26 +61,35 @@ export const MenuItem = ({ item, onRemoveFromCart, onAddToCart }) => {
 
         <div className="flex items-center justify-between px-1 mt-auto">
           <div className="px-3 py-1 rounded-full mr-3 flex-shrink-0">
-            <p className="text-primary fnt-medium whitespace-nowrap">
+            <p className="text-primary font-medium whitespace-nowrap">
               {parseInt(item.price).toLocaleString()}đ
             </p>
           </div>
           <div className="flex items-center gap-1">
-            {localQuantity > 0 && (
+            {quantity > 0 && (
               <>
                 <button
                   className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-gray-400 flex items-center justify-center"
-                  onClick={handleRemoveFromCart}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemoveFromCart(item);
+                  }}
                 >
                   <FaMinus className="text-white w-[60%] h-[60%]" />
                 </button>
-                <span className="w-3 text-center text-black font-semibold">{localQuantity}</span>
+                <span className="w-3 text-center text-black font-semibold">{quantity}</span>
               </>
             )}
             <button
               ref={buttonRef}
               className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-primary flex items-center justify-center"
-              onClick={handleAddToCart}
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddToCart(item);
+                setTimeout(() => {
+                  createFlyingEffect();
+                }, 0); // Delay để DOM cập nhật xong
+              }}
             >
               <FaPlus className="text-white w-[60%] h-[60%]" />
             </button>
@@ -163,3 +118,4 @@ export const MenuItem = ({ item, onRemoveFromCart, onAddToCart }) => {
 };
 
 export default MenuItem;
+  

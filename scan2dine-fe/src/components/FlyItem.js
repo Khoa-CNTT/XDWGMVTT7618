@@ -21,11 +21,11 @@ export const FlyItem = ({ id, imageUrl, startPosition, endPosition, onAnimationE
     const keyframes = `
       @keyframes rollAnimation-${id} {
         0% {
-          transform: translate(0, 0) rotate(0deg) scale(1.2);
+          transform: translate(-50%, -50%) rotate(0deg) scale(1.2);
           opacity: 1;
         }
         100% {
-          transform: translate(${deltaX}px, ${deltaY}px) rotate(720deg) scale(0.3);
+          transform: translate(${deltaX}px, ${deltaY}px) rotate(720deg) scale(0.4);
           opacity: 0;
         }
       }

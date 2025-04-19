@@ -131,6 +131,26 @@ const cartdetailController = {
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
+    },
+    confirmOrder: async (req, res) => {
+        try {
+            const { cartId } = req.body;
+            const cartDetails = await CartDetail.find({ cart: cartId });
+            
+            // Update status for all items in cart
+            await CartDetail.updateMany(
+                { cart: cartId },
+                { $set: { status: 'pending' } }
+            );
+
+            const updatedDetails = await CartDetail.find({ cart: cartId })
+                .populate('products')
+                .populate('cart');
+
+            res.status(200).json(updatedDetails);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
 };
 
