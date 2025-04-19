@@ -6,7 +6,7 @@ import CartBar from '../components/Carbar';
 import { FaArrowLeft } from 'react-icons/fa';
 import { CategoryFilter } from '../components/CategoryFilter';
 import { useNavigate } from 'react-router-dom';
-import { removeFromCartDetail } from '../server/cartService';  
+import { removeFromCartDetail } from '../server/cartService';
 
 export const Menu = ({ direction }) => {
     const [cart, setCart] = useState([]);
@@ -113,7 +113,7 @@ export const Menu = ({ direction }) => {
     useEffect(() => {
         const fetchCart = async () => {
             try {
-                const res = await fetch('http://localhost:5000/s2d/cart/getOrCreateCart', {
+                const res = await fetch(`${process.env.REACT_APP_API_URL}/s2d/cart/getOrCreateCart`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId }),

@@ -1,19 +1,5 @@
 import React, { useState } from 'react'
-// import {
-//     FaSearch,
-//     FaBars,
-//     FaChevronDown,
-//     FaEye,
-//     FaTrash,
-//     FaSync,
-//     FaUser,
-//     FaSignInAlt,
-//     FaFileAlt,
-//     FaHome,
-//     FaInfoCircle,
-//     FaList,
-//     FaGithub
-// } from 'react-icons/fa';
+
 import { SideBar } from '../components/SideBar';
 import { Breadcrumb } from '../components/Breadcrumb';
 import Dashboard from '../components/DashBoard';
@@ -23,18 +9,6 @@ export const AdminPage = () => {
 
     // Trạng thái để theo dõi trang đang được hiển thị
     const [currentPage, setCurrentPage] = useState('tổng quan hệ thống');
-
-    // Render nội dung dựa trên trang hiện tại
-    const renderContent = () => {
-        switch (currentPage) {
-            case 'tổng quan hệ thống':
-                return <Dashboard></Dashboard>
-            case 'quản lý bàn':
-                return <TableManagementSystem></TableManagementSystem>;
-            default:
-            // return <DashBoard />;
-        }
-    };
 
     return (
         <div className="flex h-screen bg-gray-100">
