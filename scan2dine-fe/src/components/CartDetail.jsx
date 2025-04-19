@@ -38,7 +38,7 @@ const CartDetails = () => {
     }
   };
 
-  const totalPrice = cartItems.reduce((sum, item) => 
+  const totalPrice = cartItems.reduce((sum, item) =>
     sum + (parseInt(item.products.price) * item.quantity), 0);
 
   if (loading) {
@@ -61,7 +61,7 @@ const CartDetails = () => {
           {cartItems.map((item) => (
             <div key={item._id} className="flex items-center gap-4 p-3 border-b">
               <img
-                src={`http://localhost:5000/${item.products.image}`}
+                src={`${process.env.REACT_APP_API_URL}/${item.products.image}`}
                 alt={item.products.pd_name}
                 className="w-16 h-16 object-cover rounded-lg"
               />

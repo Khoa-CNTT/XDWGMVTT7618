@@ -34,14 +34,14 @@ export const MenuItem = ({ item, onRemoveFromCart, onAddToCart }) => {
   const createFlyingEffect = () => {
     const button = buttonRef.current;
     const cartIcon = document.getElementById('cart-icon');
-    
+
     console.log('Button:', button);
     console.log('Cart Icon:', cartIcon);
 
     if (button && cartIcon) {
       const buttonRect = button.getBoundingClientRect();
       const cartRect = cartIcon.getBoundingClientRect();
-      
+
       console.log('Button position:', buttonRect);
       console.log('Cart position:', cartRect);
 
@@ -60,7 +60,7 @@ export const MenuItem = ({ item, onRemoveFromCart, onAddToCart }) => {
         ...prev,
         {
           id,
-          imageUrl: 'http://localhost:5000/' + item.image,
+          imageUrl: `${process.env.REACT_APP_API_URL}${item.image}`,
           startPosition,
           endPosition,
         },
@@ -102,7 +102,7 @@ export const MenuItem = ({ item, onRemoveFromCart, onAddToCart }) => {
       <div className="bg-white p-2 relative mt-2 transition duration-300 hover:shadow-lg hover:scale-[1.02] rounded-lg">
         <div className="cursor-pointer p-3" onClick={() => setShowDetail(true)}>
           <img
-            src={'http://localhost:5000/' + item.image}
+            src={`${process.env.REACT_APP_API_URL}${item.image}`}
             alt={item.pd_name}
             className="w-[160px] h-[160px] object-cover mx-auto rounded-md"
           />

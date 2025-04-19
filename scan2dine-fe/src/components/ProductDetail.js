@@ -41,7 +41,7 @@ function ProductDetail({ item, product, onClose, onAddToCart }) {
             const id = Date.now();
             setFlyingItems(prev => [...prev, {
                 id,
-                imageUrl: "http://localhost:5000/" + product.image,
+                imageUrl: `${process.env.REACT_APP_API_URL}${product.image}`,
                 startPosition,
                 endPosition
             }]);

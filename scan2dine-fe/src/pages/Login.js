@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
-import { MdVisibility, MdVisibilityOff, MdKey, MdInfo } from 'react-icons/md'
+import { MdVisibility, MdVisibilityOff, MdKey } from 'react-icons/md'
 import { Footer } from '../components/Footer'
 import { FaUser } from "react-icons/fa";
-import { navigate, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import api from '../server/api';
 
 export const Login = () => {

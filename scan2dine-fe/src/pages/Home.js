@@ -50,7 +50,7 @@ const Home = ({ direction }) => {
 
     //lưu thông tin khách hàng vào local
     useEffect(() => {
-        const saved = localStorage.getItem("customer");
+        const saved = sessionStorage.getItem("customer");
         if (saved) {
             const parsed = JSON.parse(saved);
             setCustomer(parsed);
@@ -62,7 +62,7 @@ const Home = ({ direction }) => {
 
 
     //tên khách hàng hiển thị tại lời chào
-    const cus = JSON.parse(localStorage.getItem("customer"));
+    const cus = JSON.parse(sessionStorage.getItem("customer"));
     const name = cus?.name || "Quý khách";
 
 
@@ -75,13 +75,13 @@ const Home = ({ direction }) => {
     const handleLoginSuccess = (phone, name) => {
         setCustomer({ phone, name });
         setIsLoggedIn(true);
-        localStorage.setItem("customer", JSON.stringify({ phone, name }));
+        sessionStorage.setItem("customer", JSON.stringify({ phone, name }));
     };
 
 
     //thích thì dùng
     const handleLogout = () => {
-        localStorage.removeItem("customer");
+        sessionStorage.removeItem("customer");
         setIsLoggedIn(false);
         navigate("/");
     };
@@ -122,7 +122,7 @@ const Home = ({ direction }) => {
                         </div>
                         <div className="text-sm text-gray-600 text-center font-medium">
                             Bạn hãy thư giãn, món ngon sẽ sớm có mặt tại bàn:
-                            <span className="bg-gray-100 px-2 py-1 rounded ml-1 text-primary font-bold">C2</span>
+                            <span className="bg-gray-100 px-2 py-1 rounded ml-1 text-primary font-bold">{cus?.table}</span>
                         </div>
                     </div>
 
