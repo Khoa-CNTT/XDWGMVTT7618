@@ -1,0 +1,44 @@
+// services/cartService.js
+const {OrderDetail, Order} = require('../model/model');
+
+// Hàm tăng số lượng
+const increaseOrderQuantity = async (orderID, productID, quantity = 1) => {
+    let orderDetailItem = await OrderDetail.findOne({ order: orderID, products: productID });
+    console.log(orderDetailItem);
+    if (orderDetailItem) {
+        orderDetailItem.quantity += quantity; // Tăng số lượng
+        await orderDetailItem.save();
+        return { updated: true, detail: orderDetailItem };
+    } else {
+        // Nếu chưa có sản phẩm, tạo mới
+        const newItem = new OrderDetail({
+            order:orderID,
+            products: productID,
+            quantity: quantity
+        });
+        await newItem.save();
+        return { updated: false, detail: newItem };
+    }
+};
+
+// Hàm giảm số lượng
+const decreaseOrderQuantity = async (order, products, quantity = 1) => {
+    let orderDetailItem = await OrderDetail.findOne({ order: order, products: products });
+
+    if (!orderDetailItem) {
+        throw new Error("Sản phẩm không tồn tại trong giỏ hàng.");
+    }
+
+    // Giảm số lượng, nhưng không cho nhỏ hơn 1 (hoặc có thể xóa luôn nếu về 0, tùy yêu cầu)
+    if(orderDetailItem.quantity >= 1){
+        orderDetailItem.quantity = Math.max(orderDetailItem.quantity - quantity, 0);
+    await orderDetailItem.save();
+    }
+    
+    return orderDetailItem;
+    
+};
+module.exports = {
+    increaseOrderQuantity,
+    decreaseOrderQuantity
+};

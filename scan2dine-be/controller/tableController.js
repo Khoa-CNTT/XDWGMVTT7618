@@ -4,7 +4,7 @@ const tableController = {
     // add table
     addTable:async(req,res)=>{
         try {
-            const newTable = new tableController(req.body);
+            const newTable = new Table(req.body);
             const saveTable = await newTable.save();
             res.status(200).json(saveTable);
         } catch (error) {

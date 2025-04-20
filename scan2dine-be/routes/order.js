@@ -1,0 +1,13 @@
+var express = require('express');
+const orderController = require('../controller/orderController');
+var router =  express.Router();
+
+// ADD ORDER
+router.post('/', orderController.addOrder);
+// GET ORDER
+router.get('/',orderController.getOrder);
+// DELETE ORDER
+router.delete('/:id',orderController.deleteOrder);
+// UPDATE ORDER
+router.patch('/:id',orderController.updateOrder);
+module.exports = router;
