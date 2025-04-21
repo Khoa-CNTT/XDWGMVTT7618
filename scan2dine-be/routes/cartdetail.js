@@ -4,7 +4,7 @@ var router = express.Router();
 
 router.post('/', cartdetailController.addCartdetail);
 router.get('/', cartdetailController.getCartdetail)
-router.delete('/:id', cartdetailController.deleteCartdetail);
+router.delete('/:id', cartdetailController.deleteCartdetai);
 router.patch('/:id', cartdetailController.updateCartdetail);
 router.post('/', cartdetailController.downQuantity);
 router.post('/confirm', cartdetailController.confirmOrder);
