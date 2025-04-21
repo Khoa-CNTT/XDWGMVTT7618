@@ -19,16 +19,25 @@ const CartDetails = () => {
   const fetchCartItems = async () => {
     try {
       const cartId = localStorage.getItem('cartId');
-      const response = await api.get('/s2d/cartdetail');
-      const filteredItems = response.data.filter(item => item.cart._id === cartId);
+      const [cartDetailRes, foodstallRes] = await Promise.all([
+        api.get('/s2d/product'),
+        api.get('/s2d/foodstall')
+      ]);
 
-      // Group items by counter
-      const groupedItems = filteredItems.reduce((acc, item) => {
-        const counter = item.products.counter || 'Quầy A';
-        if (!acc[counter]) {
-          acc[counter] = [];
+      const items = cartDetailRes.data.filter(item => item.cart._id === cartId);
+      const stallMap = foodstallRes.data.reduce((acc, stall) => {
+        acc[stall._id] = stall.stall_name;
+        return acc;
+      }, {});
+
+      const groupedItems = items.reduce((acc, item) => {
+        const stallId = item.products.stall_id;
+        const stallName = stallMap[stallId] || 'Quầy chưa phân loại';
+
+        if (!acc[stallName]) {
+          acc[stallName] = [];
         }
-        acc[counter].push(item);
+        acc[stallName].push(item);
         return acc;
       }, {});
 
@@ -41,50 +50,24 @@ const CartDetails = () => {
     }
   };
 
-  // Cập nhật số lượng trong MongoDB
+  // Xử lý sự kiện khi người dùng thay đổi số lượng món trong giỏ hàng
   const handleUpdateQuantity = async (item, change) => {
     try {
+        
       const newQuantity = item.quantity + change;
       if (newQuantity <= 0) {
-        // Remove item from cart
         await api.delete(`/s2d/cartdetail/${item._id}`);
-        
-        // Update local state immediately
-        setCartItems(prev => {
-          const newItems = { ...prev };
-          const counter = item.products.counter || 'Quầy A';
-          newItems[counter] = newItems[counter].filter(i => i._id !== item._id);
-          if (newItems[counter].length === 0) {
-            delete newItems[counter];
-          }
-          return newItems;
-        });
+        fetchCartItems();
       } else {
-        // Update quantity in MongoDB
-        const response = await api.patch(`/s2d/cartdetail/${item._id}`, {
-          quantity: newQuantity
-        });
-
-        if (response.status === 200) {
-          // Update local state immediately with the new quantity
-          setCartItems(prev => {
-            const newItems = { ...prev };
-            const counter = item.products.counter || 'Quầy A';
-            newItems[counter] = newItems[counter].map(i =>
-              i._id === item._id ? { ...i, quantity: newQuantity } : i
-            );
-            return newItems;
-          });
-        }
+        await api.patch(`/s2d/cartdetail/${item._id}`, { quantity: newQuantity });
+        fetchCartItems();
       }
     } catch (error) {
       console.error('Error updating quantity:', error);
-      // Only fetch all items if there's an error
-      await fetchCartItems();
     }
   };
 
-  // Chuyển đổi trạng thái expandedCounters khi nhấn nút Sửa/Ẩn ở mỗi counter ke
+  // Xử lý sự kiện khi người dùng nhấn vào nút "Sửa" của quầy
   const toggleCounter = (counter) => {
     setExpandedCounters(prev =>
       prev.includes(counter)
@@ -93,13 +76,11 @@ const CartDetails = () => {
     );
   };
 
-  // Tính tổng giá trị của các món trong giỏ hàng
+  // Tính tổng giá trị của tất cả các món trong giỏ hàng
   const totalPrice = Object.values(cartItems).flat().reduce((sum, item) =>
     sum + (parseInt(item.products.price) * item.quantity), 0);
 
-  if (loading) return <div>Loading...</div>;
-
-  // Xác nhận đặt hàng
+  // Xử lý sự kiện khi người dùng nhấn nút "Xác nhận gửi yêu cầu gọi món"
   const handleConfirmOrder = async () => {
     try {
       const cartId = localStorage.getItem('cartId');
@@ -110,12 +91,13 @@ const CartDetails = () => {
     }
   };
 
-  // Chuyển hướng đến trang chi tiết đơn hàng
+  // Xử lý sự kiện khi người dùng nhấn nút "Đã hiểu"
   const handleUnderstand = () => {
     setShowConfirmation(false);
-    // Navigate to order details page
     navigate('/orderdetail');
   };
+
+  if (loading) return <div>Loading...</div>;
 
 
   return (
@@ -126,25 +108,22 @@ const CartDetails = () => {
         </button>
         <h1 className="text-xl font-semibold">Các món đang chọn</h1>
       </div>
-  
+
       <div className="flex-1 overflow-auto pb-24">
-        {Object.entries(cartItems).map(([counter, items]) => (
-          <div key={counter} className="border-b">
+        {Object.entries(cartItems).map(([stallName, items]) => (
+          <div key={stallName} className="border-b">
             <div className="flex items-center justify-between p-4">
               <div className="flex items-center gap-2">
                 <FaStore className="text-gray-500" />
-                <span className="font-medium">{counter}</span>
+                <span className="font-medium">{stallName}</span>
                 <span className="text-gray-500">({items.length} món)</span>
               </div>
-              <button
-                onClick={() => toggleCounter(counter)}
-                className="text-primary"
-              >
-                {expandedCounters.includes(counter) ? 'Ẩn' : 'Sửa'}
+              <button onClick={() => toggleCounter(stallName)} className="text-primary">
+                {expandedCounters.includes(stallName) ? 'Ẩn' : 'Sửa'}
               </button>
             </div>
-  
-            {expandedCounters.includes(counter) && items.map((item) => (
+
+            {expandedCounters.includes(stallName) && items.map((item) => (
               <div key={item._id} className="flex items-center gap-4 p-4 border-t">
                 <img
                   src={`http://localhost:5000/${item.products.image}`}
@@ -158,17 +137,11 @@ const CartDetails = () => {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => handleUpdateQuantity(item, -1)}
-                    className="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center"
-                  >
+                  <button onClick={() => handleUpdateQuantity(item, -1)} className="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center">
                     <FaMinus className="text-white" />
                   </button>
                   <span className="w-4 text-center">{item.quantity}</span>
-                  <button
-                    onClick={() => handleUpdateQuantity(item, 1)}
-                    className="w-8 h-8 rounded-full bg-primary flex items-center justify-center"
-                  >
+                  <button onClick={() => handleUpdateQuantity(item, 1)} className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
                     <FaPlus className="text-white" />
                   </button>
                 </div>
@@ -177,7 +150,7 @@ const CartDetails = () => {
           </div>
         ))}
       </div>
-  
+
       <div className="bg-white mt-auto">
         <div className="flex justify-between items-center p-4 border-t">
           <span className="font-medium">Tổng tiền</span>
@@ -194,7 +167,7 @@ const CartDetails = () => {
           </button>
         </div>
       </div>
-  
+
       {showConfirmation && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-sm mx-4 text-center">
