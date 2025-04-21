@@ -10,77 +10,102 @@ const CartDetails = () => {
   const [expandedCounters, setExpandedCounters] = useState([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
-  // Lấy danh sách các món trong giỏ hàng từ MongoDB khi component được mount
   useEffect(() => {
     fetchCartItems();
   }, []);
-
-  // Lấy danh sách các món trong giỏ hàng từ MongoDB
+  
   const fetchCartItems = async () => {
     try {
       const cartId = localStorage.getItem('cartId');
+      if (!cartId) {
+        setCartItems({});
+        setLoading(false);
+        return;
+      }
+  
       const [cartDetailRes, foodstallRes] = await Promise.all([
-        api.get('/s2d/product'),
+        api.get('/s2d/cartdetail'),
         api.get('/s2d/foodstall')
       ]);
-
-      const items = cartDetailRes.data.filter(item => item.cart._id === cartId);
-      const stallMap = foodstallRes.data.reduce((acc, stall) => {
-        acc[stall._id] = stall.stall_name;
-        return acc;
-      }, {});
-
-      const groupedItems = items.reduce((acc, item) => {
-        const stallId = item.products.stall_id;
-        const stallName = stallMap[stallId] || 'Quầy chưa phân loại';
-
-        if (!acc[stallName]) {
-          acc[stallName] = [];
+  
+      // Lọc các item thuộc cart hiện tại
+      const items = cartDetailRes.data.filter(item => {
+        const match = item.cart?._id === cartId;
+        if (!match) {
         }
-        acc[stallName].push(item);
-        return acc;
-      }, {});
+        return match;
+      });
+  
+      // Tạo map foodstall
+      const foodstallMap = {};
+      foodstallRes.data.forEach(stall => {
+        foodstallMap[stall._id] = {
+          name: stall.stall_name,
+          itemCount: 0
+        };
+      });
 
+      // Nhóm item theo stall_id
+      const groupedItems = {};
+      items.forEach(item => {
+        if (!item.products || !item.products.stall_id) {
+          return;
+        }
+        const stallId = item.products.stall_id;
+        const stall = foodstallMap[stallId];
+        if (!stall) {
+          return;
+        }
+        if (!groupedItems[stallId]) {
+          groupedItems[stallId] = {
+            stallName: stall.name,
+            items: []
+          };
+        }
+  
+        groupedItems[stallId].items.push(item);
+        foodstallMap[stallId].itemCount++;
+      });
+  
       setCartItems(groupedItems);
       setExpandedCounters(Object.keys(groupedItems));
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching cart items:', error);
       setLoading(false);
+      setCartItems({});
     }
   };
+  
+  
 
-  // Xử lý sự kiện khi người dùng thay đổi số lượng món trong giỏ hàng
   const handleUpdateQuantity = async (item, change) => {
     try {
-        
       const newQuantity = item.quantity + change;
       if (newQuantity <= 0) {
         await api.delete(`/s2d/cartdetail/${item._id}`);
-        fetchCartItems();
       } else {
         await api.patch(`/s2d/cartdetail/${item._id}`, { quantity: newQuantity });
-        fetchCartItems();
       }
+      fetchCartItems();
     } catch (error) {
       console.error('Error updating quantity:', error);
     }
   };
 
-  // Xử lý sự kiện khi người dùng nhấn vào nút "Sửa" của quầy
-  const toggleCounter = (counter) => {
+  const toggleCounter = (stallId) => {
     setExpandedCounters(prev =>
-      prev.includes(counter)
-        ? prev.filter(c => c !== counter)
-        : [...prev, counter]
+      prev.includes(stallId)
+        ? prev.filter(id => id !== stallId)
+        : [...prev, stallId]
     );
   };
 
-  // Tính tổng giá trị của tất cả các món trong giỏ hàng
-  const totalPrice = Object.values(cartItems).flat().reduce((sum, item) =>
-    sum + (parseInt(item.products.price) * item.quantity), 0);
+  const totalPrice = Object.values(cartItems).reduce((sum, stall) => {
+    return sum + stall.items.reduce((stallSum, item) => {
+      return stallSum + parseInt(item.products.price) * item.quantity;
+    }, 0);
+  }, 0);
 
-  // Xử lý sự kiện khi người dùng nhấn nút "Xác nhận gửi yêu cầu gọi món"
   const handleConfirmOrder = async () => {
     try {
       const cartId = localStorage.getItem('cartId');
@@ -91,14 +116,12 @@ const CartDetails = () => {
     }
   };
 
-  // Xử lý sự kiện khi người dùng nhấn nút "Đã hiểu"
   const handleUnderstand = () => {
     setShowConfirmation(false);
     navigate('/orderdetail');
   };
 
   if (loading) return <div>Loading...</div>;
-
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl overflow-hidden relative">
@@ -110,23 +133,26 @@ const CartDetails = () => {
       </div>
 
       <div className="flex-1 overflow-auto pb-24">
-        {Object.entries(cartItems).map(([stallName, items]) => (
-          <div key={stallName} className="border-b">
+        {Object.entries(cartItems).map(([stallId, stall]) => (
+          <div key={stallId} className="border-b">
             <div className="flex items-center justify-between p-4">
-              <div className="flex items-center gap-2">
-                <FaStore className="text-gray-500" />
-                <span className="font-medium">{stallName}</span>
-                <span className="text-gray-500">({items.length} món)</span>
+              <div className="flex flex-col">
+                <div className="flex items-center gap-2">
+                  <FaStore className="text-gray-500" />
+                  <span className="font-medium">{stall.stallName}</span>
+                  <span className="text-gray-500">({stall.items.length} món)</span>
+                </div>
+                <span className="text-sm text-gray-400">{stall.location}</span>
               </div>
-              <button onClick={() => toggleCounter(stallName)} className="text-primary">
-                {expandedCounters.includes(stallName) ? 'Ẩn' : 'Sửa'}
+              <button onClick={() => toggleCounter(stallId)} className="text-primary">
+                {expandedCounters.includes(stallId) ? 'Ẩn' : 'Sửa'}
               </button>
             </div>
 
-            {expandedCounters.includes(stallName) && items.map((item) => (
+            {expandedCounters.includes(stallId) && stall.items.map((item) => (
               <div key={item._id} className="flex items-center gap-4 p-4 border-t">
                 <img
-                  src={`http://localhost:5000/${item.products.image}`}
+                  src={`${process.env.REACT_APP_API_URL}/${item.products.image}`}
                   alt={item.products.pd_name}
                   className="w-16 h-16 object-cover rounded-lg"
                 />
