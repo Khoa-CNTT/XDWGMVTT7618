@@ -6,7 +6,7 @@ const userController = {
     // get user
     getAllUser: async (req, res) => {
         try {
-            const user = await User.find();
+            const user = await User.find().populate({path: "role_id", select: "role_name"});
             res.status(200).json(user);
         } catch (err) {
             res.status(500).json(err);
