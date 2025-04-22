@@ -6,7 +6,7 @@ const userController = {
     // get user
     getAllUser: async (req, res) => {
         try {
-            const user = await User.find().populate({path: "role_id", select: "role_name"});
+            const user = await User.find().populate({ path: "role_id", select: "role_name" });
             res.status(200).json(user);
         } catch (err) {
             res.status(500).json(err);
@@ -15,9 +15,9 @@ const userController = {
     // add user
     addUser: async (req, res) => {
         try {
-            const { full_name, email, password, role_id } = req.body;
+            const { full_name, username, email, password, role_id } = req.body;
 
-            const user = new User({ full_name, email, password, role_id });
+            const user = new User({ full_name, username, email, password, role_id });
             await user.save();
             await Role.findByIdAndUpdate(role_id, {
                 $push: { user: user._id }
@@ -32,7 +32,7 @@ const userController = {
     updateUser: async (req, res) => {
         try {
             const userId = req.params.id;
-            const { full_name, email, password, role_id } = req.body;
+            const { full_name, username, email, password, role_id } = req.body;
 
             // 1. Tìm user hiện tại
             const user = await User.findById(userId);
@@ -44,6 +44,7 @@ const userController = {
 
             // 2. Cập nhật thông tin user
             user.full_name = full_name || user.full_name;
+            user.username = username || user.username;
             user.email = email || user.email;
             user.password = password || user.password;
             user.role_id = role_id || user.role_id;
@@ -111,7 +112,7 @@ const userController = {
     // đăng kí
     register: async (req, res) => {
         try {
-            const { full_name, email, password, role_id } = req.body;
+            const { full_name, username, email, password, role_id } = req.body;
 
             console.log("Received data:", req.body);
 
@@ -127,7 +128,7 @@ const userController = {
             }
 
             const hashedPassword = await bcrypt.hash(password, 10);
-            const newUser = new User({ full_name, email, password: hashedPassword, role_id });
+            const newUser = new User({ full_name, username, email, password: hashedPassword, role_id });
             await newUser.save();
 
             // Gán user vào role
@@ -144,11 +145,11 @@ const userController = {
     // đăng nhập 
     login: async (req, res) => {
         try {
-            const { full_name, password } = req.body;
+            const { username, password } = req.body;
 
             // Tìm user theo full_name
             // const user = await User.findOne({ full_name });
-            const user = await User.findOne({ full_name }).populate('role_id');
+            const user = await User.findOne({ username }).populate('role_id');
             if (!user) {
                 return res.status(404).json({ message: 'Tên đăng nhập không tồn tại' });
             }

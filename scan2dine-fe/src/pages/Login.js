@@ -9,7 +9,7 @@ export const Login = () => {
 
     //state trạng thái hiển thị mật khẩu
     const [showPassword, setShowPassword] = useState(false);
-    const [full_name, setUsername] = useState('');
+    const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
     const navigate = useNavigate();
@@ -19,7 +19,7 @@ export const Login = () => {
         e.preventDefault();
         try {
             const response = await api.post('/s2d/user/login', {
-                full_name,
+                username,
                 password
             });
 
@@ -66,7 +66,7 @@ export const Login = () => {
                             <input
                                 type="text"
                                 placeholder="Nhập tên đăng nhập"
-                                value={full_name}
+                                value={username}
                                 onChange={(e) => setUsername(e.target.value)}
                                 className="w-full p-3 pl-10 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary bg-white"
                             />
