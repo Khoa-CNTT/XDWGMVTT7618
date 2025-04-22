@@ -12,7 +12,7 @@ const cartRoute = require('./routes/cart');
 const categoryRoute = require('./routes/category');
 const productRoute = require('./routes/product');
 const foodstallRoute = require('./routes/foodstall');
-const reviewRoute =  require('./routes/review');
+const reviewRoute = require('./routes/review');
 const orderRoute = require('./routes/order');
 const orderdetailRoute = require('./routes/orderdetail');
 const tableRoue = require('./routes/table');
@@ -23,12 +23,18 @@ const connectDB = require('./config/db');
 connectDB();
 
 
+
 // connection to mongooseDB
 // main().catch(err => console.log(err));
 // async function main() {
 //   await mongoose.connect('mongodb://127.0.0.1:27017/scan2Dine');
 //   // use `await mongoose.connect('mongodb://user:password@127.0.0.1:27017/test');` if your database has auth enabled
 // }
+// CORS cho tất cả route và mọi origin:
+
+//Hàng của front-end
+const cors = require('cors');
+app.use(cors());
 
 
 // view engine setup
@@ -44,8 +50,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
 // khai báo route sử dụng
-app.use('/s2d/customer',customerRoute);
-app.use('/s2d/cartdetail',cartdetailRoute);
+app.use('/s2d/customer', customerRoute);
+app.use('/s2d/cartdetail', cartdetailRoute);
 app.use('/s2d/cart', cartRoute);
 app.use('/s2d/category', categoryRoute);
 app.use('/s2d/product', productRoute);
@@ -55,12 +61,12 @@ app.use('/s2d/order', orderRoute);
 app.use('/s2d/orderdetail', orderdetailRoute);
 app.use('/s2d/table', tableRoue);
 // catch 404 and forward to error handler
-app.use(function(req, res, next) {
+app.use(function (req, res, next) {
   next(createError(404));
 });
 
 // error handler
-app.use(function(err, req, res, next) {
+app.use(function (err, req, res, next) {
   // set locals, only providing error in development
   res.locals.message = err.message;
   res.locals.error = req.app.get('env') === 'development' ? err : {};

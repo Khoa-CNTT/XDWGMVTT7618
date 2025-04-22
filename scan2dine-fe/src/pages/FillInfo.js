@@ -65,7 +65,7 @@ const CustomerLogin = ({ onSuccess }) => {
             return;
         }
 
-        // Kiểm tra tên khách hàng
+        //Kiểm tra tên khách hàng
         if (!name) {
             setMessage("Vui lòng nhập tên để đăng ký.");
             return;
