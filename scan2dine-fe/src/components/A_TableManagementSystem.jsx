@@ -1,24 +1,26 @@
 import { useEffect, useState } from 'react';
 import { FaEdit, FaPlus, FaSearch } from 'react-icons/fa';
-import { AdTableItem } from './A_TableItem';
+import { A_TableItem } from './A_TableItem';
 import api from '../server/api';
 import { A_TableDetail } from './A_TableDetail';
 import { A_AddTable } from './A_AddTable';
 
 export default function TableManagementSystem() {
     const [tables, setTables] = useState([]);
-
     const [selectedTable, setSelectedTable] = useState(null);
     const [showQRModal, setShowQRModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [showAddModal, setShowAddModal] = useState(false);
     const [newTable, setNewTable] = useState({ name: '', location: '' });
+    const [statusFilter, setStatusFilter] = useState('all');
 
+    //lấy dữ liệu từ data
     useEffect(() => {
         const fetchTable = async () => {
             try {
                 const getTable = await api.get('/s2d/table');
                 setTables(getTable.data);
+
             } catch (error) {
                 console.error('Lỗi khi tải danh mục sản phẩm:', error);
             }
@@ -26,19 +28,45 @@ export default function TableManagementSystem() {
         fetchTable();
     }, []);
 
-    const filteredTables = tables.filter(table =>
-        table.tb_number?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        ||
-        // table.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        table.status.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredTables = tables
+        .filter(table =>
+            table.tb_number?.toString().toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .filter(table => {
+            if (statusFilter === 'all') return true;
+            if (statusFilter === 'special') return ['3', '4', '5'].includes(table.status);
+            return table.status === statusFilter;
+        })
+        .sort((a, b) => a.tb_number - b.tb_number);
 
-    const statusColors = {
-        'Trống': 'bg-green-100 text-green-800',
-        'Đang phục vụ': 'bg-blue-100 text-blue-800',
-        'Đã đặt': 'bg-yellow-100 text-yellow-800'
+
+
+    //Trạng thái số sang chữ
+    const getStatusLabel = (status) => {
+        switch (status) {
+            case '1':
+                return 'Bàn trống';
+            case '2':
+                return 'Đang phục vụ';
+            case '3':
+            case '4':
+            case '5':
+                return 'Có yêu cầu đặc biệt';
+            default:
+                return 'Không xác định';
+        }
     };
 
+    //Màu trạng thái
+    const statusColors = {
+        '1': 'bg-green-100 text-green-800',
+        '2': 'bg-blue-100 text-blue-800',
+        '3': 'bg-yellow-100 text-yellow-800',
+        '4': 'bg-yellow-100 text-yellow-800',
+        '5': 'bg-yellow-100 text-yellow-800'
+    };
+
+    //thêm bàn
     const handleAddTable = () => {
         if (newTable.name && newTable.location) {
             setTables([...tables, {
@@ -52,20 +80,9 @@ export default function TableManagementSystem() {
         }
     };
 
+    //xóa bàn
     const handleDeleteTable = (id) => {
         setTables(tables.filter(table => table.id !== id));
-    };
-
-    const toggleTableStatus = (id) => {
-        setTables(tables.map(table => {
-            if (table.id === id) {
-                const statuses = ['Trống', 'Đang phục vụ', 'Đã đặt'];
-                const currentIndex = statuses.indexOf(table.status);
-                const nextIndex = (currentIndex + 1) % statuses.length;
-                return { ...table, status: statuses[nextIndex] };
-            }
-            return table;
-        }));
     };
 
     return (
@@ -85,6 +102,18 @@ export default function TableManagementSystem() {
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                     />
+                </div>
+                <div className="w-full md:w-64">
+                    <select
+                        className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                        <option value="all">Tất cả trạng thái</option>
+                        <option value="1">Bàn trống</option>
+                        <option value="2">Đang phục vụ</option>
+                        <option value="special">Có yêu cầu đặc biệt</option>
+                    </select>
                 </div>
 
                 <button
@@ -119,15 +148,16 @@ export default function TableManagementSystem() {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                        {filteredTables.map((table) => (
-                            <AdTableItem
+                        {filteredTables.map((table, index) => (
+                            <A_TableItem
                                 key={table.id}
+                                index={index}
                                 table={table}
-                                toggleTableStatus={toggleTableStatus}
                                 setSelectedTable={setSelectedTable}
                                 setShowQRModal={setShowQRModal}
                                 handleDeleteTable={handleDeleteTable}
-                                statusColors={statusColors}></AdTableItem>
+                                statusColors={statusColors}
+                                getStatusLabel={getStatusLabel}></A_TableItem>
                         ))}
                     </tbody>
                 </table>
@@ -136,17 +166,24 @@ export default function TableManagementSystem() {
             {/* Thống kê */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6">
                 <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                    <h3 className="text-lg font-semibold text-green-800">Trống</h3>
-                    <p className="text-2xl font-bold text-green-600">{tables.filter(t => t.status === 'Trống').length}</p>
+                    <h3 className="text-lg font-semibold text-green-800">Bàn trống</h3>
+                    <p className="text-2xl font-bold text-green-600">
+                        {tables.filter(t => t.status === '1').length}
+                    </p>
                 </div>
                 <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                     <h3 className="text-lg font-semibold text-blue-800">Đang phục vụ</h3>
-                    <p className="text-2xl font-bold text-blue-600">{tables.filter(t => t.status === 'Đang phục vụ').length}</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                        {tables.filter(t => t.status === '2').length}
+                    </p>
                 </div>
                 <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                    <h3 className="text-lg font-semibold text-yellow-800">Đã đặt</h3>
-                    <p className="text-2xl font-bold text-yellow-600">{tables.filter(t => t.status === 'Đã đặt').length}</p>
+                    <h3 className="text-lg font-semibold text-yellow-800">Có yêu cầu đặc biệt</h3>
+                    <p className="text-2xl font-bold text-yellow-600">
+                        {tables.filter(t => ['3', '4', '5'].includes(t.status)).length}
+                    </p>
                 </div>
+
             </div>
 
             {/* Modal hiển thị QR code */}

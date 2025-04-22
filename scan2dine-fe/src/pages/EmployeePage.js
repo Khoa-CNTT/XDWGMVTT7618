@@ -2,10 +2,11 @@ import React, { useEffect, useState } from 'react'
 import { FaArrowLeft, FaUser, FaMapPin } from 'react-icons/fa';
 import { TableItem } from '../components/TableItem';
 import api from '../server/api';
+import { useNavigate } from 'react-router-dom'; // ✅ dùng useNavigate
 
 export const EmployeePage = () => {
-    // Table data with statuses
     const [table, setTable] = useState([]);
+    const navigate = useNavigate(); // ✅ khởi tạo navigate
 
     useEffect(() => {
         const fetchTable = async () => {
@@ -19,7 +20,10 @@ export const EmployeePage = () => {
         fetchTable();
     }, []);
 
-
+    const handleLogout = () => {
+        localStorage.removeItem('user');
+        navigate('/login'); // ✅ điều hướng đúng cách
+    };
 
     return (
         <div className="flex flex-col h-screen bg-white">
@@ -27,9 +31,10 @@ export const EmployeePage = () => {
             <div className="bg-primary p-4 text-white flex items-center justify-between">
                 <div className="flex items-center">
                     <FaArrowLeft size={20} />
-                    <span className="ml-4 font-medium">Xin chào, Hop!</span>
+
                 </div>
-                <div className="flex items-center">
+                <div><span className="ml-4 font-medium">Xin chào, Hop!</span></div>
+                <div className="flex items-center cursor-pointer" onClick={handleLogout}>
                     <FaUser size={20} />
                     <span className="ml-2">Đăng xuất</span>
                 </div>
@@ -39,7 +44,7 @@ export const EmployeePage = () => {
             <div className="p-4">
                 <div className="text-2xl font-bold font-bungee">
                     <span className="text-black">SCAN</span>
-                    <span className="text-primary  ">2</span>
+                    <span className="text-primary">2</span>
                     <span className="text-black">DINE</span>
                 </div>
                 <div className="flex items-center text-gray-500 text-sm mt-1">
@@ -56,7 +61,7 @@ export const EmployeePage = () => {
             {/* Table Grid */}
             <div className="grid grid-cols-2 gap-4 px-4 pb-20">
                 {table.map(table => (
-                    <TableItem key={table.id} table={table}></TableItem>
+                    <TableItem key={table.id} table={table} />
                 ))}
             </div>
 
