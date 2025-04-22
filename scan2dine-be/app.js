@@ -35,6 +35,7 @@ connectDB();
 //Hàng của front-end
 const cors = require('cors');
 app.use(cors());
+// hello fen
 
 
 // view engine setup
