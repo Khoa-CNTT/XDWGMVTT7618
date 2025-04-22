@@ -3,28 +3,28 @@ import { FaEdit, FaPlus, FaSearch } from 'react-icons/fa';
 import { A_TableItem } from './A_TableItem';
 import api from '../server/api';
 import { A_TableDetail } from './A_TableDetail';
-import { A_AddTable } from './A_AddTable';
+import ConfirmModal from './ConfirmModal';
 
 export default function TableManagementSystem() {
     const [tables, setTables] = useState([]);
     const [selectedTable, setSelectedTable] = useState(null);
     const [showQRModal, setShowQRModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [newTable, setNewTable] = useState({ name: '', location: '' });
     const [statusFilter, setStatusFilter] = useState('all');
+    const [showConfirmModal, setShowConfirmModal] = useState(false);
 
+
+    const fetchTable = async () => {
+        try {
+            const getTable = await api.get('/s2d/table');
+            setTables(getTable.data);
+
+        } catch (error) {
+            console.error('Lỗi khi tải danh mục sản phẩm:', error);
+        }
+    };
     //lấy dữ liệu từ data
     useEffect(() => {
-        const fetchTable = async () => {
-            try {
-                const getTable = await api.get('/s2d/table');
-                setTables(getTable.data);
-
-            } catch (error) {
-                console.error('Lỗi khi tải danh mục sản phẩm:', error);
-            }
-        };
         fetchTable();
     }, []);
 
@@ -67,16 +67,14 @@ export default function TableManagementSystem() {
     };
 
     //thêm bàn
-    const handleAddTable = () => {
-        if (newTable.name && newTable.location) {
-            setTables([...tables, {
-                id: tables.length + 1,
-                name: newTable.name,
-                location: newTable.location,
-                status: '1'
-            }]);
-            setNewTable({ name: '', location: '' });
-            setShowAddModal(false);
+    const createNewTable = async () => {
+        try {
+            const res = await api.post('/s2d/table');
+            fetchTable();
+            alert('Thêm bàn thành công!');
+        } catch (error) {
+            console.error(error);
+            alert('Lỗi khi thêm bàn');
         }
     };
 
@@ -118,8 +116,7 @@ export default function TableManagementSystem() {
 
                 <button
                     className="flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition w-full md:w-auto"
-                    onClick={() => setShowAddModal(true)}
-                >
+                    onClick={() => setShowConfirmModal(true)}                >
                     <FaPlus className="w-5 h-5 mr-2" />
                     Thêm bàn mới
                 </button>
@@ -192,16 +189,18 @@ export default function TableManagementSystem() {
                     selectedTable={selectedTable}
                     setShowQRModal={setShowQRModal}></A_TableDetail>
             )}
-
-            {/* Modal thêm bàn mới */}
-            {showAddModal && (
-                <A_AddTable
-                    newTable={newTable}
-                    setNewTable={setNewTable}
-                    setShowAddModal={setShowAddModal}
-                    handleAddTable={handleAddTable}></A_AddTable>
-
+            {showConfirmModal && (
+                <ConfirmModal
+                    title="Xác nhận tạo bàn mới"
+                    message="Bạn có chắc chắn muốn tạo bàn mới không?"
+                    onConfirm={() => {
+                        setShowConfirmModal(false);
+                        createNewTable();
+                    }}
+                    onCancel={() => setShowConfirmModal(false)}
+                />
             )}
         </div>
+
     );
 }
