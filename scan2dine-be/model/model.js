@@ -185,9 +185,11 @@ const orderdetailSchema = new mongoose.Schema({
 const tableSchema = new mongoose.Schema({
   tb_number: {
     type: Number,
+    unique: true 
   },
   status: {
     type: String,
+    default: "1"
   },
   qr_code: {
     type: String,
@@ -198,6 +200,7 @@ const tableSchema = new mongoose.Schema({
       ref: "Order",
     },
   ],
+  
 }, { collection: 'TABLE' });
 const roleSchema = new mongoose.Schema({
   role_name: {

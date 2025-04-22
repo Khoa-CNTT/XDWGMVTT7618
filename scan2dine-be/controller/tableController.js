@@ -4,29 +4,25 @@ const tableController = {
     // add table
     addTable: async (req, res) => {
         try {
-            // Tìm bàn có tb_number lớn nhất
             const lastTable = await Table.findOne().sort({ tb_number: -1 });
-
-            // Tăng tb_number, nếu không có bàn nào thì bắt đầu từ 1
+            console.log("Last table:", lastTable);
+    
             const nextTableNumber = lastTable ? lastTable.tb_number + 1 : 1;
-
-            // Tạo mới bàn với tb_number tự động tăng
+    
             const newTable = new Table({
                 ...req.body,
                 tb_number: nextTableNumber,
             });
-
-            // Lưu bàn mới vào DB
+    
             const saved = await newTable.save();
-
-            // Trả về thông tin bàn vừa tạo, bao gồm cả tên "Bàn X"
-            res.status(200).json({
+    
+            return res.status(200).json({
                 ...saved.toObject(),
                 name: `Bàn ${saved.tb_number}`
             });
         } catch (error) {
             console.error("Error in addTable:", error);
-            res.status(500).json({ message: "Server error", error: error.message });
+            return res.status(500).json({ message: "Server error", error: error.message });
         }
     },
 
@@ -39,10 +35,9 @@ const tableController = {
                 ...t.toObject(),
                 name: `Bàn ${t.tb_number}`
             }));
-            res.status(200).json(result);
-
+            return res.status(200).json(result);
         } catch (error) {
-            res.status(500).json({ message: "Server error", error: error.message });
+            return res.status(500).json({ message: "Server error", error: error.message });
         }
     },
     // delete table
@@ -52,16 +47,16 @@ const tableController = {
             if (!table) {
                 return res.status(404).json("Table not found");
             }
-            res.status(200).json({ message: "Table has been deleted successfully", delete: deleteTable });
+            return res.status(200).json({ message: "Table has been deleted successfully", delete: deleteTable });
         } catch (error) {
-            res.status(500).json("Error deleting table: " + error.message);
+            return res.status(500).json("Error deleting table: " + error.message);
         }
     },
     updatetable: async (req, res) => {
         try {
             const tableID = await Table.findById(req.params.id);
             if (!tableID) {
-                res.status(404).json('not found')
+                return res.status(404).json('not found')
             }
 
             if (tableID.order && tableID.order !== req.body.order?.toString()) {
@@ -72,12 +67,11 @@ const tableController = {
             const updateTable = await Table.findByIdAndUpdate(req.params.id, req.body, {
                 new: true
             })
-            res.status(200).json({ message: "Update successfully", update: updateTable });
+            return res.status(200).json({ message: "Update successfully", update: updateTable });
         } catch (error) {
 
         }
-    },
-
+    }
 }
 
 module.exports = tableController;
