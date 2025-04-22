@@ -1,5 +1,4 @@
 const { Order, Table } = require('../model/model');
-// const QRCode = require('qrcode');
 
 const tableController = {
     // add table
@@ -41,6 +40,7 @@ const tableController = {
                 name: `Bàn ${t.tb_number}`
             }));
             res.status(200).json(result);
+
         } catch (error) {
             res.status(500).json({ message: "Server error", error: error.message });
         }
@@ -77,7 +77,6 @@ const tableController = {
 
         }
     },
-
 
 }
 

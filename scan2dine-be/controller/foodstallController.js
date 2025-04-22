@@ -73,7 +73,7 @@ const foodstallController = {
 
   // deleteFoodstall: async (req, res) => {
   //   try {
-  //       // Tìm foodstall cần xóa
+  //       // Tìm foodstall cần xóa 
   //       const foodstall = await Foodstall.findById(req.params.id);
   //       if (!foodstall) {
   //           return res.status(404).json({ message: "Foodstall not found" });
