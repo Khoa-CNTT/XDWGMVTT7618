@@ -14,7 +14,16 @@ const CustomerLogin = ({ onSuccess }) => {
     const table = searchParams.get("table"); // lấy số bàn từ query
 
     const handleCheckPhone = async () => {
-        if (!phone) return;
+        if (!phone) {
+            setMessage("Vui lòng nhập số điện thoại.");
+            return;
+        }
+
+        if (phone.length !== 10 || !/^\d{10}$/.test(phone)) {
+            setMessage("Số điện thoại chỉ nhập 10 kí tự số.");
+            return;
+        }
+
         try {
             const res = await api.post("/s2d/customer/check-phone", { phone });
             setName(res.data.customer.name);
@@ -24,21 +33,55 @@ const CustomerLogin = ({ onSuccess }) => {
             if (err.response?.status === 404) {
                 setName("");
                 setIsExisting(false);
-                setMessage("Số điện thoại chưa tồn tại. Vui lòng nhập tên để đăng ký.");
+                setMessage("Số điện thoại chưa tồn tại. Vui lòng nhập tên để truy cập.");
             } else {
                 setMessage("Đã xảy ra lỗi khi kiểm tra số điện thoại.");
             }
         }
     };
 
+    // Kiểm tra tên khách hàng
+    const handleCheckName = () => {
+        if (name.length > 50) {
+            setMessage("Tên khách hàng không được vượt quá 50 ký tự.");
+        } else if (/\d/.test(name)) {
+            setMessage("Tên khách hàng chỉ cho phép nhập chữ.");
+        } else {
+            setMessage(""); // Xóa thông báo lỗi nếu hợp lệ
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        // Kiểm tra số điện thoại trước khi gửi
         if (!phone) {
             setMessage("Vui lòng nhập số điện thoại.");
             return;
         }
 
+        if (phone.length !== 10 || !/^\d{10}$/.test(phone)) {
+            setMessage("Số điện thoại chỉ nhập 10 kí tự số.");
+            return;
+        }
+
+        // Kiểm tra tên khách hàng
+        if (!name) {
+            setMessage("Vui lòng nhập tên để đăng ký.");
+            return;
+        }
+
+        if (name.length > 50) {
+            setMessage("Tên khách hàng không được vượt quá 50 ký tự.");
+            return;
+        }
+
+        if (/\d/.test(name)) {
+            setMessage("Tên khách hàng chỉ cho phép nhập chữ.");
+            return;
+        }
+
+        // Kiểm tra số điện thoại nếu tồn tại
         if (isExisting) {
             sessionStorage.setItem("customer", JSON.stringify({ phone, name, table }));
             onSuccess?.(phone, name);
@@ -46,12 +89,8 @@ const CustomerLogin = ({ onSuccess }) => {
             return;
         }
 
-        if (!name) {
-            setMessage("Vui lòng nhập tên để đăng ký.");
-            return;
-        }
-
         try {
+            // Gửi yêu cầu đăng ký mới
             const res = await api.post("/s2d/customer/", { phone, name });
             sessionStorage.setItem("customer", JSON.stringify({ phone, name, table }));
             setMessage(`Đăng ký thành công! Xin chào ${res.data.name}`);
@@ -63,13 +102,14 @@ const CustomerLogin = ({ onSuccess }) => {
         }
     };
 
+
     return (
         <div className="flex justify-center items-center min-h-screen bg-gray-100 px-4">
             <div className="w-full max-w-[400px] rounded-2xl border border-gray-300 shadow-lg bg-white p-6 space-y-6">
                 <div className="text-center">
                     <h1 className="text-4xl font-bold font-bungee">
                         <span className="text-black">SCAN</span>
-                        <span className="text-blue-500">2</span>
+                        <span className="text-primary">2</span>
                         <span className="text-black">DINE</span>
                     </h1>
                 </div>
@@ -99,6 +139,7 @@ const CustomerLogin = ({ onSuccess }) => {
                                 type="text"
                                 value={name}
                                 placeholder="Nhập tên khách hàng"
+                                onBlur={handleCheckName}
                                 onChange={(e) => setName(e.target.value)}
                                 disabled={isExisting}
                                 className="w-full p-3 pl-10 pr-10 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -111,13 +152,13 @@ const CustomerLogin = ({ onSuccess }) => {
 
                     <button
                         type="submit"
-                        className="w-full bg-blue-500 text-white py-3 rounded font-bungee uppercase transition hover:bg-blue-600 active:scale-95"
+                        className="w-full bg-primary text-white py-3 rounded font-bungee uppercase transition hover:bg-blue-600 active:scale-95"
                     >
                         Xác nhận
                     </button>
 
                     {message && (
-                        <p className="mt-4 text-sm text-blue-600 font-medium">{message}</p>
+                        <p className="mt-4 text-sm text-primary font-medium">{message}</p>
                     )}
                 </form>
 

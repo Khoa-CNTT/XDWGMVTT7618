@@ -2,12 +2,14 @@ import React from 'react';
 import {
     FaUser,
     FaSignInAlt,
-    FaFileAlt,
     FaHome
 } from 'react-icons/fa';
+import { MdTableRestaurant } from "react-icons/md";
+import { IoMdCash } from "react-icons/io";
+
 import { Navigate, NavLink } from 'react-router-dom';
 
-export const SideBar = () => {
+export const A_SideBar = ({ setCurrentPage }) => {
 
     const linkClass = ({ isActive }) =>
         `flex items-center px-4 py-3 ${isActive ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800'}`;
@@ -34,32 +36,32 @@ export const SideBar = () => {
                 <div className="mt-2">
                     <NavLink to="/admin/dashboard" className={linkClass}>
                         <FaHome size={16} className="mr-3" />
-                        <span>Tổng quan hệ thống</span>
+                        <span>Tổng Quan Hệ Thống</span>
                     </NavLink>
                 </div>
 
                 <div className="mt-6 px-4 py-2 text-xs font-semibold text-gray-400">QUẢN LÝ</div>
                 <div className="mt-2">
                     <NavLink to="/admin/tables" className={linkClass}>
-                        <FaFileAlt size={16} className="mr-3" />
+                        <MdTableRestaurant size={19} className="mr-3" />
                         <span>Bàn</span>
                     </NavLink>
 
-                    <NavLink to="/admin/employees" className={linkClass}>
-                        <FaFileAlt size={16} className="mr-3" />
-                        <span>Nhân viên</span>
+                    <NavLink to="/admin/users" className={linkClass}>
+                        <FaUser size={16} className="mr-3" />
+                        <span>Người Dùng</span>
                     </NavLink>
 
                     <NavLink to="/admin/owners" className={linkClass}>
-                        <FaUser size={16} className="mr-3" />
-                        <span>Chủ quầy</span>
+                        <IoMdCash size={16} className="mr-3" />
+                        <span>Khách Hàng</span>
                     </NavLink>
 
                     <NavLink to="" className="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white"
                         onClick={handleLogout}
                     >
                         <FaSignInAlt size={16} className="mr-3" />
-                        <span>Logout</span>
+                        <span>Đang Xuất</span>
                     </NavLink>
                 </div>
             </div>

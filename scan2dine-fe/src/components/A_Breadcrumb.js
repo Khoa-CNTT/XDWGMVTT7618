@@ -1,6 +1,6 @@
 import React from 'react'
 
-export const Breadcrumb = ({ currentPage }) => {
+export const A_Breadcrumb = ({ currentPage }) => {
     return (
         <div className="bg-white p-4 shadow-sm border-b flex items-center justify-between">
             <div className="flex items-center">
