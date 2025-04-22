@@ -214,7 +214,7 @@ const userSchema = new mongoose.Schema({
   full_name: {
     type: String,
   },
-  user_name: {
+  username: {
     type: String,
   },
   email: {
