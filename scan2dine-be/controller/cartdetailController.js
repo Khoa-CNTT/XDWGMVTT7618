@@ -32,7 +32,6 @@ const cartdetailController ={
                 if (!product) {
                     return res.status(404).json({ message: 'Product không tìm thấy.' });
                 }
-    
                 await product.updateOne({
                     $addToSet: { cartdetail: upProduttoCartdetail.detail._id }
                 });

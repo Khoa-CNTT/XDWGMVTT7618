@@ -1,6 +1,4 @@
-
 const { Order, Table } = require('../model/model');
-
 
 const tableController = {
     // add table
@@ -36,6 +34,26 @@ const tableController = {
             res.status(500).json("Error deleting table: " + error.message);
         }
     },
+    updatetable: async (req, res) => {
+        try {
+            const tableID = await Table.findById(req.params.id);
+            if (!tableID) {
+                res.status(404).json('not found')
+            } 
+
+            if ( tableID.order && tableID.order !== req.body.order?.toString()){
+                await Order.findByIdAndUpdate(tableID.order, {
+                    table: tableID._id,
+                })
+            }
+            const updateTable = await Table.findByIdAndUpdate(req.params.id, req.body, {
+                new: true
+            })
+            res.status(200).json({ message: "Update successfully", update:updateTable });
+        } catch (error) {
+
+        }
+    }
 }
 
 module.exports = tableController;
