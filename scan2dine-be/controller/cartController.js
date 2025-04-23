@@ -1,4 +1,4 @@
-const { Cart, Customer, Table, CartDetail, OrderDetail, Order } = require('../model/model');
+const { Cart, Customer, Table, CartDetail, Orderdetail, Order } = require('../model/model');
 const { creatCart } = require('../service/cartService');
 const { deleteCartDetailsByCartId } = require('../utils/cartUtils');
 
@@ -99,7 +99,7 @@ const cartController = {
                 quantity: item.quantity,
                 status: 'pending'
             }));
-            const orderDetails = await OrderDetail.insertMany(orderDetailDocs);
+            const orderDetails = await Orderdetail.insertMany(orderDetailDocs);
 
             // Cập nhật lại trường orderdetail trong Order để lưu các ID của OrderDetail
             newOrder.orderdetail = orderDetails.map(od => od._id);
@@ -113,7 +113,7 @@ const cartController = {
             // Cập nhật orderDetails vào trong sản phẩm
             for (let item of orderDetails) {
                 await Product.findByIdAndUpdate(item.products, {
-                    $push: { orderDetails: item._id }  // Thêm ID của OrderDetail vào mảng orderDetails của sản phẩm
+                    $push: { orderdetail : item._id }  // Thêm ID của OrderDetail vào mảng orderDetails của sản phẩm
                 });
             }
 
