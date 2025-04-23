@@ -1,4 +1,4 @@
-const { OrderDetail, Order, Product } = require('../model/model');
+const { Orderdetail, Order, Product } = require('../model/model');
 const { increaseOrderQuantity, decreaseOrderQuantity } = require('../service/orderdetailService');
 
 const orderdetailCOntroller = {
@@ -36,58 +36,10 @@ const orderdetailCOntroller = {
 
     },
 
-    // addOrderDetail : async (req, res) => {
-    //     try {
-    //       const { order, products, quantity, status } = req.body;
-      
-    //       // Kiểm tra đủ thông tin
-    //       if (!order || !products || !quantity) {
-    //         return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
-    //       }
-      
-    //       // Kiểm tra đơn hàng
-    //       const checkOrder = await Order.findById(order);
-    //       if (!checkOrder) {
-    //         return res.status(404).json({ message: "Không tìm thấy đơn hàng" });
-    //       }
-      
-    //       // Kiểm tra sản phẩm
-    //       const checkProduct = await Product.findById(products);
-    //       if (!checkProduct) {
-    //         return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
-    //       }
-      
-    //       // Tạo order detail mới
-    //       const newOrderDetail = new Orderdetail({
-    //         order,
-    //         products,
-    //         quantity,
-    //         status: status || "Đang xử lý", // Mặc định nếu không có
-    //       });
-      
-    //       const savedOrderDetail = await newOrderDetail.save();
-      
-    //       // Gắn vào đơn hàng
-    //       checkOrder.orderdetail.push(savedOrderDetail._id);
-    //       await checkOrder.save();
-      
-    //       res.status(201).json({
-    //         message: "Thêm chi tiết đơn hàng thành công",
-    //         orderdetail: savedOrderDetail,
-    //       });
-    //     } catch (error) {
-    //       console.error("Lỗi khi thêm order detail:", error);
-    //       res.status(500).json({
-    //         message: "Lỗi server",
-    //         error: error.message || error,
-    //       });
-    //     }
-    // },
-
     // GET ORDERDETAIL 
     getOrderdetail: async (req, res) => {
         try {
-            const getOrderdetail = await OrderDetail.find();
+            const getOrderdetail = await Orderdetail.find();
             if (getOrderdetail.length <= 0) return "không có order detail"
             res.status(200).json(getOrderdetail);
         } catch (error) {
@@ -98,7 +50,7 @@ const orderdetailCOntroller = {
     // DELETE ORDER DETAIL 
     deleteOrderdetail: async (req, res) => {
         try {
-            const deleteOrderdetail = await OrderDetail.findByIdAndDelete(req.params.id);
+            const deleteOrderdetail = await Orderdetail.findByIdAndDelete(req.params.id);
 
             if (!deleteOrderdetail) {
                 res.status(404).json('not found')
@@ -128,7 +80,7 @@ const orderdetailCOntroller = {
     },
     updateOrderdetial: async (req, res) => {
         try {
-            const orderdetailID = await OrderDetail.findById(req.params.id);
+            const orderdetailID = await Orderdetail.findById(req.params.id);
             if (!orderdetailID) {
                 res.status(404).json('not found')
             }

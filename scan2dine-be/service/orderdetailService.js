@@ -1,5 +1,5 @@
 // services/cartService.js
-const {Orderdetail, Order} = require('../model/model');
+const {Orderdetail, Order, Product } = require('../model/model');
 
 // Hàm tăng số lượng
 const increaseOrderQuantity = async (orderID, productID, quantity = 1) => {
@@ -11,7 +11,7 @@ const increaseOrderQuantity = async (orderID, productID, quantity = 1) => {
         return { updated: true, detail: orderDetailItem };
     } else {
         // Nếu chưa có sản phẩm, tạo mới
-        const newItem = new OrderDetail({
+        const newItem = new Orderdetail({
             order:orderID,
             products: productID,
             quantity: quantity
