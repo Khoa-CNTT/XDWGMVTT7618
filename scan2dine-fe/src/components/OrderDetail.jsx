@@ -8,7 +8,7 @@ const OrderDetail = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [orderDetails, setOrderDetails] = useState({
-        orderNumber: '#12345',
+        orderNumber: '',
         startTime: '',
         endTime: '',
         phone: '',
@@ -27,7 +27,7 @@ const OrderDetail = () => {
         try {
             const cartId = localStorage.getItem('cartId');
             const [cartDetails, foodstalls] = await Promise.all([
-                api.get('/s2d/cartdetail'),
+                api.get('/s2d/cartdetail'),//phải get từ orderdetail 
                 api.get('/s2d/foodstall')
             ]);
 

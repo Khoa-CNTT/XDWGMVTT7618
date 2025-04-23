@@ -1,4 +1,5 @@
 const { Cart, Customer, Product, CartDetail } = require('../model/model');
+const { param } = require('../routes/cartdetail');
 const { creatCart } = require('../service/cartService');
 
 const cartController = {
@@ -30,7 +31,28 @@ const cartController = {
             return res.status(500).json(error);
         }
     },
+    getAcart: async (req, res) => {
+        try {
+            const cart = await Cart.findById(req.params.id)
+                .populate({
+                    path: "cartdetail",
+                    select: "quantity products",
+                    populate: {
+                        path: "products",
+                        select: "pd_name price "
+                    }
+                });
 
+
+            if (!cart) {
+                return res.status(404).json({ message: "Cart not found" });
+            }
+
+            res.status(200).json(cart);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
     //delete all cartdetail theo id của giỏ hàng
     // deleteCartdetail: async (req, res) => {
     //     try {

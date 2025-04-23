@@ -59,33 +59,37 @@ const foodstallsSchema = new mongoose.Schema({
 const cartSchema = new mongoose.Schema({
   customer: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Customer"
+    ref: "Customer",
   },
-  created_at: {
-    type: Date,
-    default: Date.now
-  }
-}, { collection: 'CART' });
-
+  cartdetail: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "CartDetail",
+    },
+  ],
+}, {
+  collection: "CART",
+});
 const cartdetailSchema = new mongoose.Schema({
   cart: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Cart",
-    required: true
   },
-  products: {
+  products:
+  {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Product",
-    required: true
   },
   quantity: {
     type: Number,
-    required: true,
-    min: 1,
     default: 1
+  },
+  amount: {
+    type: Number
   }
-}, { collection: 'CARTDETAIL' });
-
+}, {
+  collection: "CARTDETAIL",
+});
 //ĐÁNH GIÁ
 const reviewSchema = new mongoose.Schema({
   customer: {
@@ -185,7 +189,7 @@ const orderdetailSchema = new mongoose.Schema({
 const tableSchema = new mongoose.Schema({
   tb_number: {
     type: Number,
-    unique: true 
+    unique: true
   },
   status: {
     type: String,
@@ -200,7 +204,7 @@ const tableSchema = new mongoose.Schema({
       ref: "Order",
     },
   ],
-  
+
 }, { collection: 'TABLE' });
 const roleSchema = new mongoose.Schema({
   role_name: {

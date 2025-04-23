@@ -5,6 +5,7 @@ module.exports = {
     extend: {
       colors: {
         primary: "#B6282C", // Màu đỏ chủ đạo
+        primaryHover: "#D6474C",
         secondary: "#9333EA", // Màu tím
         danger: "#DC2626", // Màu đỏ
         customGray: "#6B7280", // Màu xám

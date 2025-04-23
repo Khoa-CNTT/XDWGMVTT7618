@@ -12,7 +12,7 @@ import { Navigate, NavLink } from 'react-router-dom';
 export const A_SideBar = ({ setCurrentPage }) => {
 
     const linkClass = ({ isActive }) =>
-        `flex items-center px-4 py-3 ${isActive ? 'bg-gray-800 text-white' : 'text-gray-300 hover:bg-gray-800'}`;
+        `flex items-center px-4 py-3 ${isActive ? 'bg-primary text-white' : 'text-gray-300 hover:bg-gray-800'}`;
 
 
     const handleLogout = () => {
@@ -61,7 +61,7 @@ export const A_SideBar = ({ setCurrentPage }) => {
                         onClick={handleLogout}
                     >
                         <FaSignInAlt size={16} className="mr-3" />
-                        <span>Đang Xuất</span>
+                        <span>Đăng Xuất</span>
                     </NavLink>
                 </div>
             </div>

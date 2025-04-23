@@ -6,46 +6,48 @@ const cartdetailController = {
     try {
       const { cart, products, quantity } = req.body;
 
-      const existingCartDetail = await CartDetail.findOne({
-        cart: cart,
-        products: products
-      });
-
-      if (existingCartDetail) {
-        const updatedCartDetail = await CartDetail.findByIdAndUpdate(
-          existingCartDetail._id,
-          { $inc: { quantity: quantity || 1 } },
-          { new: true }
-        ).populate({
-          path: 'products',
-          select: 'pd_name price image stall_id' // ✅ Thêm stall_id
-        });
-
-        return res.status(200).json(updatedCartDetail);
+      if (!cart || !products) {
+        return res.status(400).json({ message: "Thiếu cartID hoặc productsId" });
       }
 
-      const newCartDetail = new CartDetail({
-        cart,
-        products,
-        quantity: quantity || 1
-      });
+      const upProduttoCartdetail = await increaseCartQuantity(cart, products, quantity || 1);
 
-      const savedCartDetail = await newCartDetail.save();
+      // Cập nhật Cart nếu có
+      if (cart) {
+        const cartID = await Cart.findById(cart);
+        if (!cartID) {
+          return res.status(404).json({ message: 'Cart không tìm thấy.' });
+        }
 
-      await Product.findByIdAndUpdate(products, {
-        $push: { cartdetail: savedCartDetail._id }
-      });
-
-      const populatedCartDetail = await CartDetail.findById(savedCartDetail._id)
-        .populate({
-          path: 'products',
-          select: 'pd_name price image stall_id' // ✅ Thêm stall_id
+        await cartID.updateOne({
+          $addToSet: { cartdetail: upProduttoCartdetail.detail._id }
         });
 
-      res.status(200).json(populatedCartDetail);
+        // console.log("Cart updated:", cartID);
+      }
+
+      // Cập nhật Product nếu có
+      if (products) {
+        const product = await Product.findById(products);
+        if (!product) {
+          return res.status(404).json({ message: 'Product không tìm thấy.' });
+        }
+
+        await product.updateOne({
+          $addToSet: { cartdetail: upProduttoCartdetail.detail._id }
+        });
+
+        // console.log("Product updated:", product);
+      };
+      // const amountItem = await calculateCartdetail(cart);
+      res.status(200).json({
+        message: upProduttoCartdetail.updated ? "Tăng số lượng sản phẩm trong giỏ hàng" : "Thêm sản phẩm vào giỏ hàng",
+        detail: upProduttoCartdetail
+      });
+
     } catch (error) {
-      console.error('Error in addCartdetail:', error);
-      res.status(500).json({ error: error.message });
+      console.error("Error in addCartdetail:", error);
+      res.status(500).json({ message: "Server error", error: error.message || error });
     }
   },
 
@@ -100,7 +102,7 @@ const cartdetailController = {
       }
 
       res.status(200).json(updatedCartDetail);
-       } catch (error) {
+    } catch (error) {
       res.status(500).json({ error: error.message });
     }
   },
