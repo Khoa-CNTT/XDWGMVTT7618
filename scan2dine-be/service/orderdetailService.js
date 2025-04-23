@@ -1,9 +1,9 @@
 // services/cartService.js
-const {OrderDetail, Order} = require('../model/model');
+const {Orderdetail, Order} = require('../model/model');
 
 // Hàm tăng số lượng
 const increaseOrderQuantity = async (orderID, productID, quantity = 1) => {
-    let orderDetailItem = await OrderDetail.findOne({ order: orderID, products: productID });
+    let orderDetailItem = await Orderdetail.findOne({ order: orderID, products: productID });
     console.log(orderDetailItem);
     if (orderDetailItem) {
         orderDetailItem.quantity += quantity; // Tăng số lượng
@@ -23,7 +23,7 @@ const increaseOrderQuantity = async (orderID, productID, quantity = 1) => {
 
 // Hàm giảm số lượng
 const decreaseOrderQuantity = async (order, products, quantity = 1) => {
-    let orderDetailItem = await OrderDetail.findOne({ order: order, products: products });
+    let orderDetailItem = await Orderdetail.findOne({ order: order, products: products });
 
     if (!orderDetailItem) {
         throw new Error("Sản phẩm không tồn tại trong giỏ hàng.");

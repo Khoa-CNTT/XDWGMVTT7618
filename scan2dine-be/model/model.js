@@ -107,7 +107,7 @@ const customerSchema = new mongoose.Schema({
     require: true,
   },
   phone: {
-    type: Number,
+    type: String,
     // required: true
   },
   cart: {

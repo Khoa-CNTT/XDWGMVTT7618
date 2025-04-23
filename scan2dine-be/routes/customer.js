@@ -7,6 +7,8 @@ const customerController = require("../controller/customerController");
 router.post("/", customerController.addCustomer);
 // ALL CUSTOMER
 router.get("/", customerController.getAllCustomer);
+//Show all khách hàng đã mua hàng
+router.get("/static", customerController.getCustomerStatistics)
 // UPDATE CUSTOMER
 router.patch('/:id', customerController.updateCustomer);
 //DELETE CUSTOMER
