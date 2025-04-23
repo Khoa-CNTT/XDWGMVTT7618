@@ -12,6 +12,8 @@ const CustomerLogin = ({ onSuccess }) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const table = searchParams.get("table"); // lấy số bàn từ query
+    const [customerCart, setCustomerCart] = useState(null);
+
 
     const handleCheckPhone = async () => {
         if (!phone) {
@@ -27,6 +29,7 @@ const CustomerLogin = ({ onSuccess }) => {
         try {
             const res = await api.post("/s2d/customer/check-phone", { phone });
             setName(res.data.customer.name);
+            setCustomerCart(res.data.customer.cart);
             setIsExisting(true);
             setMessage(`Chào mừng trở lại, ${res.data.customer.name}!`);
         } catch (err) {
@@ -60,6 +63,7 @@ const CustomerLogin = ({ onSuccess }) => {
             return;
         }
 
+        //kiểm tra phone chỉ được 10 kí tự
         if (phone.length !== 10 || !/^\d{10}$/.test(phone)) {
             setMessage("Số điện thoại chỉ nhập 10 kí tự số.");
             return;
@@ -71,11 +75,13 @@ const CustomerLogin = ({ onSuccess }) => {
             return;
         }
 
+        //kiểm tra tên nhiều hơn 50 kí tự
         if (name.length > 50) {
             setMessage("Tên khách hàng không được vượt quá 50 ký tự.");
             return;
         }
 
+        //kiểm tra tên không được nhập số
         if (/\d/.test(name)) {
             setMessage("Tên khách hàng chỉ cho phép nhập chữ.");
             return;
@@ -83,7 +89,7 @@ const CustomerLogin = ({ onSuccess }) => {
 
         // Kiểm tra số điện thoại nếu tồn tại
         if (isExisting) {
-            sessionStorage.setItem("customer", JSON.stringify({ phone, name, table }));
+            sessionStorage.setItem("customer", JSON.stringify({ phone, name, table, cart: customerCart }));
             onSuccess?.(phone, name);
             navigate("/home");
             return;
@@ -92,7 +98,7 @@ const CustomerLogin = ({ onSuccess }) => {
         try {
             // Gửi yêu cầu đăng ký mới
             const res = await api.post("/s2d/customer/", { phone, name });
-            sessionStorage.setItem("customer", JSON.stringify({ phone, name, table }));
+            sessionStorage.setItem("customer", JSON.stringify({ phone, name, table, cart: res.data.cart }));
             setMessage(`Đăng ký thành công! Xin chào ${res.data.name}`);
             setIsExisting(true);
             onSuccess?.(phone, name);

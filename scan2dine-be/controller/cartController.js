@@ -1,4 +1,4 @@
-const { Cart, Customer, Table, CartDetail, Orderdetail, Order } = require('../model/model');
+const { Cart, Customer, Table, CartDetail, OrderDetail, Order } = require('../model/model');
 const { creatCart } = require('../service/cartService');
 const { deleteCartDetailsByCartId } = require('../utils/cartUtils');
 

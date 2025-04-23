@@ -1,5 +1,5 @@
 const { default: mongoose } = require("mongoose");
-const { Customer, Cart } = require("../model/model");
+const { Customer, Cart, Order } = require("../model/model");
 const { creatCart } = require("../service/cartService");
 const customerController = {
   //  ADD CUSTOMER
@@ -122,22 +122,21 @@ const customerController = {
     }
   },
   // show all KH mua hàng
+
   getCustomerStatistics: async (req, res) => {
     try {
       const data = await Order.aggregate([
         {
-          $sort: { od_date: -1 } // Sắp xếp theo ngày giảm dần
+          $sort: { _id: -1 } // Đảm bảo đơn mới nhất nằm đầu tiên (dựa vào _id)
         },
         {
           $group: {
-            _id: "$customer",
+            _id: "$customer", // Gom nhóm theo khách hàng
             totalOrders: { $sum: 1 },
             totalSpent: {
-              $sum: {
-                $toDouble: "$total_amount"
-              }
+              $sum: { $toDouble: "$total_amount" }
             },
-            latestOrder: { $first: "$$ROOT" } // Lấy toàn bộ đơn hàng mới nhất
+            latestOrder: { $first: "$$ROOT" } // Lấy đơn mới nhất trong nhóm
           }
         },
         {
@@ -167,14 +166,13 @@ const customerController = {
           }
         }
       ]);
-
+  
       res.status(200).json({ success: true, data });
     } catch (error) {
       console.error("Lỗi khi lấy thống kê khách hàng:", error);
       res.status(500).json({ success: false, message: "Lỗi server" });
     }
   }
-
 };
 
 module.exports = customerController;

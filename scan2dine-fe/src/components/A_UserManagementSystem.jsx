@@ -66,16 +66,16 @@ export default function UserManagementSystem() {
     };
 
     const handleSubmit = () => {
-        if (!currentUser.fullName || !currentUser.username) return;
+        // if (!currentUser.full_name || !currentUser.username) return;
 
-        if (isEditing) {
-            setUsers(users.map(user => user.id === currentUser.id ? currentUser : user));
-        } else {
-            const newId = users.length > 0 ? Math.max(...users.map(user => user.id)) + 1 : 1;
-            setUsers([...users, { ...currentUser, id: newId }]);
-        }
+        // if (isEditing) {
+        //     setUsers(users.map(user => user._id === currentUser._id ? currentUser : user));
+        // } else {
+        //     const newId = users.length > 0 ? Math.max(...users.map(user => user._id)) + 1 : 1;
+        //     setUsers([...users, { ...currentUser, id: newId }]);
+        // }
 
-        handleCloseModal();
+        // handleCloseModal();
     };
 
     const handleDelete = (id) => {
@@ -158,7 +158,18 @@ export default function UserManagementSystem() {
                                     </th>
                                     <th
                                         className="text-left py-3 px-4 font-semibold text-sm text-gray-600 cursor-pointer"
-                                        onClick={() => handleSort('fullName')}
+                                        onClick={() => handleSort('_id')}
+                                    >
+                                        <div className="flex items-center">
+                                            UID
+                                            {sortField === '_id' && (
+                                                sortDirection === 'asc' ? <FaChevronUp size={16} /> : <FaChevronDown size={16} />
+                                            )}
+                                        </div>
+                                    </th>
+                                    <th
+                                        className="text-left py-3 px-4 font-semibold text-sm text-gray-600 cursor-pointer"
+                                        onClick={() => handleSort('full_name')}
                                     >
                                         <div className="flex items-center">
                                             Họ Và Tên
@@ -184,7 +195,7 @@ export default function UserManagementSystem() {
                                     >
                                         <div className="flex items-center">
                                             Vai Trò
-                                            {sortField === 'role' && (
+                                            {sortField === 'role_name' && (
                                                 sortDirection === 'asc' ? <FaChevronUp size={16} /> : <FaChevronDown size={16} />
                                             )}
                                         </div>
@@ -194,21 +205,35 @@ export default function UserManagementSystem() {
                             </thead>
                             <tbody>
                                 {sortedUsers.length > 0 ? (
-                                    sortedUsers.map((user) => (
+                                    sortedUsers.map((user, index) => (
                                         <tr key={user._id} className="border-b border-gray-200 hover:bg-gray-50">
+                                            {/* STT */}
+                                            <td className="py-3 px-4">{index + 1}</td>
+
+                                            {/* ID */}
                                             <td className="py-3 px-4">{user._id}</td>
+
+                                            {/* Họ và tên */}
                                             <td className="py-3 px-4">{user.full_name}</td>
+
+                                            {/* Tên đăng nhập */}
                                             <td className="py-3 px-4">{user.username}</td>
+
+                                            {/* Vai trò */}
                                             <td className="py-3 px-4">
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${user.role_name === '3'
-                                                    ? 'bg-red-100 text-red-800'
-                                                    : user.role === '2'
-                                                        ? 'bg-blue-100 text-blue-800'
-                                                        : 'bg-green-100 text-green-800'
-                                                    }`}>
-                                                    {user.role_name}
+                                                <span
+                                                    className={`px-2 py-1 rounded-full text-xs font-medium ${user.role_name === '3'
+                                                        ? 'bg-red-100 text-red-800'
+                                                        : user.role_name === '1'
+                                                            ? 'bg-blue-100 text-blue-800'
+                                                            : 'bg-green-100 text-green-800'
+                                                        }`}
+                                                >
+                                                    {user.role_id.role_name}
                                                 </span>
                                             </td>
+
+                                            {/* Thao tác */}
                                             <td className="py-3 px-4">
                                                 <div className="flex space-x-2">
                                                     <button
@@ -231,12 +256,13 @@ export default function UserManagementSystem() {
                                     ))
                                 ) : (
                                     <tr>
-                                        <td colSpan="5" className="py-8 text-center text-gray-500">
+                                        <td colSpan="6" className="py-8 text-center text-gray-500">
                                             Không tìm thấy người dùng nào.
                                         </td>
                                     </tr>
                                 )}
                             </tbody>
+
                         </table>
                     </div>
                 </div>

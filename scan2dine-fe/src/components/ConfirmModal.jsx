@@ -15,7 +15,7 @@ export default function ConfirmModal({ title, message, onConfirm, onCancel }) {
                     </button>
                     <button
                         onClick={onConfirm}
-                        className="px-4 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700"
+                        className="px-4 py-2 text-sm rounded-md bg-primary text-white hover:bg-primaryHover"
                     >
                         Xác nhận
                     </button>

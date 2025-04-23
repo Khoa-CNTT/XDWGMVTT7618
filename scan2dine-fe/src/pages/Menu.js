@@ -13,124 +13,99 @@ export const Menu = ({ direction }) => {
     const [cart, setCart] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [menuItems, setMenuItems] = useState([]);
-    const [userId] = useState(localStorage.getItem('userId'));
     const [totalItems, setTotalItems] = useState(0);
     const [totalPrice, setTotalPrice] = useState(0);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const navigate = useNavigate();
 
+    //Lấy dữ liệu của người dùng hiện tại
+    const customer = JSON.parse(sessionStorage.getItem("customer"));
+
+    //Lấy ID cart của người dùng hiện tại
+    const cartId = sessionStorage.getItem(customer.cart);
+
+    //Lấy dữ liệu cart
     const fetchCart = async () => {
         try {
-            const cartId = localStorage.getItem('cartId');
-            if (!cartId) {
-                const res = await api.post('/s2d/cart/', { userId });
-                if (res.data) {
-                    localStorage.setItem('cartId', res.data._id);
-                }
-            }
 
-            const response = await api.get('/s2d/cartdetail');
-            const cartDetails = response.data.filter(item => item.cart._id === localStorage.getItem('cartId'));
-            setCart(cartDetails);
+            const response = await api.get(`/s2d/cart/${customer.cart}`);
+            console.log(response);
+            // const cartDetails = response.data.filter(item => item.cart._id === localStorage.getItem('cartId'));
+            // setCart(cartDetails);
 
-            const total = cartDetails.reduce((acc, item) => ({
-                items: acc.items + item.quantity,
-                price: acc.price + (item.products.price * item.quantity)
-            }), { items: 0, price: 0 });
+            // const total = cartDetails.reduce((acc, item) => ({
+            //     items: acc.items + item.quantity,
+            //     price: acc.price + (item.products.price * item.quantity)
+            // }), { items: 0, price: 0 });
 
-            setTotalItems(total.items);
-            setTotalPrice(total.price);
+            // setTotalItems(total.items);
+            // setTotalPrice(total.price);
         } catch (error) {
             console.error('Error fetching cart:', error);
         }
     };
 
-    useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const getProduct = await api.get('/s2d/product');
-                setMenuItems(getProduct.data);
-                await fetchCart();
-            } catch (error) {
-                console.error('Error fetching data:', error);
-            }
-        };
-        fetchData();
-    }, [userId]);
+    //lấy dữ liệu menu
+    const fetchData = async () => {
+        try {
+            const getProduct = await api.get('/s2d/product');
+            setMenuItems(getProduct.data);
+            // await fetchCart();
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    };
 
+    //Load dữ liệu
+    useEffect(() => {
+        fetchData();
+        fetchCart();
+    }, []);
+
+    //Tìm kiếm món ăn
+    const filteredMenuItems = menuItems.filter(item =>
+        (selectedCategory === 'all' || item.category === selectedCategory) &&
+        typeof item.pd_name === 'string' &&
+        item.pd_name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
+    //Chức năng thêm vào giỏ hàng
     const addToCart = async (item) => {
         try {
-            const cartId = localStorage.getItem('cartId');
-            const existingItem = cart.find(i => i.products._id === item._id);
+            const res = await api.post(`/s2d/cartdetail`, {
+                cart: customer.cart,
+                products: item._id,
+                quantity: 1 // chỉnh lại khi thêm = menu chi tiết
 
-            if (existingItem) {
-                setCart(prev =>
-                    prev.map(i =>
-                        i.products._id === item._id
-                            ? { ...i, quantity: i.quantity + 1 }
-                            : i
-                    )
-                );
-            } else {
-                const newItem = {
-                    cart: { _id: cartId },
-                    products: item,
-                    quantity: 1
-                };
-                setCart(prev => [...prev, newItem]);
-            }
+            });
+            await fetchCart();
+        } catch (error) {
+            console.error("Lỗi khi thêm vào giỏ hàng:", error);
+            alert("Thêm thất bại");
+        }
+    };
 
-            setTotalItems(prev => prev + 1);
-            setTotalPrice(prev => prev + parseInt(item.price));
-
-            await api.post('/s2d/cartdetail', {
-                cart: cartId,
+    //Xóa khỏi giỏ hàng
+    const removeFromCart = async (item) => {
+        try {
+            const res = api.delete(`/s2d/cartdetail`, {
+                cart: customer.cart,
                 products: item._id,
                 quantity: 1
             });
-        } catch (error) {
-            console.error('Error adding to cart:', error);
             await fetchCart();
+        } catch (error) {
+
         }
     };
 
-    const removeFromCart = async (item) => {
-        try {
-            const existingItem = cart.find(i => i.products._id === item._id);
-            if (!existingItem) return;
-
-            const newQuantity = existingItem.quantity - 1;
-
-            if (newQuantity === 0) {
-                setCart(prev => prev.filter(i => i.products._id !== item._id));
-            } else {
-                setCart(prev => prev.map(i =>
-                    i.products._id === item._id
-                        ? { ...i, quantity: newQuantity }
-                        : i
-                ));
-            }
-
-            setTotalItems(prev => prev - 1);
-            setTotalPrice(prev => prev - parseInt(item.price));
-
-            await removeFromCartDetail(item._id);
-        } catch (error) {
-            console.error('Error removing from cart:', error);
-            await fetchCart();
-        }
-    };
 
     const getItemQuantity = (itemId) => {
         const cartItem = cart.find(item => item.products._id === itemId);
         return cartItem ? cartItem.quantity : 0;
     };
 
-    const filteredMenuItems = menuItems.filter(item =>
-        (selectedCategory === 'all' || item.category === selectedCategory) &&
-        typeof item.pd_name === 'string' &&
-        item.pd_name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+
 
     return (
         <PageWrapper direction={direction}>

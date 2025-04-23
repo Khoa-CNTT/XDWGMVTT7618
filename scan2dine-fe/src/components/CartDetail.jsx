@@ -13,7 +13,7 @@ const CartDetails = () => {
   useEffect(() => {
     fetchCartItems();
   }, []);
-  
+
   const fetchCartItems = async () => {
     try {
       const cartId = localStorage.getItem('cartId');
@@ -22,12 +22,12 @@ const CartDetails = () => {
         setLoading(false);
         return;
       }
-  
+
       const [cartDetailRes, foodstallRes] = await Promise.all([
         api.get('/s2d/cartdetail'),
         api.get('/s2d/foodstall')
       ]);
-  
+
       // Lọc các item thuộc cart hiện tại
       const items = cartDetailRes.data.filter(item => {
         const match = item.cart?._id === cartId;
@@ -35,7 +35,7 @@ const CartDetails = () => {
         }
         return match;
       });
-  
+
       // Tạo map foodstall
       const foodstallMap = {};
       foodstallRes.data.forEach(stall => {
@@ -62,11 +62,11 @@ const CartDetails = () => {
             items: []
           };
         }
-  
+
         groupedItems[stallId].items.push(item);
         foodstallMap[stallId].itemCount++;
       });
-  
+
       setCartItems(groupedItems);
       setExpandedCounters(Object.keys(groupedItems));
       setLoading(false);
@@ -75,8 +75,8 @@ const CartDetails = () => {
       setCartItems({});
     }
   };
-  
-  
+
+
 
   const handleUpdateQuantity = async (item, change) => {
     try {
