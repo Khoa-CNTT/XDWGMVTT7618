@@ -1,5 +1,5 @@
 const { default: mongoose } = require("mongoose");
-const { Customer, Cart } = require("../model/model");
+const { Customer, Cart, Order } = require("../model/model");
 const { creatCart } = require("../service/cartService");
 const customerController = {
   //  ADD CUSTOMER
@@ -121,6 +121,60 @@ const customerController = {
       res.status(500).json({ message: "Internal server error", error });
     }
   },
+  // show all KH mua hàng
+
+  getCustomerStatistics: async (req, res) => {
+    try {
+      const data = await Order.aggregate([
+        {
+          $sort: { _id: -1 } // Đảm bảo đơn mới nhất nằm đầu tiên (dựa vào _id)
+        },
+        {
+          $group: {
+            _id: "$customer", // Gom nhóm theo khách hàng
+            totalOrders: { $sum: 1 },
+            totalSpent: {
+              $sum: { $toDouble: "$total_amount" }
+            },
+            latestOrder: { $first: "$$ROOT" } // Lấy đơn mới nhất trong nhóm
+          }
+        },
+        {
+          $lookup: {
+            from: "CUSTOMER",
+            localField: "_id",
+            foreignField: "_id",
+            as: "customerInfo"
+          }
+        },
+        {
+          $unwind: "$customerInfo"
+        },
+        {
+          $project: {
+            _id: 0,
+            customer_id: "$_id",
+            name: "$customerInfo.name",
+            phone: "$customerInfo.phone",
+            totalOrders: 1,
+            totalSpent: 1,
+            latestOrderDate: "$latestOrder.od_date",
+            latestOrderAmount: {
+              $toDouble: "$latestOrder.total_amount"
+            },
+            latestOrderNote: "$latestOrder.od_note"
+          }
+        }
+      ]);
+  
+      res.status(200).json({ success: true, data });
+    } catch (error) {
+      console.error("Lỗi khi lấy thống kê khách hàng:", error);
+      res.status(500).json({ success: false, message: "Lỗi server" });
+    }
+  }
+  
+  //-----------------------------------------------
 };
 
 module.exports = customerController;

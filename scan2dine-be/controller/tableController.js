@@ -72,6 +72,6 @@ const tableController = {
 
         }
     }
-}
 
+    }
 module.exports = tableController;
