@@ -139,7 +139,7 @@ const orderSchema = new mongoose.Schema({
     ref: "Table",
   },
   od_date: {
-    type: String,
+    type: Date, default: Date.now
   },
   od_note: {
     type: String,
@@ -164,6 +164,7 @@ const orderSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Payment",
   },
+  updatedAt: { type: Date, default: Date.now }
 }, { collection: 'ORDER' });
 //CHI TIẾT ĐƠN HÀNG
 const orderdetailSchema = new mongoose.Schema({

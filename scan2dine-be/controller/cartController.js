@@ -1,5 +1,6 @@
-const { Cart, Customer, Product, CartDetail } = require('../model/model');
+const { Cart, Customer, Table, CartDetail, Orderdetail, Order } = require('../model/model');
 const { creatCart } = require('../service/cartService');
+const { deleteCartDetailsByCartId } = require('../utils/cartUtils');
 
 const cartController = {
     // add a cart
@@ -32,69 +33,119 @@ const cartController = {
     },
 
     //delete all cartdetail theo id của giỏ hàng
-    // deleteCartdetail: async (req, res) => {
-    //     try {
-    //         const deleteAllcartdetail = await Cart.findById(req.params.id);
-
-    //         if (!deleteAllcartdetail) {
-    //             return res.status(404).json({ message: "not found" })
-    //         }
-    //         if (deleteAllcartdetail) {
-    //             await CartDetail.deleteMany({ cart: req.params.id })
-    //         }
-
-    //         await Cart.findByIdAndUpdate(deleteAllcartdetail._id, {
-    //             $set: {
-    //                 cartdetail: []
-    //             }
-    //         })
-
-    //         return res.status(200).json({
-    //             message: "Cart and related deleted successfully",
-    //             delete: deleteAllcartdetail
-    //         })
-    //     } catch (error) {
-    //         console.error("Error in addCartdetail:", error);
-    //         return res.status(500).json({ message: "Server error", error: error.message || error });
-    //     }
-    // },
     deleteCartdetail: async (req, res) => {
         try {
-            const cart = await Cart.findById(req.params.id);
+            const deletedIds = await deleteCartDetailsByCartId(req.params.id);
+            return res.status(200).json({
+                message: "CartDetails deleted successfully",
+                deletedCartDetailIds: deletedIds
+            });
+        } catch (error) {
+            console.error("Error in deleteCartdetail:", error);
+            return res.status(500).json({ message: "Server error", error: error.message });
+        }
+    },
+    getAcart: async (req, res) => {
+        try {
+            const cart = await Cart.findById(req.params.id)
+                .populate({
+                    path: "cartdetail",
+                    select: "quantity products",
+                    populate: {
+                        path: "products",
+                        select: "pd_name price "
+                    }
+                });
+
 
             if (!cart) {
                 return res.status(404).json({ message: "Cart not found" });
             }
 
-            // Lấy danh sách CartDetail liên quan tới cart
-            const relatedCartDetails = await CartDetail.find({ cart: cart._id });
-            const cartDetailIds = relatedCartDetails.map(cd => cd._id);
+            res.status(200).json(cart);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
+    },
 
-            // Xoá các CartDetail liên quan đến cart
-            await CartDetail.deleteMany({ cart: cart._id });
+    createOrderFromCart: async (req, res) => {
+        try {
+            const { cart, table } = req.body;
 
-            // Gỡ CartDetail khỏi Product
-            await Product.updateMany(
-                { cartdetail: { $in: cartDetailIds } },
-                { $pull: { cartdetail: { $in: cartDetailIds } } }
-            );
+            // Tìm giỏ hàng bằng ID
+            const cartID = await Cart.findById(cart);
+            if (!cartID) return res.status(404).json({ message: 'Không tìm thấy giỏ hàng' });
 
-            // Xoá mảng cartdetail trong Cart nếu có
-            await Cart.findByIdAndUpdate(cart._id, {
-                $set: { cartdetail: [] }
+            const customerId = cartID.customer;  // Sử dụng cartID.customer để lấy customer
+
+            // Lấy các chi tiết giỏ hàng
+            const cartDetails = await CartDetail.find({ cart: cartID._id }).populate('products');
+            if (cartDetails.length === 0) {
+                return res.status(400).json({ message: 'Giỏ hàng trống!' });
+            }
+
+            // Tạo đơn hàng
+            const newOrder = new Order({
+                customer: customerId,
+                table: table,
+                status: 'pending'
+            });
+            await newOrder.save();
+
+            // Tạo chi tiết đơn hàng từ giỏ hàng
+            const orderDetailDocs = cartDetails.map(item => ({
+                order: newOrder._id,  // Liên kết OrderDetail với Order
+                products: item.products._id,  // Sử dụng item.products._id
+                quantity: item.quantity,
+                status: 'pending'
+            }));
+            const orderDetails = await OrderDetail.insertMany(orderDetailDocs);
+
+            // Cập nhật lại trường orderdetail trong Order để lưu các ID của OrderDetail
+            newOrder.orderdetail = orderDetails.map(od => od._id);
+            await newOrder.save();  // Lưu lại đơn hàng với các orderdetail
+
+            // Cập nhật mảng orders trong Table
+            await Table.findByIdAndUpdate(table, {
+                $push: { order: newOrder._id }  // Thêm ID của Order vào mảng order trong Table
             });
 
-            return res.status(200).json({
-                message: "CartDetails deleted and removed from Product successfully",
-                deletedCartDetailIds: cartDetailIds
+            // Cập nhật orderDetails vào trong sản phẩm
+            for (let item of orderDetails) {
+                await Product.findByIdAndUpdate(item.products, {
+                    $push: { orderDetails: item._id }  // Thêm ID của OrderDetail vào mảng orderDetails của sản phẩm
+                });
+            }
+
+            // Tạo mảng orderdetail để trả về
+            const orderItemsToReturn = cartDetails.map(item => ({
+                product: item.products._id,  // Sử dụng item.products._id
+                name: item.products.name,    // item.products.name
+                price: item.products.price,  // item.products.price
+                quantity: item.quantity,
+                total: item.products.price * item.quantity
+            }));
+
+            // Xóa các chi tiết giỏ hàng đã xử lý
+            await deleteCartDetailsByCartId(cartID._id);
+
+            res.status(201).json({
+                message: 'Đơn hàng đã được tạo thành công!',
+                order: {
+                    _id: newOrder._id,
+                    customer: newOrder.customer,
+                    table: newOrder.table,
+                    orderdetail: orderItemsToReturn,  // Trả về orderdetail
+                    status: newOrder.status,
+                    createdAt: newOrder.createdAt
+                }
             });
 
         } catch (error) {
-            console.error("Error in deleteCartdetail:", error);
-            return res.status(500).json({ message: "Server error", error: error.message || error });
+            console.error('Lỗi khi xác nhận giỏ hàng:', error);
+            res.status(500).json({ message: 'Lỗi server', error: error.message });
         }
     }
 
 }
-
 module.exports = cartController;
