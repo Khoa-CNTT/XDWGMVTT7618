@@ -41,6 +41,11 @@ const foodstallsSchema = new mongoose.Schema({
       ref: "Product",
     },
   ],
+  user: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  }
+  ],
   review: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Review",
@@ -91,7 +96,7 @@ const reviewSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Customer",
   },
-  stall_id: {
+  stall: {
     type: mongoose.Schema.Types.ObjectId,
     ref: " Stall",
   },
@@ -230,10 +235,6 @@ const userSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Role",
   },
-  stall_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: " Stall",
-  }, 
 }, { collection: 'USER' });
 
 //THÔNG BÁO
