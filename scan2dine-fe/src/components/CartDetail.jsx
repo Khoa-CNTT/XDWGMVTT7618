@@ -10,55 +10,56 @@ const CartDetails = () => {
   const [expandedCounters, setExpandedCounters] = useState([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
 
+  //lấy thông tin cusomer
+  const customer = JSON.parse(sessionStorage.getItem('customer'));
   useEffect(() => {
     fetchCartItems();
   }, []);
 
   const fetchCartItems = async () => {
     try {
-      const cartId = localStorage.getItem('cartId');
-      if (!cartId) {
-        setCartItems({});
-        setLoading(false);
-        return;
-      }
+      // if (!customer.cart) {
+      //   setCartItems({});
+      //   setLoading(false);
+      //   return;
+      // }
+
+      setLoading(true); // bật loading trước khi gọi API
 
       const [cartDetailRes, foodstallRes] = await Promise.all([
         api.get('/s2d/cartdetail'),
         api.get('/s2d/foodstall')
       ]);
+      console.log('Cart details:', cartDetailRes.data);
+      // console.log('Food stalls:', foodstallRes.data);
+      // console.log("Cart details:", cartDetailRes.data);
+      console.log("Customer cart ID:", customer?.cart);
 
-      // Lọc các item thuộc cart hiện tại
-      const items = cartDetailRes.data.filter(item => {
-        const match = item.cart?._id === cartId;
-        if (!match) {
-        }
-        return match;
-      });
+      // Lọc những item thuộc cart hiện tại
+      const currentCartItems = cartDetailRes.data.filter(
+        item => item.cart._id === customer.cart
 
-      // Tạo map foodstall
-      const foodstallMap = {};
-      foodstallRes.data.forEach(stall => {
-        foodstallMap[stall._id] = {
-          name: stall.stall_name,
-          itemCount: 0
-        };
-      });
+      );
 
-      // Nhóm item theo stall_id
+      console.log("currentCartItems", currentCartItems);
+
+      // Tạo map foodstall: id -> { name, itemCount }
+      const foodstallMap = Object.fromEntries(
+        foodstallRes.data.map(stall => [
+          stall._id,
+          { name: stall.stall_name, itemCount: 0 }
+        ])
+      );
+
+      // Gom nhóm item theo stall_id
       const groupedItems = {};
-      items.forEach(item => {
-        if (!item.products || !item.products.stall_id) {
-          return;
-        }
-        const stallId = item.products.stall_id;
-        const stall = foodstallMap[stallId];
-        if (!stall) {
-          return;
-        }
+      currentCartItems.forEach(item => {
+        const stallId = item.products?.stall_id;
+        if (!stallId || !foodstallMap[stallId]) return;
+
         if (!groupedItems[stallId]) {
           groupedItems[stallId] = {
-            stallName: stall.name,
+            stallName: foodstallMap[stallId].name,
             items: []
           };
         }
@@ -68,13 +69,17 @@ const CartDetails = () => {
       });
 
       setCartItems(groupedItems);
-      setExpandedCounters(Object.keys(groupedItems));
+      // console.log('Grouped items:', groupedItems);
+
+      setExpandedCounters(Object.keys(groupedItems)); // Mở tất cả stall khi load
       setLoading(false);
     } catch (error) {
-      setLoading(false);
+      console.error("Lỗi khi fetch giỏ hàng:", error);
       setCartItems({});
+      setLoading(false);
     }
   };
+
 
 
 
@@ -106,10 +111,13 @@ const CartDetails = () => {
     }, 0);
   }, 0);
 
+
   const handleConfirmOrder = async () => {
     try {
-      const cartId = localStorage.getItem('cartId');
-      await api.post('/s2d/cartdetail/confirm', { cartId });
+      await api.post('/s2d/cart/confirm', {
+        cart: customer.cart,
+        table: customer.idTable
+      });
       setShowConfirmation(true);
     } catch (error) {
       console.error('Error confirming order:', error);

@@ -19,19 +19,21 @@ const OrderDetail = () => {
         totalItems: 0
     });
 
+    const customer = JSON.parse(sessionStorage.getItem('customer'));
+
+
     useEffect(() => {
         fetchOrderDetails();
     }, []);
 
     const fetchOrderDetails = async () => {
         try {
-            const cartId = localStorage.getItem('cartId');
-            const [cartDetails, foodstalls] = await Promise.all([
-                api.get('/s2d/cartdetail'),//phải get từ orderdetail 
+            const [orderDetails, foodstalls] = await Promise.all([
+                api.get('/s2d/orderdetail'),//phải get từ orderdetail 
                 api.get('/s2d/foodstall')
             ]);
 
-            const items = cartDetails.data.filter(item => item.cart._id === cartId);
+            const items = orderDetails.data.filter(item => item.cart._id === customer.cart);
 
             const stallMap = foodstalls.data.reduce((acc, stall) => {
                 acc[stall._id] = {

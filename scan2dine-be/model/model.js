@@ -15,7 +15,7 @@ const productSchema = new mongoose.Schema({
   pd_name: { type: String },
   category: { type: mongoose.Schema.Types.ObjectId, ref: "Category" },
   description: { type: String },
-  price: { type: String },
+  price: { type: Number },
   image: { type: String },
   stall_id: { type: mongoose.Schema.Types.ObjectId, ref: "Stall" },
   orderdetail: [

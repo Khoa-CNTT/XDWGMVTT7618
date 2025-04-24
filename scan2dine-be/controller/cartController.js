@@ -71,6 +71,7 @@ const cartController = {
     createOrderFromCart: async (req, res) => {
         try {
             const { cart, table } = req.body;
+            console.log('req.body:', req.body);
 
             // Tìm giỏ hàng bằng ID
             const cartID = await Cart.findById(cart);
@@ -116,7 +117,10 @@ const cartController = {
                     $push: { orderdetail: item._id }  // Thêm ID của OrderDetail vào mảng orderdetails của sản phẩm
                 });
             }
-
+            // Cập nhật mảng orders trong Customer
+            await Customer.findByIdAndUpdate(customerId, {
+                $push: { order: newOrder._id } 
+            });
             // Tạo mảng orderdetail để trả về
             const orderItemsToReturn = cartDetails.map(item => ({
                 product: item.products._id,  // Sử dụng item.products._id
