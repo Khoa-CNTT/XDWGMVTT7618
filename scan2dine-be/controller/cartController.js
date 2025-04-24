@@ -133,15 +133,19 @@ const cartController = {
             // Xóa các chi tiết giỏ hàng đã xử lý
             await deleteCartDetailsByCartId(cartID._id);
 
+            const populatedOrder = await Order.findById(newOrder._id)
+            .populate('customer', "name phone")  // Populate thông tin chi tiết của customer
+            .populate('table', "tb_number");
+            const formattedCreatedAt = moment(populatedOrder.createdAt).format('DD/MM/YYYY HH:mm:ss'); // Nếu bạn muốn hiển thị thêm info của table
             res.status(201).json({
                 message: 'Đơn hàng đã được tạo thành công!',
                 order: {
-                    _id: newOrder._id,
-                    customer: newOrder.customer,
-                    table: newOrder.table,
-                    orderdetail: orderItemsToReturn,  // Trả về orderdetail
-                    status: newOrder.status,
-                    createdAt: newOrder.createdAt
+                    _id: populatedOrder._id,
+                    customer: populatedOrder.customer,
+                    table: populatedOrder.table,
+                    orderdetail: orderItemsToReturn,
+                    status: populatedOrder.status,
+                    createdAt: formattedCreatedAt
                 }
             });
 
