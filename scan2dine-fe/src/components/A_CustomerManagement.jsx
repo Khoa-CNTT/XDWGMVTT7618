@@ -1,15 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { MdPerson, MdRestaurantMenu, MdHistory, MdNotifications, MdSettings, } from 'react-icons/md';
 import { FaSearch, FaUserPlus, FaQrcode, FaFileAlt, FaEdit, FaTrashAlt, FaCheck, FaTimes, FaSortAmountDown, FaEllipsisV } from 'react-icons/fa';
+import api from '../server/api';
 
 export default function CustomerManagement() {
-    const [customers, setCustomers] = useState([
-        { id: 1, name: 'Nguyễn Văn A', phone: '0987654321', email: 'nguyenvana@example.com', visits: 12, totalSpent: 2450000, lastVisit: '2025-04-15', status: 'active' },
-        { id: 2, name: 'Trần Thị B', phone: '0912345678', email: 'tranthib@example.com', visits: 8, totalSpent: 1750000, lastVisit: '2025-04-18', status: 'active' },
-        { id: 3, name: 'Lê Văn C', phone: '0978563412', email: 'levanc@example.com', visits: 5, totalSpent: 860000, lastVisit: '2025-04-10', status: 'inactive' },
-        { id: 4, name: 'Phạm Thị D', phone: '0932145678', email: 'phamthid@example.com', visits: 15, totalSpent: 3200000, lastVisit: '2025-04-20', status: 'active' },
-        { id: 5, name: 'Hoàng Văn E', phone: '0965432187', email: 'hoangvane@example.com', visits: 3, totalSpent: 520000, lastVisit: '2025-04-05', status: 'inactive' },
-    ]);
+
+    //Chứa thông tin khách hàng
+    const [customers, setCustomers] = useState([]);
 
     const [searchTerm, setSearchTerm] = useState('');
     const [isAddingCustomer, setIsAddingCustomer] = useState(false);
@@ -22,6 +19,22 @@ export default function CustomerManagement() {
     const [selectedCustomers, setSelectedCustomers] = useState([]);
     const [activeTab, setActiveTab] = useState('all');
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+
+    //lấy thông tin khách hàng
+    useEffect(() => {
+        const fetchCustomer = async () => {
+            try {
+                const getCustomers = await api.get('/s2d/customer/static');
+                setCustomers(getCustomers.data.data);
+                console.log(customers);
+
+
+            } catch (error) {
+                console.error('Lỗi khi tải danh mục sản phẩm:', error);
+            }
+        };
+        fetchCustomer();
+    }, []);
 
     const filteredCustomers = customers.filter(customer => {
         const matchesSearch = customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -172,9 +185,7 @@ export default function CustomerManagement() {
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Lần ghé gần nhất
                                     </th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Trạng thái
-                                    </th>
+
                                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Thao tác
                                     </th>
@@ -182,7 +193,7 @@ export default function CustomerManagement() {
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                                 {filteredCustomers.map((customer) => (
-                                    <tr key={customer.id} className="hover:bg-gray-50">
+                                    <tr key={customer.customer_id} className="hover:bg-gray-50">
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <input
                                                 type="checkbox"
@@ -198,7 +209,7 @@ export default function CustomerManagement() {
                                                 </div>
                                                 <div className="ml-4">
                                                     <div className="text-sm font-medium text-gray-900">{customer.name}</div>
-                                                    <div className="text-sm text-gray-500">ID: {customer.id}</div>
+                                                    <div className="text-sm text-gray-500">ID: {customer.customer_id}</div>
                                                 </div>
                                             </div>
                                         </td>
@@ -207,19 +218,13 @@ export default function CustomerManagement() {
                                             <div className="text-sm text-gray-500">{customer.email}</div>
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {customer.visits}
+                                            {customer.totalOrders}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {formatCurrency(customer.totalSpent)}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {new Date(customer.lastVisit).toLocaleDateString('vi-VN')}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${customer.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                                                }`}>
-                                                {customer.status === 'active' ? 'Hoạt động' : 'Không hoạt động'}
-                                            </span>
+                                            {customer.latestOrderDate}
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                             {showDeleteConfirm === customer.id ? (

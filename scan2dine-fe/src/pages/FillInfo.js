@@ -12,6 +12,8 @@ const CustomerLogin = ({ onSuccess }) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const table = searchParams.get("table"); // lấy số bàn từ query
+    const idTable = searchParams.get("id"); // lấy số bàn từ query
+
     const [customerCart, setCustomerCart] = useState(null);
 
 
@@ -89,7 +91,7 @@ const CustomerLogin = ({ onSuccess }) => {
 
         // Kiểm tra số điện thoại nếu tồn tại
         if (isExisting) {
-            sessionStorage.setItem("customer", JSON.stringify({ phone, name, table, cart: customerCart }));
+            sessionStorage.setItem("customer", JSON.stringify({ phone, name, table, idTable, cart: customerCart }));
             onSuccess?.(phone, name);
             navigate("/home");
             return;
@@ -98,7 +100,7 @@ const CustomerLogin = ({ onSuccess }) => {
         try {
             // Gửi yêu cầu đăng ký mới
             const res = await api.post("/s2d/customer/", { phone, name });
-            sessionStorage.setItem("customer", JSON.stringify({ phone, name, table, cart: res.data.cart }));
+            sessionStorage.setItem("customer", JSON.stringify({ phone, name, table, idTable, cart: res.data.cart }));
             setMessage(`Đăng ký thành công! Xin chào ${res.data.name}`);
             setIsExisting(true);
             onSuccess?.(phone, name);

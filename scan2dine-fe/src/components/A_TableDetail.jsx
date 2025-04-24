@@ -51,7 +51,7 @@ export const A_TableDetail = ({ selectedTable, setShowQRModal }) => {
                     <div className="w-48 h-48 bg-white p-2 rounded-lg shadow-md flex items-center justify-center">
                         <QRCodeSVG
                             ref={svgRef}
-                            value={`${process.env.REACT_APP_URL}/?table=${selectedTable.tb_number}`}
+                            value={`${process.env.REACT_APP_URL}/?table=${selectedTable.tb_number}&id=${selectedTable._id}`}
                             size={160}
                         />
                     </div>

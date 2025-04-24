@@ -71,6 +71,7 @@ const cartController = {
     createOrderFromCart: async (req, res) => {
         try {
             const { cart, table } = req.body;
+            console.log('req.body:', req.body);
 
             // Tìm giỏ hàng bằng ID
             const cartID = await Cart.findById(cart);
