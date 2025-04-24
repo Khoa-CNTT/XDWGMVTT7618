@@ -6,6 +6,7 @@ var router =  express.Router();
 router.post('/', orderController.addOrder);
 // GET ORDER
 router.get('/',orderController.getOrder);
+router.get('/:id',orderController.getAorder);
 // DELETE ORDER
 router.delete('/:id',orderController.deleteOrder);
 // UPDATE ORDER
