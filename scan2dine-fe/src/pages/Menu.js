@@ -22,28 +22,33 @@ export const Menu = ({ direction }) => {
     const customer = JSON.parse(sessionStorage.getItem("customer"));
 
     //Lấy ID cart của người dùng hiện tại
-    const cartId = sessionStorage.getItem(customer.cart);
+    // const cartId = sessionStorage.getItem(customer.cart);
 
     //Lấy dữ liệu cart
     const fetchCart = async () => {
         try {
-
             const response = await api.get(`/s2d/cart/${customer.cart}`);
-            console.log(response);
-            // const cartDetails = response.data.filter(item => item.cart._id === localStorage.getItem('cartId'));
-            // setCart(cartDetails);
+            const cartDetails = response.data;
 
-            // const total = cartDetails.reduce((acc, item) => ({
-            //     items: acc.items + item.quantity,
-            //     price: acc.price + (item.products.price * item.quantity)
-            // }), { items: 0, price: 0 });
+            const cartItems = cartDetails.cartdetail || [];
+            setCart(cartItems);
 
-            // setTotalItems(total.items);
-            // setTotalPrice(total.price);
+            const total = cartItems.reduce((acc, item) => {
+                // Tính tổng số món và tổng giá trị của giỏ hàng
+                return {
+                    items: acc.items + item.quantity,
+                    price: acc.price + (item.products.price * item.quantity) // Tính tổng giá đúng
+                };
+            }, { items: 0, price: 0 });
+
+            setTotalItems(total.items);
+            setTotalPrice(total.price);
         } catch (error) {
             console.error('Error fetching cart:', error);
         }
     };
+
+
 
     //lấy dữ liệu menu
     const fetchData = async () => {
@@ -72,39 +77,87 @@ export const Menu = ({ direction }) => {
     //Chức năng thêm vào giỏ hàng
     const addToCart = async (item) => {
         try {
-            const res = await api.post(`/s2d/cartdetail`, {
+            // Cập nhật UI trước (nếu muốn cập nhật nhanh)
+            setCart(prev => {
+                const updated = [...prev];
+                const index = updated.findIndex(i => i.products._id === item._id);
+                if (index >= 0) {
+                    updated[index] = {
+                        ...updated[index],
+                        quantity: updated[index].quantity + 1
+                    };
+                } else {
+                    updated.push({ products: item, quantity: 1 });
+                }
+                return updated;
+            });
+
+            // Gửi request lên server
+            await api.post(`/s2d/cartdetail`, {
                 cart: customer.cart,
                 products: item._id,
-                quantity: 1 // chỉnh lại khi thêm = menu chi tiết
-
+                quantity: 1
             });
-            await fetchCart();
+
+            // GỌI LẠI fetchCart ĐỂ CẬP NHẬT GIÁ ĐÚNG TỪ SERVER
+            fetchCart();
+
         } catch (error) {
             console.error("Lỗi khi thêm vào giỏ hàng:", error);
             alert("Thêm thất bại");
         }
     };
 
+
+
+
     //Xóa khỏi giỏ hàng
     const removeFromCart = async (item) => {
         try {
-            const res = api.delete(`/s2d/cartdetail`, {
-                cart: customer.cart,
-                products: item._id,
-                quantity: 1
+            // Cập nhật nhanh UI
+            setCart(prev => {
+                const updated = [...prev];
+                const index = updated.findIndex(i => i.products._id === item._id);
+                if (index >= 0) {
+                    if (updated[index].quantity > 1) {
+                        updated[index] = {
+                            ...updated[index],
+                            quantity: updated[index].quantity - 1
+                        };
+                    } else {
+                        updated.splice(index, 1); // Xóa luôn nếu số lượng về 0
+                    }
+                }
+                return updated;
             });
-            await fetchCart();
-        } catch (error) {
 
+            // Cập nhật số lượng và tổng giá
+            setTotalItems(prev => prev - 1);
+            setTotalPrice(prev => prev - item.price);
+
+            // Gửi request đến server
+            await api.delete(`/s2d/cartdetail`, {
+                data: {
+                    cart: customer.cart,
+                    products: item._id,
+                    quantity: 1
+                }
+            });
+
+        } catch (error) {
+            console.error("Lỗi khi xóa khỏi giỏ hàng:", error);
+            alert("Xóa sản phẩm thất bại");
         }
     };
 
 
+
+
     const getItemQuantity = (itemId) => {
+        if (!Array.isArray(cart)) return 0;
         const cartItem = cart.find(item => item.products._id === itemId);
         return cartItem ? cartItem.quantity : 0;
     };
-
 
 
     return (
@@ -153,6 +206,7 @@ export const Menu = ({ direction }) => {
                         totalItems={totalItems}
                         totalPrice={totalPrice}
                     />
+
                 )}
             </div>
         </PageWrapper>
