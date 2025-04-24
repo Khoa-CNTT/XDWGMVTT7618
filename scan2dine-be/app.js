@@ -14,8 +14,9 @@ const foodstallRoute = require('./routes/foodstall');
 const reviewRoute = require('./routes/review');
 const orderRoute = require('./routes/order');
 const orderdetailRoute = require('./routes/orderdetail');
-const tableRoue = require('./routes/table');
-const userRoue = require('./routes/User');
+const tableRoute = require('./routes/table');
+const userRoute = require('./routes/User');
+const roleRoute = require('./routes/role')
 var app = express();
 const dotenv = require("dotenv");
 dotenv.config();
@@ -59,8 +60,9 @@ app.use('/s2d/foodstall', foodstallRoute);
 app.use('/s2d/review', reviewRoute);
 app.use('/s2d/order', orderRoute);
 app.use('/s2d/orderdetail', orderdetailRoute);
-app.use('/s2d/table', tableRoue);
-app.use('/s2d/user', userRoue);
+app.use('/s2d/table', tableRoute);
+app.use('/s2d/user', userRoute);
+app.use('/s2d/role',roleRoute);
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));

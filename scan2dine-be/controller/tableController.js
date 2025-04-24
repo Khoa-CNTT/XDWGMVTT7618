@@ -6,16 +6,16 @@ const tableController = {
         try {
             const lastTable = await Table.findOne().sort({ tb_number: -1 });
             console.log("Last table:", lastTable);
-    
+
             const nextTableNumber = lastTable ? lastTable.tb_number + 1 : 1;
-    
+
             const newTable = new Table({
                 ...req.body,
                 tb_number: nextTableNumber,
             });
-    
+
             const saved = await newTable.save();
-    
+
             return res.status(200).json({
                 ...saved.toObject(),
                 name: `Bàn ${saved.tb_number}`
@@ -52,26 +52,57 @@ const tableController = {
             return res.status(500).json("Error deleting table: " + error.message);
         }
     },
+    // updatetable: async (req, res) => {
+    //     try {
+    //         const tableID = await Table.findById(req.params.id);
+    //         if (!tableID) {
+    //             return res.status(404).json('not found')
+    //         }
+
+    //         if (tableID.order && tableID.order !== req.body.order?.toString()) {
+    //             await Order.findByIdAndUpdate(tableID.order, {
+    //                 table: tableID._id,
+    //             })
+    //         }
+    //         const updateTable = await Table.findByIdAndUpdate(req.params.id, req.body, {
+    //             new: true
+    //         })
+    //         return res.status(200).json({ message: "Update successfully", update: updateTable });
+    //     } catch (error) {
+
+    //     }
+    // }
     updatetable: async (req, res) => {
         try {
             const tableID = await Table.findById(req.params.id);
             if (!tableID) {
-                return res.status(404).json('not found')
+                return res.status(404).json('Table not found');
             }
 
+            // Kiểm tra và cập nhật order nếu có sự thay đổi
             if (tableID.order && tableID.order !== req.body.order?.toString()) {
                 await Order.findByIdAndUpdate(tableID.order, {
                     table: tableID._id,
-                })
+                });
             }
-            const updateTable = await Table.findByIdAndUpdate(req.params.id, req.body, {
-                new: true
-            })
+
+            // Cập nhật status nếu có trong req.body
+            if (req.body.status) {
+                tableID.status = req.body.status;
+            }
+
+            // Cập nhật các trường khác (nếu cần thiết) bằng req.body
+            const updateTable = await Table.findByIdAndUpdate(req.params.id, {
+                status: tableID.status,  // Cập nhật status đã thay đổi
+                order: req.body.order || tableID.order,  // Cập nhật order nếu có thay đổi
+                // Có thể thêm các trường khác ở đây nếu cần
+            }, { new: true });
+
             return res.status(200).json({ message: "Update successfully", update: updateTable });
         } catch (error) {
-
+            console.error(error);  // Log lỗi để dễ dàng kiểm tra
+            return res.status(500).json({ message: "An error occurred", error: error.message });
         }
-    }
-
-    }
+    },
+}
 module.exports = tableController;

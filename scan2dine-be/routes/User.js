@@ -5,9 +5,9 @@ const mongoose = require('mongoose');
 
 // router.get('/',userController.getAllUser);
 // ROUTES CỤ THỂ — đặt TRƯỚC
+router.get('/', userController.getAllUsers);
 router.post('/register', userController.register);
 router.post('/login', userController.login);
-router.get('/', userController.getAllUser);
 router.post('/', userController.addUser);
 
 // ROUTES CÓ THAM SỐ — đặt SAU CÙNG
