@@ -119,7 +119,7 @@ const cartController = {
             }
             // Cập nhật mảng orders trong Customer
             await Customer.findByIdAndUpdate(customerId, {
-                $push: { order: newOrder._id } // Đúng là `orders`, không phải `order`
+                $push: { order: newOrder._id } 
             });
             // Tạo mảng orderdetail để trả về
             const orderItemsToReturn = cartDetails.map(item => ({
