@@ -1,4 +1,4 @@
-const {Order, Customer, Table, OrderDetail} = require('../model/model');
+const {Order, Customer, Table, Orderdetail} = require('../model/model');
 const orderController = {
     // ADD ORDER
     addOrder: async (req, res) => {
@@ -37,6 +37,31 @@ const orderController = {
             res.status(500).json({ message: "Server error", error: error.message || error });
         }
     }, 
+    getAorder: async (req, res) => {
+        try {
+            const getAorder = await Order.findById(req.params.id)
+                .populate({
+                    path: "orderdetail",
+                    select: "quantity products",
+                    populate: {
+                        path: "products",
+                        select: "pd_name price stall",
+                        populate: {
+                            path: "stall",
+                            select: "stall_name"
+                        }
+                    }
+                });
+
+            if (!getAorder) {
+                return res.status(404).json('not found');
+            };
+            res.status(200).json(getAorder);
+        } catch (error) {
+            console.error("Error in DELETEREVIEW:", error);
+            return res.status(500).json({ message: "Server error", error: error.message || error });
+        }
+    },
     // UPDATE ORDER
     updateOrder: async(req,res) =>{
         try {
