@@ -104,5 +104,17 @@ const tableController = {
             return res.status(500).json({ message: "An error occurred", error: error.message });
         }
     },
+    // lấy order hiện tại của bàn đó ra
+    getCurrentOrderByTable: async (req, res) => {
+        try {
+            const table = await Table.findById(req.params.id);
+            if (!table) {
+                return res.status(404).json("Table not found");
+            }
+            res.status(200).json(table);
+        } catch (error) {
+            return res.status(500).json({ message: "Server error", error: error.message });
+        }
+    }
 }
 module.exports = tableController;
