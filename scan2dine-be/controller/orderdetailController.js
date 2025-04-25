@@ -25,13 +25,13 @@ const orderdetailCOntroller = {
                     }
                 })
             }
-            res.status(200).json({
+            return res.status(200).json({
                 message: upProduttoorderdetail.updated ? "Tăng số lượng sản phẩm trong đơn hàng " : "Thêm sản phẩm vào đơn hàng ",
                 order: upProduttoorderdetail
             });
-        } catch (error) {
+        } catch (error) {   
             console.error("Error in DELETEREVIEW:", error);
-            res.status(500).json({ message: "Server error", error: error.message || error });
+            return res.status(500).json({ message: "Server error", error: error.message || error });
         }
 
     },
