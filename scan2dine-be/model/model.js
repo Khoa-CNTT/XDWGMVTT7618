@@ -148,6 +148,8 @@ const orderSchema = new mongoose.Schema({
   },
   od_status: {
     type: String,
+    enum: ['Chưa thanh toán', 'Thanh toán'],  // danh sách các trạng thái hợp lệ
+    default: "Chưa thanh toán"
   },
   orderdetail: [
     {
@@ -180,6 +182,8 @@ const orderdetailSchema = new mongoose.Schema({
   },
   status: {
     type: String,
+    default: "Chờ xác nhận",
+    enum: ['Chờ xác nhận', 'Xác nhận', 'Đang xử lý', 'Hoàn thành'],  // danh sách các trạng thái hợp lệ
   },
 }, { collection: 'ORDERDETAIL' });
 const tableSchema = new mongoose.Schema({

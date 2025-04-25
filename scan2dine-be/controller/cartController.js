@@ -89,7 +89,7 @@ const cartController = {
             const newOrder = new Order({
                 customer: customerId,
                 table: table,
-                status: 'pending'
+                status: 'Chưa thanh toán'
             });
             await newOrder.save();
 
@@ -98,7 +98,7 @@ const cartController = {
                 order: newOrder._id,  // Liên kết OrderDetail với Order
                 products: item.products._id,  // Sử dụng item.products._id
                 quantity: item.quantity,
-                status: 'pending'
+                status: 'Chờ xác nhận'
             }));
             const orderDetails = await Orderdetail.insertMany(orderDetailDocs);
 
@@ -144,7 +144,7 @@ const cartController = {
                     customer: populatedOrder.customer,
                     table: populatedOrder.table,
                     orderdetail: orderItemsToReturn,
-                    status: populatedOrder.status,
+                    status: populatedOrder.od_status,
                     createdAt: formattedCreatedAt
                 }
             });
