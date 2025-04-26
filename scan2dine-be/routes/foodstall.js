@@ -4,6 +4,7 @@ const foodstallController = require("../controller/foodstallController");
 
 // router.get("/", foodstallController.getAllFoodstall);
 router.get("/", foodstallController.getAllFoodstall);
+router.get("/search/:id", foodstallController.getFoodstallByTableNumber);
 router.post("/", foodstallController.addFoodstall);
 router.delete("/:id", foodstallController.deleteFoodstall);
 router.put("/:id", foodstallController.updateFoodstall);

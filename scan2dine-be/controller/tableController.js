@@ -107,16 +107,19 @@ const tableController = {
     // lấy order hiện tại của bàn đó ra
     getCurrentOrderByTable: async (req, res) => {
         try {
-            // Tìm bàn
+            // Tìm bàn theo ID từ params
             const table = await Table.findById(req.params.id);
             if (!table) {
                 return res.status(404).json({ message: "Table not found" });
             }
     
-            // Tìm tất cả đơn hàng "Chưa thanh toán" của bàn
-            const orders = await Order.find({ 
-                table: table._id, 
-                od_status: "Chưa thanh toán" 
+            // Log để kiểm tra thông tin bàn
+            console.log("Table found:", table);
+    
+            // Lọc các đơn hàng có trạng thái "Chưa thanh toán" (mã trạng thái "2")
+            const orders = await Order.find({
+                table: table._id,
+                od_status: "Chưa thanh toán"  // Trạng thái "Chưa thanh toán"
             })
             .populate({
                 path: 'orderdetail',
@@ -124,32 +127,53 @@ const tableController = {
                     path: 'products', // trong Orderdetail -> products (chính là Product)
                     model: 'Product'
                 }
-            });
+            })
+            .populate('customer')  // Thêm thông tin khách hàng vào đơn hàng
+            .populate('payment')   // Thêm thông tin thanh toán (nếu có)
+            .populate('notification')  // Thêm thông báo (nếu có)
+            .populate('table');    // Thêm thông tin bàn vào đơn hàng
+    
+            // Log để kiểm tra thông tin các đơn hàng của bàn
+            console.log("Orders found:", orders);
     
             if (orders.length === 0) {
-                return res.status(404).json({ message: "No active orders for this table" });
+                return res.status(404).json({ message: "No unpaid orders for this table" });
             }
     
             // Xử lý danh sách sản phẩm từ tất cả các đơn hàng
             const ordersDetails = orders.map(order => ({
                 orderId: order._id,
+                status: order.od_status,
+                customer: {
+                    name: order.customer.name,
+                    phone: order.customer.phone,
+                    email: order.customer.email, // Thêm thông tin khách hàng (email)
+                },
+                tableNumber: order.table ? order.table.tb_number : "Not assigned", // Thêm thông tin số bàn
+                totalAmount: order.total_amount,
+                orderNote: order.od_note,
+                paymentStatus: order.payment ? order.payment.status : "Not paid", // Trạng thái thanh toán
                 products: order.orderdetail.map(detail => ({
                     productName: detail.products.pd_name,
                     price: detail.products.price,
                     quantity: detail.quantity,
                     totalPrice: detail.quantity * detail.products.price
                 })),
-                totalAmount: order.total_amount
+                updatedAt: order.updatedAt,
+                createdAt: order.od_date,
             }));
     
+            // Trả về thông tin bàn và các đơn hàng
             res.status(200).json({
                 tableNumber: table.tb_number,
                 orders: ordersDetails
             });
     
         } catch (error) {
+            // Log lỗi và trả về thông báo lỗi
+            console.error("Error fetching orders:", error);
             return res.status(500).json({ message: "Server error", error: error.message });
         }
-    }    
+    }, 
 }
 module.exports = tableController;
