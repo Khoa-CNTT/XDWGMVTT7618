@@ -1,6 +1,6 @@
 import React, { useRef, useState } from 'react';
-import ProductDetail from './ProductDetail';
-import FlyItem from './FlyItem';
+import ProductDetail from './C_ProductDetail';
+import FlyItem from './C_FlyItem';
 import { FaPlus, FaMinus } from 'react-icons/fa';
 
 export const MenuItem = ({ item, onAddToCart, onRemoveFromCart, quantity }) => {
@@ -118,4 +118,3 @@ export const MenuItem = ({ item, onAddToCart, onRemoveFromCart, quantity }) => {
 };
 
 export default MenuItem;
-  

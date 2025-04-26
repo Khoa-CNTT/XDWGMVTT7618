@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { FaArrowLeft, FaMinus, FaPlus, FaStore } from 'react-icons/fa';
+import { FaArrowLeft, FaMinus, FaPlus, FaStore, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import api from '../server/api';
 
@@ -9,6 +9,8 @@ const CartDetails = () => {
   const [loading, setLoading] = useState(true);
   const [expandedCounters, setExpandedCounters] = useState([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
+
+  const [orderResult, setOrderResult] = useState(null); //state lưu order
 
   //lấy thông tin cusomer
   const customer = JSON.parse(sessionStorage.getItem('customer'));
@@ -23,25 +25,16 @@ const CartDetails = () => {
       //   setLoading(false);
       //   return;
       // }
-
-      setLoading(true); // bật loading trước khi gọi API
-
       const [cartDetailRes, foodstallRes] = await Promise.all([
         api.get('/s2d/cartdetail'),
         api.get('/s2d/foodstall')
       ]);
-      console.log('Cart details:', cartDetailRes.data);
-      // console.log('Food stalls:', foodstallRes.data);
-      // console.log("Cart details:", cartDetailRes.data);
-      console.log("Customer cart ID:", customer?.cart);
 
       // Lọc những item thuộc cart hiện tại
       const currentCartItems = cartDetailRes.data.filter(
         item => item.cart._id === customer.cart
 
       );
-
-      console.log("currentCartItems", currentCartItems);
 
       // Tạo map foodstall: id -> { name, itemCount }
       const foodstallMap = Object.fromEntries(
@@ -114,10 +107,11 @@ const CartDetails = () => {
 
   const handleConfirmOrder = async () => {
     try {
-      await api.post('/s2d/cart/confirm', {
+      const res = await api.post('/s2d/cart/confirm', {
         cart: customer.cart,
         table: customer.idTable
       });
+      setOrderResult(res.data);
       setShowConfirmation(true);
     } catch (error) {
       console.error('Error confirming order:', error);
@@ -126,10 +120,8 @@ const CartDetails = () => {
 
   const handleUnderstand = () => {
     setShowConfirmation(false);
-    navigate('/orderdetail');
+    navigate('/orderdetail', { state: { orderData: orderResult } }); // truyền qua state  
   };
-
-  if (loading) return <div>Loading...</div>;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl overflow-hidden relative">
@@ -152,9 +144,19 @@ const CartDetails = () => {
                 </div>
                 <span className="text-sm text-gray-400">{stall.location}</span>
               </div>
+              {/* <button
+                className="text-primary mr-2 text-sm font-medium"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleEdit(counter.id);
+                }}
+              >
+                {editingCounter === counter.id ? 'Xong' : 'Sửa'}
+              </button> */}
               <button onClick={() => toggleCounter(stallId)} className="text-primary">
-                {expandedCounters.includes(stallId) ? 'Ẩn' : 'Sửa'}
+                {expandedCounters.includes(stallId) ? <FaChevronUp /> : <FaChevronDown />}
               </button>
+
             </div>
 
             {expandedCounters.includes(stallId) && stall.items.map((item) => (

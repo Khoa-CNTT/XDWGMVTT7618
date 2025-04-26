@@ -139,7 +139,7 @@ const tableController = {
             if (orders.length === 0) {
                 return res.status(404).json({ message: "No unpaid orders for this table" });
             }
-    
+
             // Xử lý danh sách sản phẩm từ tất cả các đơn hàng
             const ordersDetails = orders.map(order => ({
                 orderId: order._id,
@@ -162,18 +162,20 @@ const tableController = {
                 updatedAt: order.updatedAt,
                 createdAt: order.od_date,
             }));
-    
+
             // Trả về thông tin bàn và các đơn hàng
             res.status(200).json({
                 tableNumber: table.tb_number,
                 orders: ordersDetails
             });
-    
+
         } catch (error) {
             // Log lỗi và trả về thông báo lỗi
             console.error("Error fetching orders:", error);
             return res.status(500).json({ message: "Server error", error: error.message });
         }
+
+
     }, 
 }
 module.exports = tableController;

@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { FaTimes } from 'react-icons/fa';
-import FlyItem from './FlyItem';
+import FlyItem from './C_FlyItem';
 import { addToCartDetail } from '../server/cartService';
 
 function ProductDetail({ item, product, onClose, onAddToCart }) {
