@@ -112,24 +112,24 @@ const tableController = {
             if (!table) {
                 return res.status(404).json({ message: "Table not found" });
             }
-    
+
             // Tìm tất cả đơn hàng "Chưa thanh toán" của bàn
-            const orders = await Order.find({ 
-                table: table._id, 
-                od_status: "Chưa thanh toán" 
+            const orders = await Order.find({
+                table: table._id,
+                od_status: "Chưa thanh toán"
             })
-            .populate({
-                path: 'orderdetail',
-                populate: {
-                    path: 'products', // trong Orderdetail -> products (chính là Product)
-                    model: 'Product'
-                }
-            });
-    
+                .populate({
+                    path: 'orderdetail',
+                    populate: {
+                        path: 'products', // trong Orderdetail -> products (chính là Product)
+                        model: 'Product'
+                    }
+                });
+
             if (orders.length === 0) {
                 return res.status(404).json({ message: "No active orders for this table" });
             }
-    
+
             // Xử lý danh sách sản phẩm từ tất cả các đơn hàng
             const ordersDetails = orders.map(order => ({
                 orderId: order._id,
@@ -141,15 +141,15 @@ const tableController = {
                 })),
                 totalAmount: order.total_amount
             }));
-    
+
             res.status(200).json({
                 tableNumber: table.tb_number,
                 orders: ordersDetails
             });
-    
+
         } catch (error) {
             return res.status(500).json({ message: "Server error", error: error.message });
         }
-    }    
+    }
 }
 module.exports = tableController;

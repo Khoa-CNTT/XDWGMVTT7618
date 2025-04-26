@@ -31,7 +31,6 @@ export default function UserManagementSystem() {
             try {
                 const getUsers = await api.get('/s2d/user');
                 setUsers(getUsers.data);
-
             } catch (error) {
                 console.error('Lỗi khi tải danh mục sản phẩm:', error);
             }
@@ -110,6 +109,17 @@ export default function UserManagementSystem() {
             return 0;
         }
     });
+
+    //custom roll name
+    const getRoleInfo = (roleName) => {
+        const roleMap = {
+            '1': { text: 'Nhân Viên', color: 'bg-blue-100 text-blue-800' },
+            '2': { text: 'Chủ Quầy', color: 'bg-green-100 text-green-800' },
+            '3': { text: 'Quản Trị Viên', color: 'bg-red-100 text-red-800' },
+        };
+
+        return roleMap[roleName] || { text: 'Unknown', color: 'bg-gray-100 text-gray-800' };
+    };
 
     return (
         <div className="bg-gray-100 p-6">
@@ -211,7 +221,7 @@ export default function UserManagementSystem() {
                                             <td className="py-3 px-4">{index + 1}</td>
 
                                             {/* ID */}
-                                            <td className="py-3 px-4">{user._id}</td>
+                                            <td className="py-3 px-4 uppercase">{user._id}</td>
 
                                             {/* Họ và tên */}
                                             <td className="py-3 px-4">{user.full_name}</td>
@@ -221,17 +231,17 @@ export default function UserManagementSystem() {
 
                                             {/* Vai trò */}
                                             <td className="py-3 px-4">
-                                                <span
-                                                    className={`px-2 py-1 rounded-full text-xs font-medium ${user.role_name === '3'
-                                                        ? 'bg-red-100 text-red-800'
-                                                        : user.role_name === '1'
-                                                            ? 'bg-blue-100 text-blue-800'
-                                                            : 'bg-green-100 text-green-800'
-                                                        }`}
-                                                >
-                                                    {user.role_id.role_name}
-                                                </span>
+                                                {(() => {
+                                                    const role = getRoleInfo(user.role_id?.role_name);
+
+                                                    return (
+                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${role.color}`}>
+                                                            {role.text}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </td>
+
 
                                             {/* Thao tác */}
                                             <td className="py-3 px-4">

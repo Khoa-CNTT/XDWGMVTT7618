@@ -10,9 +10,9 @@ import { EmployeePage } from './pages/EmployeePage';
 import { AdminPage } from './pages/AdminPage';
 import CustomerLogin from './pages/FillInfo';
 import PrivateRoute from './components/PrivateRoute';
-import CartDetail from './components/CartDetail';
-import OrderDetail from './components/OrderDetail';
-import CustomerRoute from './components/CustomerRoute';
+import CartDetail from './components/C_CartDetail';
+import OrderDetail from './components/C_OrderDetail';
+import CustomerRoute from './components/C_CustomerRoute';
 import { Owner } from './pages/Owner';
 
 function App() {
@@ -34,6 +34,7 @@ function App() {
         <Route path="/login" element={<Login direction={direction} />} />
 
         <Route path="/employee/*" element={<PrivateRoute><EmployeePage direction={direction} /></PrivateRoute>} />
+
         <Route path="/admin/*" element={<PrivateRoute><AdminPage direction={direction} /></PrivateRoute>} />
         <Route path="/owner/*" element={<PrivateRoute><Owner direction={direction} /></PrivateRoute>} />
       </Routes>

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import BannerSlider from '../components/BannerSlider';
+import BannerSlider from '../components/C_BannerSlider';
 import imgBtnGoiMon from '../assets/img/btngoimon3.jpg';
 import imgBtnDanhGia from '../assets/img/btndanhgia2.jpg';
 import imgBtnGoiNV from '../assets/img/btngoinv.jpg';

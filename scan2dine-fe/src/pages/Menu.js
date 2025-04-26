@@ -1,11 +1,11 @@
 // Menu.jsx
 import React, { useEffect, useState } from 'react';
-import MenuItem from '../components/MenuItem';
+import MenuItem from '../components/C_MenuItem';
 import PageWrapper from '../components/PageWrapper';
 import api from '../server/api';
-import CartBar from '../components/Carbar';
+import CartBar from '../components/C_Carbar';
 import { FaArrowLeft } from 'react-icons/fa';
-import { CategoryFilter } from '../components/CategoryFilter';
+import { CategoryFilter } from '../components/C_CategoryFilter';
 import { useNavigate } from 'react-router-dom';
 import { removeFromCartDetail } from '../server/cartService';
 
