@@ -33,7 +33,7 @@ export const Login = () => {
                     navigate('/employee');
                     break;
                 case '2':
-                    navigate('/owner-dashboard');
+                    navigate('/owner');
                     break;
                 case '3':
                     navigate('/admin');

@@ -13,7 +13,7 @@ import PrivateRoute from './components/PrivateRoute';
 import CartDetail from './components/CartDetail';
 import OrderDetail from './components/OrderDetail';
 import CustomerRoute from './components/CustomerRoute';
-
+import { Owner } from './pages/Owner';
 
 function App() {
   const location = useLocation();
@@ -35,6 +35,7 @@ function App() {
 
         <Route path="/employee/*" element={<PrivateRoute><EmployeePage direction={direction} /></PrivateRoute>} />
         <Route path="/admin/*" element={<PrivateRoute><AdminPage direction={direction} /></PrivateRoute>} />
+        <Route path="/owner/*" element={<PrivateRoute><Owner direction={direction} /></PrivateRoute>} />
       </Routes>
     </AnimatePresence>
   );
