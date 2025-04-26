@@ -2,6 +2,7 @@ const { Cart, Customer, Table, CartDetail, Orderdetail, Order, Product } = requi
 const { creatCart } = require('../service/cartService');
 const { deleteCartDetailsByCartId } = require('../utils/cartUtils');
 const moment = require('moment');
+const { mergeDuplicateOrderDetails } = require('../utils/orderUtils');
 const cartController = {
     // add a cart
     addCart: async (req, res) => {
@@ -71,86 +72,91 @@ const cartController = {
     createOrderFromCart: async (req, res) => {
         try {
             const { cart, table } = req.body;
-            console.log('req.body:', req.body);
 
-            // Tìm giỏ hàng bằng ID
             const cartID = await Cart.findById(cart);
             if (!cartID) return res.status(404).json({ message: 'Không tìm thấy giỏ hàng' });
 
-            const customerId = cartID.customer;  // Sử dụng cartID.customer để lấy customer
-
-            // Lấy các chi tiết giỏ hàng
+            const customerId = cartID.customer;
             const cartDetails = await CartDetail.find({ cart: cartID._id }).populate('products');
-            if (cartDetails.length === 0) {
-                return res.status(400).json({ message: 'Giỏ hàng trống!' });
-            }
+            if (cartDetails.length === 0) return res.status(400).json({ message: 'Giỏ hàng trống!' });
 
-            // Tạo đơn hàng
-            const newOrder = new Order({
+            let existingOrder = await Order.findOne({
                 customer: customerId,
-                table: table,
-                status: 'Chưa thanh toán'
-            });
-            await newOrder.save();
-
-            // Tạo chi tiết đơn hàng từ giỏ hàng
-            const orderDetailDocs = cartDetails.map(item => ({
-                order: newOrder._id,  // Liên kết OrderDetail với Order
-                products: item.products._id,  // Sử dụng item.products._id
-                quantity: item.quantity,
-                status: 'Chờ xác nhận'
-            }));
-            const orderDetails = await Orderdetail.insertMany(orderDetailDocs);
-
-            // Cập nhật lại trường orderdetail trong Order để lưu các ID của OrderDetail
-            newOrder.orderdetail = orderDetails.map(od => od._id);
-            await newOrder.save();  // Lưu lại đơn hàng với các orderdetail
-
-            // Cập nhật mảng orders trong Table
-            await Table.findByIdAndUpdate(table, {
-                $push: { order: newOrder._id }  // Thêm ID của Order vào mảng order trong Table
+                od_status: 'Chưa thanh toán'
             });
 
-            // Cập nhật orderDetails vào trong sản phẩm
-            for (let item of orderDetails) {
-                await Product.findByIdAndUpdate(item.products, {
-                    $push: { orderdetail: item._id }  // Thêm ID của OrderDetail vào mảng orderdetails của sản phẩm
+            if (!existingOrder) {
+                existingOrder = new Order({
+                    customer: customerId,
+                    table: table,
+                    od_status: 'Chưa thanh toán'
                 });
+                await existingOrder.save();
+                await Table.findByIdAndUpdate(table, { $push: { order: existingOrder._id } });
+                await Customer.findByIdAndUpdate(customerId, { $push: { order: existingOrder._id } });
             }
-            // Cập nhật mảng orders trong Customer
-            await Customer.findByIdAndUpdate(customerId, {
-                $push: { order: newOrder._id } 
-            });
-            // Tạo mảng orderdetail để trả về
-            const orderItemsToReturn = cartDetails.map(item => ({
-                product: item.products._id,  // Sử dụng item.products._id
-                name: item.products.name,    // item.products.name
-                price: item.products.price,  // item.products.price
-                quantity: item.quantity,
-                total: item.products.price * item.quantity
-            }));
 
-            // Xóa các chi tiết giỏ hàng đã xử lý
+            const orderDetails = [];
+
+            for (const item of cartDetails) {
+                const existingDetail = await Orderdetail.findOne({
+                    order: existingOrder._id,
+                    products: item.products._id,
+                    status: 'Chờ xác nhận'
+                });
+
+                if (existingDetail) {
+                    existingDetail.quantity += item.quantity;
+                    await existingDetail.save();
+                    orderDetails.push(existingDetail);
+                } else {
+                    const newDetail = await Orderdetail.create({
+                        order: existingOrder._id,
+                        products: item.products._id,
+                        quantity: item.quantity,
+                        status: 'Chờ xác nhận'
+                    });
+                    orderDetails.push(newDetail);
+                    await Product.findByIdAndUpdate(item.products._id, {
+                        $push: { orderdetail: newDetail._id }
+                    });
+                    existingOrder.orderdetail.push(newDetail._id);
+                }
+            }
+
+            await existingOrder.save();
+
+            // Gọi mergeDuplicateOrderDetails để dọn sạch các OrderDetail trùng lặp
+            await mergeDuplicateOrderDetails(existingOrder._id);
+
+            // Xoá cart detail sau khi xử lý xong
             await deleteCartDetailsByCartId(cartID._id);
 
-            const populatedOrder = await Order.findById(newOrder._id)
-            .populate('customer', "name phone")  // Populate thông tin chi tiết của customer
-            .populate('table', "tb_number");
-            const formattedCreatedAt = moment(populatedOrder.createdAt).format('DD/MM/YYYY HH:mm:ss'); // Nếu bạn muốn hiển thị thêm info của table
+            const populatedOrder = await Order.findById(existingOrder._id)
+                .populate('customer', 'name phone')
+                .populate('table', 'tb_number');
+
+            const orderItemsToReturn = orderDetails.map(item => ({
+                product: item.products,
+                quantity: item.quantity
+            }));
+
+            const formattedCreatedAt = moment(populatedOrder.createdAt).format('DD/MM/YYYY HH:mm:ss');
+
             res.status(201).json({
-                message: 'Đơn hàng đã được tạo thành công!',
+                message: 'Đơn hàng đã được xử lý thành công!',
                 order: {
                     _id: populatedOrder._id,
                     customer: populatedOrder.customer,
                     table: populatedOrder.table,
                     orderdetail: orderItemsToReturn,
-                    status: populatedOrder.od_status,
+                    status: populatedOrder.status,
                     createdAt: formattedCreatedAt
                 }
             });
 
         } catch (error) {
-            console.error('Lỗi khi xác nhận giỏ hàng:', error);
+            console.error('Lỗi khi xử lý đơn hàng từ giỏ:', error);
             res.status(500).json({ message: 'Lỗi server', error: error.message });
         }
     }

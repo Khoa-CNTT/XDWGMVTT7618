@@ -1,6 +1,6 @@
 const { Orderdetail, Order, Product } = require('../model/model');
 const { increaseOrderQuantity, decreaseOrderQuantity } = require('../service/orderdetailService');
-
+const { updateOrderDetailStatus } = require('../utils/orderDetailUtils');
 const orderdetailCOntroller = {
     // ADD OERDER DETAIL
     addOrderdetail: async (req, res) => {
@@ -161,6 +161,21 @@ const orderdetailCOntroller = {
         } catch (error) {
             console.error("Error in downQuantity:", error);
             res.status(500).json({ message: "Server error", error: error.message || error });
+        }
+    },
+
+    updateOrderdetailStatus: async (req, res) => {
+        try {
+            const {orderdetail } = req.params;
+            const { order, newStatus } = req.body;
+            const updateStatus = await updateOrderDetailStatus(order, orderdetail, newStatus);
+            return res.status(200).json({
+                message: "Cập nhật trạng thái thành công",
+                detail: updateStatus
+            });
+        } catch (error) {
+            console.error("Error in downQuantity:", error);
+            return res.status(500).json({ message: "Server error", error: error.message || error });
         }
     }
 }
