@@ -1,14 +1,29 @@
 const { default: mongoose } = require("mongoose");
-const { Product, Category, Foodstall ,User} = require("../model/model");
+const { Product, Category, Foodstall, User, Table } = require("../model/model");
 const foodstallController = {
   //  GET ALL FOODSTALL
   getAllFoodstall: async (req, res) => {
     try {
+      // Lấy danh sách quầy hàng
       const foodstalls = await Foodstall.find();
 
-      console.log("👉 Đã lấy danh sách quầy hàng:", foodstalls);
+      // Lấy tất cả sản phẩm của tất cả các quầy hàng
+      const allProducts = await Product.find({
+        stall_id: { $in: foodstalls.map(stall => stall._id) }
+      });
 
-      res.status(200).json(foodstalls);
+      // Ghép thông tin quầy hàng với sản phẩm của quầy hàng đó
+      const foodstallsWithProducts = foodstalls.map(stall => {
+        const stallProducts = allProducts.filter(product => product.stall_id.equals(stall._id));
+        return {
+          ...stall._doc,  // sao chép các thông tin quầy hàng
+          products: stallProducts  // thêm sản phẩm của quầy hàng vào
+        };
+      });
+
+      console.log("Đã lấy danh sách quầy hàng với sản phẩm:", foodstallsWithProducts);
+
+      res.status(200).json(foodstallsWithProducts);
     } catch (err) {
       console.error(" Lỗi khi lấy foodstall:", err);
       res.status(500).json({ error: err.message });
@@ -18,31 +33,31 @@ const foodstallController = {
 
   addFoodstall: async (req, res) => {
     try {
-        // Tạo mới Foodstall
-        const newStall = new Foodstall(req.body);
-        const saveStall = await newStall.save();
+      // Tạo mới Foodstall
+      const newStall = new Foodstall(req.body);
+      const saveStall = await newStall.save();
 
-        // Kiểm tra nếu có trường user và thực hiện cập nhật stall_id vào User
-        if (req.body.user) {
-            const userID = await User.findById(req.body.user);
-            if (!userID) {
-                return res.status(404).json({ message: "User not found" });
-            }
-
-            // Cập nhật stall_id vào User
-            await userID.updateOne({
-                $push: {
-                    stall_id: saveStall._id
-                }
-            });
+      // Kiểm tra nếu có trường user và thực hiện cập nhật stall_id vào User
+      if (req.body.user) {
+        const userID = await User.findById(req.body.user);
+        if (!userID) {
+          return res.status(404).json({ message: "User not found" });
         }
 
-        return res.status(200).json(saveStall); // Trả về Foodstall vừa tạo
+        // Cập nhật stall_id vào User
+        await userID.updateOne({
+          $push: {
+            stall_id: saveStall._id
+          }
+        });
+      }
+
+      return res.status(200).json(saveStall); // Trả về Foodstall vừa tạo
     } catch (error) {
-        console.error(error);
-        return res.status(500).json({ message: "Server error", error });
+      console.error(error);
+      return res.status(500).json({ message: "Server error", error });
     }
-},
+  },
 
 
 
@@ -80,20 +95,20 @@ const foodstallController = {
       if (!foodstall) {
         return { message: "Foodstall not found" };
       }
-  
+
       // Tìm các sản phẩm liên quan đến foodstall này
       const productsToDelete = await Product.find({ stall_id: stallId });
       if (productsToDelete.length > 0) {
         // Xóa các sản phẩm liên quan
         await Product.deleteMany({ stall_id: stallId });
-  
+
         // Cập nhật Category để loại bỏ sản phẩm đã xóa khỏi danh sách của Category
         await Category.updateMany(
           { products: { $in: productsToDelete.map((p) => p._id) } },
           { $pull: { products: { $in: productsToDelete.map((p) => p._id) } } }
         );
       }
-  
+
       // Xóa foodstall
       await foodstall.deleteOne();
       return { message: "Foodstall and related products deleted successfully" };
@@ -105,40 +120,40 @@ const foodstallController = {
 
   deleteFoodstall: async (req, res) => {
     try {
-        // Tìm foodstall cần xóa 
-        const foodstall = await Foodstall.findById(req.params.id);
-        if (!foodstall) {
-            return res.status(404).json({ message: "Foodstall not found" });
-        }
+      // Tìm foodstall cần xóa 
+      const foodstall = await Foodstall.findById(req.params.id);
+      if (!foodstall) {
+        return res.status(404).json({ message: "Foodstall not found" });
+      }
 
-        // Tìm các sản phẩm liên quan đến foodstall này
-        const productsToDelete = await Product.find({ stall_id: req.params.id });
-        if (productsToDelete.length > 0) {
-            console.log(`Found ${productsToDelete.length} products to delete`);
+      // Tìm các sản phẩm liên quan đến foodstall này
+      const productsToDelete = await Product.find({ stall_id: req.params.id });
+      if (productsToDelete.length > 0) {
+        console.log(`Found ${productsToDelete.length} products to delete`);
 
-            // Xóa các sản phẩm liên quan
-            await Product.deleteMany({ stall_id: req.params.id });
+        // Xóa các sản phẩm liên quan
+        await Product.deleteMany({ stall_id: req.params.id });
 
-            // Cập nhật Category để loại bỏ sản phẩm đã xóa khỏi danh sách của Category
-            await Category.updateMany(
-                { products: { $in: productsToDelete.map(p => p._id) } },
-                { $pull: { products: { $in: productsToDelete.map(p => p._id) } } }
-            );
+        // Cập nhật Category để loại bỏ sản phẩm đã xóa khỏi danh sách của Category
+        await Category.updateMany(
+          { products: { $in: productsToDelete.map(p => p._id) } },
+          { $pull: { products: { $in: productsToDelete.map(p => p._id) } } }
+        );
 
-            console.log("Products and Category updated after deletion");
-        }
+        console.log("Products and Category updated after deletion");
+      }
 
-        // Xóa foodstall
-        await foodstall.deleteOne();
+      // Xóa foodstall
+      await foodstall.deleteOne();
 
-        // Gửi phản hồi thành công
-        return res.status(200).json({
-            message: "Foodstall and related products deleted successfully",
-            foodstall: foodstall
-        });
+      // Gửi phản hồi thành công
+      return res.status(200).json({
+        message: "Foodstall and related products deleted successfully",
+        foodstall: foodstall
+      });
     } catch (error) {
-        console.error("Error in deleteFoodstall:", error);
-        return res.status(500).json({ message: "Server error", error: error.message || error });
+      console.error("Error in deleteFoodstall:", error);
+      return res.status(500).json({ message: "Server error", error: error.message || error });
     }
   },
   // UPDATE
@@ -177,5 +192,33 @@ const foodstallController = {
       res.status(500).json(error);
     }
   },
+  getFoodstallByTableNumber: async (req, res) => {
+    try {
+        // Lấy stall id từ params
+        const { id } = req.params;
+
+        // Tìm quầy theo _id
+        const foodstall = await Foodstall.findById(id);
+        if (!foodstall) {
+            return res.status(404).json({ message: "Không tìm thấy quầy hàng!" });
+        }
+
+        // Lấy tất cả sản phẩm thuộc quầy đó
+        const products = await Product.find({ stall_id: foodstall._id })
+            .select('pd_name price image description');
+
+        // Trả về thông tin quầy + danh sách sản phẩm
+        res.status(200).json({
+            stall_id: foodstall._id,
+            stallName: foodstall.stall_name,
+            location: foodstall.location,
+            products: products
+        });
+
+    } catch (error) {
+        console.error("Lỗi khi tìm kiếm quầy hàng:", error);
+        res.status(500).json({ error: error.message });
+    }
+},
 };
 module.exports = foodstallController;
