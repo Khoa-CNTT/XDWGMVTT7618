@@ -177,5 +177,37 @@ const tableController = {
 
 
     }, 
+    // xóa bàn khi có status bằng 1
+    deleteTableById : async (req, res) => {
+        try {
+          const tableId = req.params.id;
+      
+          // Tìm table theo id
+          const table = await Table.findById(tableId);
+      
+          if (!table) {
+            return res.status(404).json({ message: "Không tìm thấy bàn." });
+          }
+      
+          if (table.status !== "1") {
+            // Không xóa, trả về bàn + thông báo
+            return res.status(200).json({
+              message: "Không thể xóa. Bàn không có status = '1'.",
+              table: table,
+            });
+          }
+      
+          // Nếu status = "1", xóa bàn
+          const deletedTable = await Table.findByIdAndDelete(tableId);
+      
+          res.status(200).json({
+            message: "Xóa bàn thành công.",
+            table: deletedTable,
+          });
+        } catch (error) {
+          console.error(error);
+          res.status(500).json({ message: "Đã xảy ra lỗi server." });
+        }
+      },
 }
 module.exports = tableController;

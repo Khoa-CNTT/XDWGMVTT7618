@@ -7,7 +7,6 @@ router.post('/', tableController.addTable);
 router.delete('/:id', tableController.deleteTable);
 router.patch('/:id', tableController.updatetable);
 router.get('/current/:id', tableController.getCurrentOrderByTable);
-
-
+router.delete('/status/:id', tableController.deleteTableById);
 
 module.exports = router;
