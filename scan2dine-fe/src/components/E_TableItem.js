@@ -40,7 +40,7 @@ export const TableItem = ({ table }) => {
     return (
         <>
             <div
-                key={table.id}
+                key={table._id}
                 className={`${getTableColor(table.status)} rounded-lg p-4 shadow-sm`}
                 onClick={handleTableClick}>
                 <div className="text-xl font-bold">Bàn {table.tb_number}</div>
