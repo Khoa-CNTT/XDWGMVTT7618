@@ -113,6 +113,9 @@ const CartDetails = () => {
         cart: customer.cart,
         table: customer.idTable
       });
+      await api.patch(`/s2d/table/${customer.idTable}`, {
+        status: '3'
+      })
       setOrderResult(res.data);
       setShowConfirmation(true);
     } catch (error) {
