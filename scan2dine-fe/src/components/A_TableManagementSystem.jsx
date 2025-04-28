@@ -4,6 +4,7 @@ import { A_TableItem } from './A_TableItem';
 import api from '../server/api';
 import { A_TableDetail } from './A_TableDetail';
 import ConfirmModal from './ConfirmModal';
+import Alert from './Alert';
 
 export default function TableManagementSystem() {
     const [tables, setTables] = useState([]);
@@ -12,6 +13,7 @@ export default function TableManagementSystem() {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('all');
     const [showConfirmModal, setShowConfirmModal] = useState(false);
+    const [alert, setAlert] = useState(null);
 
 
     const fetchTable = async () => {
@@ -71,10 +73,12 @@ export default function TableManagementSystem() {
         try {
             const res = await api.post('/s2d/table');
             fetchTable();
-            alert('Thêm bàn thành công!');
+            setAlert({ type: 'success', message: 'Thêm bàn thành công!' });
+
         } catch (error) {
             console.error(error);
-            alert('Lỗi khi thêm bàn');
+            setAlert({ type: 'success', message: 'Thêm bàn thành công!' });
+
         }
     };
 
@@ -82,8 +86,9 @@ export default function TableManagementSystem() {
     const handleDeleteTable = async (id) => {
         try {
             await api.delete(`/s2d/table/status/${id}`);
-            alert('Xóa bàn thành công!');
+            setAlert({ type: 'success', message: 'Xóa bàn thành công!' });
             fetchTable()
+
         } catch (error) {
             console.error(error);
             alert('Xóa bàn thất bại!');
@@ -206,6 +211,13 @@ export default function TableManagementSystem() {
                         createNewTable();
                     }}
                     onCancel={() => setShowConfirmModal(false)}
+                />
+            )}
+            {alert && (
+                <Alert
+                    type={alert.type}
+                    message={alert.message}
+                    onClose={() => setAlert(null)}
                 />
             )}
         </div>

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FaArrowLeft, FaMapMarkerAlt, FaStore, FaPlus, FaMinus } from 'react-icons/fa';
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../server/api';
+import { Footer } from './Footer'
 
 const formatPrice = (price) => {
     return parseInt(price).toLocaleString() + 'đ';
@@ -10,8 +11,8 @@ const formatPrice = (price) => {
 const OrderDetail = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
-    const [editingCounter, setEditingCounter] = useState(null);
-    const [expandedCounters, setExpandedCounters] = useState([]);
+    // const [editingCounter, setEditingCounter] = useState(null);
+    // const [expandedCounters, setExpandedCounters] = useState([]);
 
     const [orderDetails, setOrderDetails] = useState({
         orderNumber: '',
@@ -100,41 +101,25 @@ const OrderDetail = () => {
         }
     };
 
-    const adjustQuantity = (itemId, delta) => {
-        setOrderDetails(prev => {
-            const updatedItems = prev.items.map(item =>
-                item.id === itemId
-                    ? { ...item, quantity: Math.max(item.quantity + delta, 1) }
-                    : item
-            );
+    // const adjustQuantity = (itemId, delta) => {
+    //     setOrderDetails(prev => {
+    //         const updatedItems = prev.items.map(item =>
+    //             item.id === itemId
+    //                 ? { ...item, quantity: Math.max(item.quantity + delta, 1) }
+    //                 : item
+    //         );
 
-            const newTotalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
-            const newTotalAmount = updatedItems.reduce((sum, item) => sum + (parseInt(item.price) * item.quantity), 0);
+    //         const newTotalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
+    //         const newTotalAmount = updatedItems.reduce((sum, item) => sum + (parseInt(item.price) * item.quantity), 0);
 
-            return {
-                ...prev,
-                items: updatedItems,
-                totalItems: newTotalItems,
-                totalAmount: newTotalAmount
-            };
-        });
-    };
-
-    const removeItem = (itemId) => {
-        setOrderDetails(prev => {
-            const updatedItems = prev.items.filter(item => item.id !== itemId);
-
-            const newTotalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
-            const newTotalAmount = updatedItems.reduce((sum, item) => sum + (parseInt(item.price) * item.quantity), 0);
-
-            return {
-                ...prev,
-                items: updatedItems,
-                totalItems: newTotalItems,
-                totalAmount: newTotalAmount
-            };
-        });
-    };
+    //         return {
+    //             ...prev,
+    //             items: updatedItems,
+    //             totalItems: newTotalItems,
+    //             totalAmount: newTotalAmount
+    //         };
+    //     });
+    // };
 
     const handleRequestMore = () => navigate('/menu');
     const handlePayment = () => console.log('Processing payment...');
@@ -258,10 +243,7 @@ const OrderDetail = () => {
             </div>
 
             {/* Footer */}
-            <div className="bg-gray-50 p-4 text-center text-sm text-gray-500 border-t">
-                <p>© 2025 SCAN2DINE - Ứng dụng đặt món thông minh</p>
-                <p className="mt-1">Mọi thắc mắc xin liên hệ: support@scan2dine.vn</p>
-            </div>
+            <Footer></Footer>
         </div>
     );
 };
