@@ -82,14 +82,14 @@ const cartController = {
 
             let existingOrder = await Order.findOne({
                 customer: customerId,
-                od_status: 'Chưa thanh toán'
+                od_status: '2'
             });
 
             if (!existingOrder) {
                 existingOrder = new Order({
                     customer: customerId,
                     table: table,
-                    od_status: 'Chưa thanh toán'
+                    od_status: '2'
                 });
                 await existingOrder.save();
                 await Table.findByIdAndUpdate(table, { $push: { order: existingOrder._id } });
@@ -102,7 +102,7 @@ const cartController = {
                 const existingDetail = await Orderdetail.findOne({
                     order: existingOrder._id,
                     products: item.products._id,
-                    status: 'Chờ xác nhận'
+                    status: '1'
                 });
 
                 if (existingDetail) {
@@ -114,7 +114,7 @@ const cartController = {
                         order: existingOrder._id,
                         products: item.products._id,
                         quantity: item.quantity,
-                        status: 'Chờ xác nhận'
+                        status: '1'
                     });
                     orderDetails.push(newDetail);
                     await Product.findByIdAndUpdate(item.products._id, {
@@ -150,7 +150,7 @@ const cartController = {
                     customer: populatedOrder.customer,
                     table: populatedOrder.table,
                     orderdetail: orderItemsToReturn,
-                    status: populatedOrder.status,
+                    status: populatedOrder.od_status,
                     createdAt: formattedCreatedAt
                 }
             });
