@@ -107,6 +107,8 @@ const CartDetails = () => {
 
   const handleConfirmOrder = async () => {
     try {
+
+
       const res = await api.post('/s2d/cart/confirm', {
         cart: customer.cart,
         table: customer.idTable

@@ -80,7 +80,7 @@ export const Menu = ({ direction }) => {
             // Cập nhật UI trước (nếu muốn cập nhật nhanh)
             setCart(prev => {
                 const updated = [...prev];
-                const index = updated.findIndex(i => i.products._id === item._id);
+                const index = updated.findIndex(i => i.products && i.products._id === item._id);
                 if (index >= 0) {
                     updated[index] = {
                         ...updated[index],
@@ -92,6 +92,8 @@ export const Menu = ({ direction }) => {
                 return updated;
             });
 
+            setTotalItems(prev => prev + 1);
+            setTotalPrice(prev => prev + item.price);
             // Gửi request lên server
             await api.post(`/s2d/cartdetail`, {
                 cart: customer.cart,
@@ -117,7 +119,7 @@ export const Menu = ({ direction }) => {
             // Cập nhật nhanh UI
             setCart(prev => {
                 const updated = [...prev];
-                const index = updated.findIndex(i => i.products._id === item._id);
+                const index = updated.findIndex(i => i.products && i.products._id === item._id);
                 if (index >= 0) {
                     if (updated[index].quantity > 1) {
                         updated[index] = {
@@ -155,9 +157,10 @@ export const Menu = ({ direction }) => {
 
     const getItemQuantity = (itemId) => {
         if (!Array.isArray(cart)) return 0;
-        const cartItem = cart.find(item => item.products._id === itemId);
+        const cartItem = cart.find(item => item.products && item.products._id === itemId);
         return cartItem ? cartItem.quantity : 0;
     };
+
 
 
     return (

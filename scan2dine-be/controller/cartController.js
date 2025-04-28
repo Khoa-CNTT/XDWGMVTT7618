@@ -73,6 +73,7 @@ const cartController = {
         try {
             const { cart, table } = req.body;
 
+
             const cartID = await Cart.findById(cart);
             if (!cartID) return res.status(404).json({ message: 'Không tìm thấy giỏ hàng' });
 

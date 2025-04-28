@@ -79,9 +79,17 @@ export default function TableManagementSystem() {
     };
 
     //xóa bàn
-    const handleDeleteTable = (id) => {
-        setTables(tables.filter(table => table.id !== id));
+    const handleDeleteTable = async (id) => {
+        try {
+            await api.delete(`/s2d/table/status/${id}`);
+            alert('Xóa bàn thành công!');
+            fetchTable()
+        } catch (error) {
+            console.error(error);
+            alert('Xóa bàn thất bại!');
+        }
     };
+
 
     return (
         <div className="p-6 mx-auto bg-gray-100">
@@ -147,7 +155,7 @@ export default function TableManagementSystem() {
                     <tbody className="bg-white divide-y divide-gray-200">
                         {filteredTables.map((table, index) => (
                             <A_TableItem
-                                key={table.id}
+                                key={table._id}
                                 index={index}
                                 table={table}
                                 setSelectedTable={setSelectedTable}
