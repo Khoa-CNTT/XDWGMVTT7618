@@ -7,31 +7,31 @@ const productController = {
     //ADD PRODUCT và IMAGE
     addProduct: async (req, res) => {
         try {
-            const newProduct = new Product(req.body);
+            let newProductData = { ...req.body };
+    
+            if (req.file) {
+                const imagePath = req.file.path.replace(/\\/g, '/'); // windows path fix
+                newProductData.image = imagePath.replace('public/', '/'); // clean path
+            }
+            
+            const newProduct = new Product(newProductData);
             const saveProduct = await newProduct.save();
+    
             if (req.body.category) {
                 const categoryID = await Category.findById(req.body.category);
-                await categoryID.updateOne({
-                    $push: {
-                        products: saveProduct._id
-                    }
-                })
+                await categoryID.updateOne({ $push: { products: saveProduct._id } });
             }
+    
             if (req.body.stall_id) {
                 const stall = await Foodstall.findById(req.body.stall_id);
-                await stall.updateOne({
-                    $push: {
-                        products: saveProduct._id
-                    }
-                })
+                await stall.updateOne({ $push: { products: saveProduct._id } });
             }
+    
             res.status(200).json(saveProduct);
         } catch (error) {
             res.status(500).json(error);
         }
     },
-
-
 
     //  GET ALL PRODUCT
     getAllProduct: async (req, res) => {
