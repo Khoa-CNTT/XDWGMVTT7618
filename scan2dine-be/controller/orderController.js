@@ -1,4 +1,4 @@
-const { Order, Customer, Table } = require('../model/model');
+const { Order, Customer, Table, Orderdetail } = require('../model/model');
 const orderController = {
     // ADD ORDER
     addOrder: async (req, res) => {
@@ -123,6 +123,8 @@ const orderController = {
             if (!deleteOrder) {
                 return res.status(404).json('not found');
             }
+            await Orderdetail.deleteMany({ _id: { $in: deleteOrder.orderdetail } });
+
             await Customer.findByIdAndUpdate(deleteOrder.customer, {
                 $pull: {
                     order: deleteOrder._id

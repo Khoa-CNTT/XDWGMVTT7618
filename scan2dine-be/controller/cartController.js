@@ -139,6 +139,7 @@ const cartController = {
 
             const orderItemsToReturn = orderDetails.map(item => ({
                 product: item.products,
+                status:item.status,
                 quantity: item.quantity
             }));
 
