@@ -143,7 +143,7 @@ export const EmployeePage = () => {
             {!loading && !error && filteredTables.length > 0 && (
                 <div className="grid grid-cols-2 md:grid-cols-5 gap-4 px-4 pb-20 animate-fade-in">
                     {filteredTables.map(table => (
-                        <TableItem key={table.id} table={table} />
+                        <TableItem key={table.id} table={table} fetchTables={fetchTables} />
                     ))}
                 </div>
             )}
