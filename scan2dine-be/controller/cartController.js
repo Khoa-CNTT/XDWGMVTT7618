@@ -82,7 +82,7 @@ const cartController = {
             if (cartDetails.length === 0) return res.status(400).json({ message: 'Giỏ hàng trống!' });
 
             let existingOrder = await Order.findOne({
-                customer: customerId,
+                table: table,
                 od_status: '2'
             });
 
