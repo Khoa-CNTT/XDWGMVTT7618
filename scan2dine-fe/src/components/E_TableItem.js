@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import E_OrderDetailDialog from './E_OrderDetailDialog';
 
-export const TableItem = ({ table }) => {
+export const TableItem = ({ table, fetchTables }) => {
 
     const [showOrderDetail, setShowOrderDetail] = useState(false);
 
@@ -51,6 +51,7 @@ export const TableItem = ({ table }) => {
                 tableId={table._id}
                 isOpen={showOrderDetail}
                 onClose={closeOrderDetail}
+                fetchTables={fetchTables}
             />
         </>
 
