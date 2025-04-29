@@ -4,10 +4,17 @@ const tableController = {
     // add table
     addTable: async (req, res) => {
         try {
-            const lastTable = await Table.findOne().sort({ tb_number: -1 });
-            console.log("Last table:", lastTable);
+            const tables = await Table.find().sort({ tb_number: 1 }); // Lấy tất cả bàn, sắp theo số tăng dần
 
-            const nextTableNumber = lastTable ? lastTable.tb_number + 1 : 1;
+            let nextTableNumber = 1;
+
+            for (let i = 0; i < tables.length; i++) {
+                if (tables[i].tb_number !== i + 1) {
+                    nextTableNumber = i + 1;
+                    break;
+                }
+                nextTableNumber = tables.length + 1; // Không thiếu số nào
+            }
 
             const newTable = new Table({
                 ...req.body,
@@ -112,30 +119,30 @@ const tableController = {
             if (!table) {
                 return res.status(404).json({ message: "Table not found" });
             }
-    
+
             // Log để kiểm tra thông tin bàn
             console.log("Table found:", table);
-    
+
             // Lọc các đơn hàng có trạng thái "Chưa thanh toán" (mã trạng thái "2")
             const orders = await Order.find({
                 table: table._id,
                 od_status: "Chưa thanh toán"  // Trạng thái "Chưa thanh toán"
             })
-            .populate({
-                path: 'orderdetail',
-                populate: {
-                    path: 'products', // trong Orderdetail -> products (chính là Product)
-                    model: 'Product'
-                }
-            })
-            .populate('customer')  // Thêm thông tin khách hàng vào đơn hàng
-            .populate('payment')   // Thêm thông tin thanh toán (nếu có)
-            .populate('notification')  // Thêm thông báo (nếu có)
-            .populate('table');    // Thêm thông tin bàn vào đơn hàng
-    
+                .populate({
+                    path: 'orderdetail',
+                    populate: {
+                        path: 'products', // trong Orderdetail -> products (chính là Product)
+                        model: 'Product'
+                    }
+                })
+                .populate('customer')  // Thêm thông tin khách hàng vào đơn hàng
+                .populate('payment')   // Thêm thông tin thanh toán (nếu có)
+                .populate('notification')  // Thêm thông báo (nếu có)
+                .populate('table');    // Thêm thông tin bàn vào đơn hàng
+
             // Log để kiểm tra thông tin các đơn hàng của bàn
             console.log("Orders found:", orders);
-    
+
             if (orders.length === 0) {
                 return res.status(404).json({ message: "No unpaid orders for this table" });
             }
@@ -143,7 +150,7 @@ const tableController = {
             // Xử lý danh sách sản phẩm từ tất cả các đơn hàng
             const ordersDetails = orders.map(order => ({
                 orderId: order._id,
-                status: order.od_status,
+                od_note: order.od_status,
                 customer: {
                     name: order.customer.name,
                     phone: order.customer.phone,
@@ -157,7 +164,9 @@ const tableController = {
                     productName: detail.products.pd_name,
                     price: detail.products.price,
                     quantity: detail.quantity,
-                    totalPrice: detail.quantity * detail.products.price
+                    totalPrice: detail.quantity * detail.products.price,
+                    image: detail.products.image,
+
                 })),
                 updatedAt: order.updatedAt,
                 createdAt: order.od_date,
@@ -176,38 +185,38 @@ const tableController = {
         }
 
 
-    }, 
+    },
     // xóa bàn khi có status bằng 1
-    deleteTableById : async (req, res) => {
+    deleteTableById: async (req, res) => {
         try {
-          const tableId = req.params.id;
-      
-          // Tìm table theo id
-          const table = await Table.findById(tableId);
-      
-          if (!table) {
-            return res.status(404).json({ message: "Không tìm thấy bàn." });
-          }
-      
-          if (table.status !== "1") {
-            // Không xóa, trả về bàn + thông báo
-            return res.status(200).json({
-              message: "Không thể xóa. Bàn không có status = '1'.",
-              table: table,
+            const tableId = req.params.id;
+
+            // Tìm table theo id
+            const table = await Table.findById(tableId);
+
+            if (!table) {
+                return res.status(404).json({ message: "Không tìm thấy bàn." });
+            }
+
+            if (table.status !== "1") {
+                // Không xóa, trả về bàn + thông báo
+                return res.status(200).json({
+                    message: "Không thể xóa. Bàn không có status = '1'.",
+                    table: table,
+                });
+            }
+
+            // Nếu status = "1", xóa bàn
+            const deletedTable = await Table.findByIdAndDelete(tableId);
+
+            res.status(200).json({
+                message: "Xóa bàn thành công.",
+                table: deletedTable,
             });
-          }
-      
-          // Nếu status = "1", xóa bàn
-          const deletedTable = await Table.findByIdAndDelete(tableId);
-      
-          res.status(200).json({
-            message: "Xóa bàn thành công.",
-            table: deletedTable,
-          });
         } catch (error) {
-          console.error(error);
-          res.status(500).json({ message: "Đã xảy ra lỗi server." });
+            console.error(error);
+            res.status(500).json({ message: "Đã xảy ra lỗi server." });
         }
-      },
+    },
 }
 module.exports = tableController;
