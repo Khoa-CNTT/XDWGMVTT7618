@@ -58,7 +58,24 @@ const foodstallController = {
       return res.status(500).json({ message: "Server error", error });
     }
   },
-
+  getFoodstallByUserId: async (req, res) => {
+    try {
+      const userId = req.params.userId;
+      console.log('Received userId:', userId); // Add this line
+      
+      const user = await User.findById(userId).populate('stall_id');
+      console.log('Found user:', user); // Add this line
+      
+      if (!user || !user.stall_id) {
+        return res.status(404).json({ message: "No foodstall found for this user" });
+      }
+  
+      // ... rest of the code
+    } catch (error) {
+      console.error("Error getting foodstall by user:", error);
+      res.status(500).json({ error: error.message });
+    }
+  },
 
 
 

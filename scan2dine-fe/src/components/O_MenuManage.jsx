@@ -91,26 +91,15 @@ const O_MenuManage = ({ stallId }) => {
         }
     };
 
-    // Update handleEditProduct similarly
     const handleEditProduct = async (productId, formData) => {
         try {
-            const form = new FormData();
-            form.append('pd_name', formData.pd_name);
-            form.append('price', formData.price);
-            form.append('description', formData.description);
-            form.append('category', formData.category);
-            form.append('stall_id', stallId);
-
-            if (formData.image instanceof File) {
-                form.append('image', formData.image);
-            }
-
-            const response = await api.put(`/s2d/product/${productId}`, form, {
+            // formData is a FormData object
+            const response = await api.post(`/s2d/product/${productId}`, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                 }
             });
-
+    
             if (response.status === 200) {
                 await fetchProducts();
                 setIsEditModalOpen(false);
@@ -136,12 +125,22 @@ const O_MenuManage = ({ stallId }) => {
         }
     };
 
-    const filteredProducts = products.filter(product => {
-        const matchesSearch = product.pd_name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
-        return matchesSearch && matchesCategory;
-    });
 
+    const filteredProducts = products.filter(product => {
+        // Normalize stall_id and category to string for comparison
+        const productStallId = typeof product.stall_id === 'object' && product.stall_id !== null
+            ? product.stall_id._id
+            : product.stall_id;
+
+        const productCategoryId = typeof product.category === 'object' && product.category !== null
+            ? product.category._id
+            : product.category;
+
+        const matchesStall = productStallId === stallId;
+        const matchesSearch = product.pd_name.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = selectedCategory === 'all' || productCategoryId === selectedCategory;
+        return matchesStall && matchesSearch && matchesCategory;
+    });
 
     const sortedProducts = [...filteredProducts].sort((a, b) => {
         if (priceSort === 'asc') return parseFloat(a.price) - parseFloat(b.price);
@@ -236,7 +235,7 @@ const O_MenuManage = ({ stallId }) => {
                                             <div className="flex justify-center space-x-2">
                                                 <button
                                                     onClick={() => {
-                                                        setSelectedProduct(product);
+                                                        setSelectedProduct(product); // Đảm bảo product là object, không phải null
                                                         setIsEditModalOpen(true);
                                                     }}
                                                     className="text-blue-600 hover:text-blue-900 transition-colors"

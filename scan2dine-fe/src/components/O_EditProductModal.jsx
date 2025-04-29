@@ -12,13 +12,21 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
     });
 
     useEffect(() => {
+        console.log("📦 Product passed to modal:", product);
+    
         if (product) {
             setFormData({
-                pd_name: product.pd_name,
-                price: product.price,
-                description: product.description,
-                category: product.category,
-                imagePreview: `${process.env.REACT_APP_API_URL}${product.image}`
+                pd_name: !product.pd_name || product.pd_name === 'undefined' ? '' : product.pd_name,
+                price: !product.price || product.price === 'undefined' ? '' : product.price,
+                description: !product.description || product.description === 'undefined' ? '' : product.description,
+                category:
+                    typeof product.category === 'object'
+                        ? (product.category?._id ?? '')
+                        : (!product.category || product.category === 'undefined' ? '' : product.category),
+                image: null,
+                imagePreview: product.image && product.image !== 'undefined'
+                    ? `${process.env.REACT_APP_API_URL}${product.image}`
+                    : null,
             });
         }
     }, [product]);
@@ -36,23 +44,34 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        
-        // Create FormData object to handle file upload
+    
+        // Kiểm tra dữ liệu trước khi gửi
+        if (!formData.pd_name || !formData.price || !formData.category) {
+            alert("Vui lòng điền đầy đủ tên món, giá và danh mục.");
+            return;
+        }
+    
+        console.log('✅ Form data before sending:', formData);
+    
         const formDataToSend = new FormData();
-        formDataToSend.append('pd_name', formData.pd_name);
-        formDataToSend.append('price', formData.price);
-        formDataToSend.append('description', formData.description);
-        formDataToSend.append('category', formData.category);
-        
-        // Only append image if a new one was selected
+        formDataToSend.append('pd_name', formData.pd_name || '');
+        formDataToSend.append('price', formData.price || '');
+        formDataToSend.append('description', formData.description || '');
+        formDataToSend.append('category', formData.category || '');
+    
+        // Chỉ thêm ảnh nếu người dùng chọn ảnh mới
         if (formData.image) {
             formDataToSend.append('image', formData.image);
         }
-        
-        onSave(product._id, formDataToSend);
+    
+        if (product?._id) {
+            onSave(product._id, formDataToSend);
+        } else {
+            console.error("❌ Không tìm thấy ID sản phẩm để cập nhật.");
+        }
     };
 
-    if (!isOpen) return null;
+    if (!isOpen || !product) return null;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -76,7 +95,7 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                         type="text"
                                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                                         value={formData.pd_name}
-                                        onChange={(e) => setFormData({...formData, pd_name: e.target.value})}
+                                        onChange={(e) => setFormData({ ...formData, pd_name: e.target.value })}
                                         required
                                     />
                                 </div>
@@ -88,8 +107,8 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                     <input
                                         type="number"
                                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                                        value={formData.price}
-                                        onChange={(e) => setFormData({...formData, price: e.target.value})}
+                                        value={formData.price ?? ''}
+                                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
                                         required
                                     />
                                 </div>
@@ -101,7 +120,7 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                     <select
                                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                                         value={formData.category}
-                                        onChange={(e) => setFormData({...formData, category: e.target.value})}
+                                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                                         required
                                     >
                                         <option value="">Chọn danh mục</option>
@@ -129,7 +148,7 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                                 />
                                                 <button
                                                     type="button"
-                                                    onClick={() => setFormData({...formData, image: null, imagePreview: null})}
+                                                    onClick={() => setFormData({ ...formData, image: null, imagePreview: null })}
                                                     className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1"
                                                 >
                                                     <FaTimes className="w-4 h-4" />
@@ -160,7 +179,7 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                                         rows="4"
                                         value={formData.description}
-                                        onChange={(e) => setFormData({...formData, description: e.target.value})}
+                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                                         required
                                     />
                                 </div>
