@@ -16,28 +16,50 @@ export const Owner = () => {
 
   useEffect(() => {
     const fetchStallInfo = async () => {
-      try {
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (user) {
-          console.log('User from localStorage:', user); // Debug log
-          const response = await api.get('/s2d/foodstall');
-          const foodstalls = response.data;
-          console.log('All foodstalls:', foodstalls); // Debug log
-          const userStall = foodstalls.find(stall => stall.user === "6801e0a7ac11a4e7d4b71e10");
-          console.log('Found userStall:', userStall); // Debug log
+        try {
+            const userString = localStorage.getItem('user');
+            
+            if (!userString) {
+                navigate('/login');
+                return;
+            }
 
-          if (userStall) {
-            setStallName(userStall.stall_name);
-            setCurrentStallId(userStall._id);
-          }
+            const parsed = JSON.parse(userString);
+
+            // Kiểm tra parsed.user._id
+            if (!parsed || !parsed.user || !parsed.user._id) {
+                console.log('Invalid user structure:', parsed);
+                navigate('/login');
+                return;
+            }
+
+            const user = parsed.user; // <- lấy đúng
+            const response = await api.get('/s2d/foodstall');
+            const foodstalls = response.data;
+            console.log('All foodstalls:', foodstalls);
+
+            const userStall = foodstalls.find(stall => {
+                const stallUserId = typeof stall.user === 'object' ? stall.user._id : stall.user;
+                return stallUserId?.toString() === user._id.toString();
+            });
+
+            console.log('Found stall:', userStall);
+
+            if (userStall) {
+                setStallName(userStall.stall_name);
+                setCurrentStallId(userStall._id);
+            } else {
+                setStallName('Chưa có quầy được chỉ định');
+            }
+        } catch (error) {
+            console.error('Error fetching stall info:', error);
+            navigate('/login');
         }
-      } catch (error) {
-        console.error('Error fetching stall info:', error);
-      }
     };
 
     fetchStallInfo();
-  }, []);
+}, [navigate]);
+
 
   const handleLogoClick = () => {
     setCurrentView('dashboard');

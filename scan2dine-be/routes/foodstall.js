@@ -2,12 +2,19 @@ const express = require("express");
 const router = express.Router();
 const foodstallController = require("../controller/foodstallController");
 
-// router.get("/", foodstallController.getAllFoodstall);
-router.get("/", foodstallController.getAllFoodstall);
+// Specific routes with parameters should come first
+router.get("/user/:userId", foodstallController.getFoodstallByUserId);
 router.get("/search/:id", foodstallController.getFoodstallByTableNumber);
+
+// General routes
+router.get("/", foodstallController.getAllFoodstall);
+
+// CRUD operations
 router.post("/", foodstallController.addFoodstall);
 router.delete("/:id", foodstallController.deleteFoodstall);
 router.put("/:id", foodstallController.updateFoodstall);
-// GET A STALL
+
+// Generic ID route should be last
 router.get("/:id", foodstallController.getAStall);
+
 module.exports = router;
