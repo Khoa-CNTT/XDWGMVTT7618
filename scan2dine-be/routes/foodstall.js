@@ -17,4 +17,8 @@ router.put("/:id", foodstallController.updateFoodstall);
 // Generic ID route should be last
 router.get("/:id", foodstallController.getAStall);
 
+// GET ORDER BY STALL ID
+// req: ID stall
+router.get('/orderstall/:id', foodstallController.getOrderDetailByStall);
+
 module.exports = router;
