@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FaUtensils, FaClock, FaCheckCircle, FaPrint, FaPlus, FaTimes, FaSpinner } from 'react-icons/fa';
 import { toast } from 'react-toastify';
+import api from '../server/api';
+
 
 // Dữ liệu mẫu
 const mockTableInfo = {
@@ -46,6 +48,8 @@ const mockOrderItems = [
     }
 ];
 
+
+
 const E_OrderDetailDialog = ({ tableId, isOpen, onClose }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -57,8 +61,7 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose }) => {
         if (isOpen && tableId) {
             // Giả lập việc tải dữ liệu với setTimeout
             setTimeout(() => {
-                setTableInfo(mockTableInfo);
-                setOrderItems(mockOrderItems);
+                fetchInfoOrder();
                 setLoading(false);
             }, 700); // Giả lập delay 700ms
         }
@@ -73,6 +76,23 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose }) => {
             setTotal(calculatedTotal);
         }
     }, [orderItems]);
+
+    const fetchInfoOrder = async () => {
+        try {
+            const res = await api.get(`/s2d/table/current/${tableId}`);
+            console.log('API của nhân viên', res);
+
+            setTableInfo(res.data.orders[0]); // Lấy đơn đầu tiên
+            console.log('Thông tin bàn', res.data.orders[0]);
+
+            setOrderItems(res.data.orders[0].products); // Lấy danh sách món ăn
+            console.log('Thông tin order', res.data.orders[0].products);
+
+        } catch (error) {
+            console.error('Lỗi fetchCartItems', error);
+        }
+    };
+
 
     const handleCompleteOrder = () => {
         // Giả lập xử lý hoàn thành đơn hàng
@@ -99,12 +119,16 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose }) => {
 
     const getStatusLabel = (status) => {
         switch (status) {
-            case 'available':
+            case '1':
                 return { label: 'Trống', class: 'bg-green-100 text-green-800' };
-            case 'occupied':
+            case '2':
                 return { label: 'Đang phục vụ', class: 'bg-blue-100 text-blue-800' };
-            case 'reserved':
-                return { label: 'Đã đặt trước', class: 'bg-yellow-100 text-yellow-800' };
+            case '3':
+                return { label: 'Yêu cầu xác nhận', class: 'bg-red-100 text-yellow-800' };
+            case '4':
+                return { label: 'Yêu cầu nhân viên', class: 'bg-red-100 text-yellow-800' };
+            case '5':
+                return { label: 'Yêu cầu thanh toán', class: 'bg-red-100 text-yellow-800' };
             default:
                 return { label: 'Không xác định', class: 'bg-gray-100 text-gray-800' };
         }
@@ -118,7 +142,11 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose }) => {
                 {/* Dialog Header */}
                 <div className="bg-primary p-4 text-white flex items-center justify-between rounded-t-lg">
                     <h2 className="text-lg font-medium">
-                        {loading ? 'Đang tải thông tin...' : tableInfo?.name || 'Chi tiết bàn'}
+                        {loading
+                            ? 'Đang tải thông tin...'
+                            : tableInfo?.tableNumber != null
+                                ? `Chi tiết bàn số ${tableInfo.tableNumber}`
+                                : 'Chi tiết bàn'}
                     </h2>
                     <button
                         onClick={onClose}
@@ -141,8 +169,7 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose }) => {
                                 onClick={() => {
                                     setLoading(true);
                                     setTimeout(() => {
-                                        setTableInfo(mockTableInfo);
-                                        setOrderItems(mockOrderItems);
+                                        fetchInfoOrder();
                                         setError(null);
                                         setLoading(false);
                                     }, 700);
@@ -160,14 +187,24 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose }) => {
                                     <div>
                                         <div className="flex items-center text-gray-600 text-sm">
                                             <FaUtensils className="mr-1" />
-                                            <span>{tableInfo?.capacity || 0} chỗ ngồi</span>
-                                            {tableInfo?.orderTime && (
+                                            <span>{tableInfo?.customer.phone || 0}</span>
+                                            {tableInfo?.createdAt && (
                                                 <>
                                                     <span className="mx-2">•</span>
                                                     <FaClock className="mr-1" />
-                                                    <span>{tableInfo.orderTime}</span>
+                                                    <span>
+                                                        {new Date(tableInfo.createdAt).toLocaleString('vi-VN', {
+                                                            weekday: 'long', // Thứ trong tuần
+                                                            year: 'numeric', // Năm
+                                                            month: 'long', // Tháng đầy đủ
+                                                            day: 'numeric', // Ngày
+                                                            hour: '2-digit', // Giờ (2 chữ số)
+                                                            minute: '2-digit', // Phút (2 chữ số)
+                                                        })}
+                                                    </span>
                                                 </>
                                             )}
+
                                         </div>
                                     </div>
                                     {tableInfo?.status && (
@@ -198,7 +235,7 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose }) => {
                                                         {item.image ? (
                                                             <img
                                                                 src={item.image}
-                                                                alt={item.name}
+                                                                alt={item.productName}
                                                                 className="h-full w-full object-cover"
                                                                 onError={(e) => {
                                                                     e.target.style.display = 'none';
@@ -212,7 +249,7 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose }) => {
                                                         )}
                                                     </div>
                                                     <div>
-                                                        <h4 className="font-medium">{item.name}</h4>
+                                                        <h4 className="font-medium">{item.productName}</h4>
                                                         <div className="text-sm text-gray-500">
                                                             <span>{item.quantity} x {formatCurrency(item.price)}</span>
                                                             {item.notes && (

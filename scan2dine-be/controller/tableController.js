@@ -126,7 +126,7 @@ const tableController = {
             // Lọc các đơn hàng có trạng thái "Chưa thanh toán" (mã trạng thái "2")
             const orders = await Order.find({
                 table: table._id,
-                od_status: "Chưa thanh toán"  // Trạng thái "Chưa thanh toán"
+                od_status: "2"  // Trạng thái "Chưa thanh toán"
             })
                 .populate({
                     path: 'orderdetail',
@@ -166,7 +166,7 @@ const tableController = {
                     quantity: detail.quantity,
                     totalPrice: detail.quantity * detail.products.price,
                     image: detail.products.image,
-
+                    status: detail.status
                 })),
                 updatedAt: order.updatedAt,
                 createdAt: order.od_date,
