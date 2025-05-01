@@ -3,6 +3,7 @@ import { FaArrowLeft, FaMapMarkerAlt, FaStore, FaPlus, FaMinus } from 'react-ico
 import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../server/api';
 import { Footer } from './Footer'
+import { C_OrderDetailItem } from './C_OrderDetailItem';
 
 const formatPrice = (price) => {
     return parseInt(price).toLocaleString() + 'đ';
@@ -44,8 +45,6 @@ const OrderDetail = () => {
 
             // 1. Lấy thông tin đơn hàng từ server theo ID
             const { data: orderRes } = await api.get(`/s2d/order/${orderData.order._id}`);
-            console.log('Order Response:', orderRes);
-
             if (!orderRes) throw new Error('Không tìm thấy đơn hàng');
 
             // 2. Lấy danh sách sản phẩm từ server
@@ -110,34 +109,31 @@ const OrderDetail = () => {
         let bgColor = 'bg-gray-200 text-gray-700';
 
         switch (status) {
-            case 'pending':
-                bgColor = 'bg-yellow-100 text-yellow-700';
-                return <span className={`${bgColor} px-2 py-1 rounded-full text-xs font-medium`}>Đang xử lý</span>;
-            case 'preparing':
+            case '2':
+                bgColor = 'bg-purple-100 text-purple-700';
+                return <span className={`${bgColor} px-2 py-1 rounded-full text-xs font-medium`}>Đã xác nhận</span>;
+            case '3':
                 bgColor = 'bg-blue-100 text-blue-700';
                 return <span className={`${bgColor} px-2 py-1 rounded-full text-xs font-medium`}>Đang chuẩn bị</span>;
-            case 'ready':
+            case '4':
                 bgColor = 'bg-green-100 text-green-700';
-                return <span className={`${bgColor} px-2 py-1 rounded-full text-xs font-medium`}>Sẵn sàng</span>;
-            case 'delivered':
-                bgColor = 'bg-purple-100 text-purple-700';
-                return <span className={`${bgColor} px-2 py-1 rounded-full text-xs font-medium`}>Đã giao</span>;
-            case 'cancelled':
-                bgColor = 'bg-red-100 text-red-700';
-                return <span className={`${bgColor} px-2 py-1 rounded-full text-xs font-medium`}>Đã hủy</span>;
+                return <span className={`${bgColor} px-2 py-1 rounded-full text-xs font-medium`}>Hoàn tất</span>;
             default:
+                bgColor = 'bg-gray-100 text-gray-700';
                 return <span className={`${bgColor} px-2 py-1 rounded-full text-xs font-medium`}>Chờ xác nhận</span>;
+
         }
     };
 
     return (
-        <div className="min-h-screen bg-white flex flex-col w-full sm:max-w-[800px] mx-auto">
-            <div className="bg-primary text-white p-4 flex items-center">
-                <button onClick={() => navigate(-1)} className="mr-4">
+        <div className="min-h-screen bg-white flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl">
+            <div className="bg-primary text-white p-4 relative">
+                <button onClick={() => navigate(-2)} className="absolute left-4 top-1/2 -translate-y-1/2">
                     <FaArrowLeft size={20} />
                 </button>
-                <h1 className="text-xl font-semibold">Đơn hàng của tôi</h1>
+                <h1 className="text-xl font-semibold text-center">Đơn hàng của tôi</h1>
             </div>
+
 
             <div className="p-4">
                 <div className="text-lg font-bungee font-extrabold">SCAN<span className='text-primary'>2</span>DINE</div>
@@ -164,46 +160,7 @@ const OrderDetail = () => {
 
                 <div className="divide-y">
                     {orderDetails.items.map((item) => (
-                        <div key={item.id} className="p-4 flex items-center gap-3">
-                            <div className="w-16 h-16 flex-shrink-0 rounded overflow-hidden">
-                                {`${process.env.REACT_APP_API_URL}/${item.image}` ? (
-                                    <img
-                                        src={item.image}
-                                        alt={item.name}
-                                        className="w-full h-full object-cover"
-                                    />
-                                ) : (
-                                    <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-                                        <span className="text-gray-400 text-xs">No image</span>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex-1">
-                                <div className="flex justify-between">
-                                    <h4 className="font-medium">{item.name}</h4>
-                                    <span className="font-semibold text-primary">{formatPrice(item.price)}</span>
-                                </div>
-
-                                <div className="flex justify-between items-center mt-2">
-                                    <div className="flex items-center">
-                                        <span className="text-sm">SL: {item.quantity}</span>
-                                        <span className="mx-2 text-gray-400">|</span>
-                                        {renderStatusBadge(item.status)}
-                                    </div>
-
-                                    <span className="font-medium">
-                                        {formatPrice(item.price * item.quantity)}
-                                    </span>
-                                </div>
-
-                                {item.note && (
-                                    <div className="mt-1 text-sm italic text-gray-600">
-                                        <span className="font-medium">Ghi chú:</span> {item.note}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                        <C_OrderDetailItem key={item.id} item={item} renderStatusBadge={renderStatusBadge} />
                     ))}
                 </div>
             </div>

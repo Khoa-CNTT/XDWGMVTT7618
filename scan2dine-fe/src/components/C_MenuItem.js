@@ -3,7 +3,7 @@ import ProductDetail from './C_ProductDetail';
 import FlyItem from './C_FlyItem';
 import { FaPlus, FaMinus } from 'react-icons/fa';
 
-export const MenuItem = ({ item, onAddToCart, onRemoveFromCart, quantity }) => {
+export const MenuItem = ({ item, onAddToCart, onRemoveFromCart, quantity, fetchCart }) => {
   const [showDetail, setShowDetail] = useState(false);
   const [flyingItems, setFlyingItems] = useState([]);
   const buttonRef = useRef(null);
@@ -110,7 +110,7 @@ export const MenuItem = ({ item, onAddToCart, onRemoveFromCart, quantity }) => {
 
       {showDetail && (
         <div className="fixed inset-1 z-50 bg-black bg-opacity-30 backdrop-blur-sm flex items-center justify-center">
-          <ProductDetail product={item} onClose={() => setShowDetail(false)} onAddToCart={onAddToCart} />
+          <ProductDetail product={item} onClose={() => setShowDetail(false)} fetchCart={fetchCart} setShowDetail={setShowDetail} />
         </div>
       )}
     </>

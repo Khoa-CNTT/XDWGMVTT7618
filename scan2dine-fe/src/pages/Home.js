@@ -10,6 +10,7 @@ import PageWrapper from '../components/PageWrapper';
 import { Footer } from '../components/Footer';
 import CustomerLogin from './FillInfo';
 import ConfirmLogoutModal from '../components/ConfirmLogoutModal';
+import { FaArrowLeft } from 'react-icons/fa';
 
 
 const Home = ({ direction }) => {
@@ -99,7 +100,7 @@ const Home = ({ direction }) => {
                     {/* Kính chào quý khách */}
                     <div className="w-full bg-primary text-white text-center py-3 font-bold text-lg relative">
 
-                        <MdArrowBack className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-2xl"
+                        <FaArrowLeft size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-2xl hover:text-gray-800 cursor-pointer"
                             onClick={() => setShowConfirmLogout(true)} />
                         Kính chào quý khách
                     </div>
