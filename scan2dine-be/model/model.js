@@ -153,7 +153,7 @@ const orderSchema = new mongoose.Schema({
   od_status: {
     type: String,
     // enum: ['Chưa thanh toán', 'Thanh toán'],  // danh sách các trạng thái hợp lệ
-    enum: [         '2',              '3'],  // danh sách các trạng thái hợp lệ
+    enum: ['2', '3'],  // danh sách các trạng thái hợp lệ
     default: "1"
   },
   orderdetail: [
@@ -170,7 +170,7 @@ const orderSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Payment",
   },
-  updatedAt: { type: Date, default: Date.now }
+  // updatedAt: { type: Date, default: Date.now }
 }, { collection: 'ORDER' });
 //CHI TIẾT ĐƠN HÀNG
 const orderdetailSchema = new mongoose.Schema({
@@ -189,7 +189,7 @@ const orderdetailSchema = new mongoose.Schema({
     type: String,
     default: "1",
     // enum: ['Chờ xác nhận', 'Xác nhận', 'Đang xử lý', 'Hoàn thành'],  // danh sách các trạng thái hợp lệ
-    enum: [     '1',             '2',          '3',         '4'],  // danh sách các trạng thái hợp lệ
+    enum: ['1', '2', '3', '4'],  // danh sách các trạng thái hợp lệ
   },
 }, { collection: 'ORDERDETAIL' });
 const tableSchema = new mongoose.Schema({
@@ -210,7 +210,7 @@ const tableSchema = new mongoose.Schema({
       ref: "Order",
     },
   ],
-  stall : {
+  stall: {
     type: String,
     ref: "Stall"
   }

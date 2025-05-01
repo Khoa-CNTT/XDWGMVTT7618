@@ -32,86 +32,33 @@ const OrderDetail = () => {
 
     }, [orderData]);
 
-
     useEffect(() => {
         fetchOrderDetails(orderData);
     }, [orderData]);
 
-    // const fetchOrderDetails = async () => {
-    //     try {
-
-
-    //         //Lấy danh sách sản phẩm
-    //         const { data: products } = await api.get('/s2d/product');
-    //         const productMap = Object.fromEntries(products.map(p => [p._id, p]));
-
-    //         const items = orderData.order.orderdetail || [];
-    //         let totalItems = 0;
-    //         let totalAmount = 0;
-
-    //         const flatItemsList = items.map(item => {
-    //             const product = productMap[item.product] || {};
-    //             const quantity = item.quantity || 0;
-    //             const price = parseInt(product.price) || 0;
-
-    //             totalItems += quantity;
-    //             totalAmount += price * quantity;
-
-    //             return {
-    //                 id: item.product,
-    //                 name: product.pd_name || 'Sản phẩm không xác định',
-    //                 image: product.image ? `${process.env.REACT_APP_API_URL}/${product.image}` : '',
-    //                 quantity,
-    //                 price,
-    //                 note: item.note,
-    //                 status: item.status
-    //             };
-    //         });
-
-    //         // Đọc từ localStorage một lần
-    //         const phone = orderData.order.customer.phone;
-    //         const customerName = orderData.order.customer.name;
-    //         const table = orderData.order.table.tb_number;
-
-
-    //         setOrderDetails({
-    //             orderNumber: orderData.order.orderCode || '#12345',
-    //             startTime: new Date(orderData.order.createdAt).toLocaleString(),
-    //             endTime: '',
-    //             phone,
-    //             customerName,
-    //             table,
-    //             items: flatItemsList,
-    //             totalAmount,
-    //             totalItems
-    //         });
-
-    //     } catch (error) {
-    //         console.error('Lỗi khi lấy chi tiết đơn hàng:', error);
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
-
-
     const fetchOrderDetails = async (orderData) => {
+        if (!orderData?.order?._id) return;
+
         try {
             setLoading(true);
 
-            // 1. Lấy chi tiết đơn hàng
+            // 1. Lấy thông tin đơn hàng từ server theo ID
             const { data: orderRes } = await api.get(`/s2d/order/${orderData.order._id}`);
-            const order = orderRes.order;
+            console.log('Order Response:', orderRes);
 
-            // 2. Lấy danh sách sản phẩm
+            if (!orderRes) throw new Error('Không tìm thấy đơn hàng');
+
+            // 2. Lấy danh sách sản phẩm từ server
             const { data: products } = await api.get('/s2d/product');
             const productMap = Object.fromEntries(products.map(p => [p._id, p]));
 
-            const items = order.orderdetail || [];
+            // 3. Xử lý danh sách món ăn trong đơn hàng
+            const items = orderRes.orderdetail || [];
             let totalItems = 0;
             let totalAmount = 0;
 
             const flatItemsList = items.map(item => {
-                const product = productMap[item.product] || {};
+                const product = item.products || {};
                 const quantity = item.quantity || 0;
                 const price = parseInt(product.price) || 0;
 
@@ -119,38 +66,39 @@ const OrderDetail = () => {
                 totalAmount += price * quantity;
 
                 return {
-                    id: item.product,
+                    id: product._id || item.productId || 'unknown',
                     name: product.pd_name || 'Sản phẩm không xác định',
-                    image: product.image ? `${process.env.REACT_APP_API_URL}/${product.image}` : '',
+                    image: `${process.env.REACT_APP_API_URL}/${product.image}` ? `${process.env.REACT_APP_API_URL}/${product.image}` : '',
                     quantity,
                     price,
-                    note: item.note,
-                    status: item.status
+                    note: item.note || '',
+                    status: item.status || 'pending'
                 };
             });
 
-            const phone = order.customer?.phone || '';
-            const customerName = order.customer?.name || '';
-            const table = order.table?.tb_number || '';
-
+            // 4. Cập nhật state với thông tin đơn hàng
             setOrderDetails({
-                orderNumber: order.orderCode || '#12345',
-                startTime: new Date(order.createdAt).toLocaleString(),
-                endTime: '',
-                phone,
-                customerName,
-                table,
+                orderNumber: orderRes._id || '#12345',
+                startTime: orderRes.od_date ? new Date(orderRes.od_date).toLocaleString() : '',
+                endTime: orderRes.updatedAt ? new Date(orderRes.updatedAt).toLocaleString() : '',
+                phone: orderRes.customer?.phone || '',
+                customerName: orderRes.customer?.name || '',
+                table: orderRes.table?.tb_number || '',
                 items: flatItemsList,
                 totalAmount,
                 totalItems
             });
 
+
         } catch (error) {
             console.error('Lỗi khi lấy chi tiết đơn hàng:', error);
+            alert('Không thể tải chi tiết đơn hàng. Vui lòng thử lại sau.');
         } finally {
             setLoading(false);
         }
     };
+
+
 
     const handleRequestMore = () => navigate('/menu');
     const handlePayment = () => console.log('Processing payment...');
@@ -200,11 +148,11 @@ const OrderDetail = () => {
             </div>
 
             <div className="border-t border-b p-4 space-y-2">
-                <div className="flex justify-between"><span>Đơn hàng:</span><span className="text-primary font-medium uppercase">{orderData.order._id}</span></div>
-                <div className="flex justify-between"><span>Giờ bắt đầu:</span><span>{orderData.order.createdAt}</span></div>
-                <div className="flex justify-between"><span>Số điện thoại:</span><span>{orderData.order.customer.phone}</span></div>
-                <div className="flex justify-between"><span>Tên khách hàng:</span><span>{orderData.order.customer.name}</span></div>
-                <div className="flex justify-between"><span>Bàn:</span><span>{orderData.order.table.tb_number}</span></div>
+                <div className="flex justify-between"><span>Đơn hàng:</span><span className="text-primary font-medium uppercase">{orderDetails.orderNumber}</span></div>
+                <div className="flex justify-between"><span>Giờ bắt đầu:</span><span>{orderDetails.startTime}</span></div>
+                <div className="flex justify-between"><span>Số điện thoại:</span><span>{orderDetails.phone}</span></div>
+                <div className="flex justify-between"><span>Tên khách hàng:</span><span>{orderDetails.customerName}</span></div>
+                <div className="flex justify-between"><span>Bàn:</span><span>{orderDetails.table}</span></div>
             </div>
 
             {/* Danh sách sản phẩm phẳng */}
@@ -218,7 +166,7 @@ const OrderDetail = () => {
                     {orderDetails.items.map((item) => (
                         <div key={item.id} className="p-4 flex items-center gap-3">
                             <div className="w-16 h-16 flex-shrink-0 rounded overflow-hidden">
-                                {item.image ? (
+                                {`${process.env.REACT_APP_API_URL}/${item.image}` ? (
                                     <img
                                         src={item.image}
                                         alt={item.name}

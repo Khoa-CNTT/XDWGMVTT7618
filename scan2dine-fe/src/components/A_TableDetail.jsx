@@ -5,6 +5,7 @@ import { FaEdit } from 'react-icons/fa'; // Đừng quên import nếu dùng
 export const A_TableDetail = ({ selectedTable, setShowQRModal }) => {
     const svgRef = useRef();
 
+    //Tải QR 
     const handleDownload = () => {
         const svgElement = svgRef.current;
 
