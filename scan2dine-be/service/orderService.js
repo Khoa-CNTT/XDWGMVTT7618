@@ -39,7 +39,7 @@ const createOrderFromCartService = async (cartId, tableId) => {
     // Tìm đơn hàng chưa thanh toán theo bàn (ưu tiên gộp đơn theo bàn)
     let order = await Order.findOne({ 
         table: tableId, 
-        od_status: '2' 
+        od_status: { $in: ['2', '1']}
     });
 
     // Nếu chưa có đơn hàng chưa thanh toán cho bàn → tạo mới
