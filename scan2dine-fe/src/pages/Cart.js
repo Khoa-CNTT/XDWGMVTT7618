@@ -1,240 +1,301 @@
-import { useState } from 'react';
-import { FaArrowLeft, FaChevronDown, FaPlus, FaMinus, FaStore } from "react-icons/fa";
+import React, { useEffect, useState } from 'react';
+import { FaArrowLeft, FaMinus, FaPlus, FaStore, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
+import api from '../server/api';
 
-export default function Cart({ onNavigateToHome }) {
+const CartDetails = () => {
     const navigate = useNavigate();
-    const [editingCounter, setEditingCounter] = useState(null);
-    const [expandedCounters, setExpandedCounters] = useState([1, 2]); // Initially expand all
+    const [cartItems, setCartItems] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [expandedCounters, setExpandedCounters] = useState([]);
+    const [showConfirmation, setShowConfirmation] = useState(false);
+    const [editingCounter, setEditingCounter] = useState(null); // Thêm state cho việc chỉnh sửa
 
-    // Initial cart data
-    const [cartItems, setCartItems] = useState([
-        {
-            id: 1,
-            counter: 'Quầy A',
-            items: [
-                { id: 11, name: 'Lẩu thái nấm chay', price: 150000, quantity: 1, image: '/api/placeholder/400/400' },
-                { id: 12, name: 'Lẩu thái nấm mặn', price: 150000, quantity: 1, image: '/api/placeholder/400/400' }
-            ]
-        },
-        {
-            id: 2,
-            counter: 'Quầy B',
-            items: [
-                { id: 21, name: 'Lẩu thái nấm chay', price: 150000, quantity: 1, image: '/api/placeholder/400/400' }
-            ]
-        },
-        {
-            id: 3,
-            counter: 'Quầy C',
-            items: [
-                { id: 21, name: 'Lẩu thái nấm chay', price: 150000, quantity: 1, image: '/api/placeholder/400/400' }
-            ]
-        },
-        {
-            id: 4,
-            counter: 'Quầy D',
-            items: [
-                { id: 21, name: 'Lẩu thái nấm chay', price: 150000, quantity: 1, image: '/api/placeholder/400/400' }
-            ]
+    const [orderResult, setOrderResult] = useState(null); //state lưu order
+
+    //lấy thông tin cusomer
+    const customer = JSON.parse(sessionStorage.getItem('customer'));
+
+    //load dữ liệu
+    useEffect(() => {
+        fetchCartItems();
+    }, []);
+
+    //lấy dữ liệu
+    const fetchCartItems = async () => {
+        try {
+            const [cartDetailRes, foodstallRes] = await Promise.all([
+                api.get('/s2d/cartdetail'),
+                api.get('/s2d/foodstall')
+            ]);
+
+            // Lọc những item thuộc cart hiện tại
+            const currentCartItems = cartDetailRes.data.filter(
+                item => item.cart._id === customer.cart
+            );
+
+            // Tạo map foodstall: id -> { name, itemCount }
+            const foodstallMap = Object.fromEntries(
+                foodstallRes.data.map(stall => [
+                    stall._id,
+                    { name: stall.stall_name, itemCount: 0 }
+                ])
+            );
+
+            // Gom nhóm item theo stall_id
+            const groupedItems = {};
+            currentCartItems.forEach(item => {
+                const stallId = item.products?.stall_id;
+                if (!stallId || !foodstallMap[stallId]) return;
+
+                if (!groupedItems[stallId]) {
+                    groupedItems[stallId] = {
+                        stallName: foodstallMap[stallId].name,
+                        items: []
+                    };
+                }
+
+                groupedItems[stallId].items.push(item);
+                foodstallMap[stallId].itemCount++;
+            });
+
+            setCartItems(groupedItems);
+            setExpandedCounters(Object.keys(groupedItems)); // Mở tất cả stall khi load
+            setLoading(false);
+        } catch (error) {
+            console.error("Lỗi khi fetch giỏ hàng:", error);
+            setCartItems({});
+            setLoading(false);
         }
-    ]);
+    };
 
-    // Calculate total
-    const totalAmount = cartItems.reduce((total, counter) => {
-        return total + counter.items.reduce((counterTotal, item) => {
-            return counterTotal + (item.price * item.quantity);
+    //thay đổi số lượng
+    const handleUpdateQuantity = async (item, change) => {
+        try {
+            const newQuantity = item.quantity + change;
+            if (newQuantity <= 0) {
+                await api.delete(`/s2d/cartdetail/${item._id}`);
+            } else {
+                await api.patch(`/s2d/cartdetail/${item._id}`, { quantity: newQuantity });
+            }
+            fetchCartItems();
+        } catch (error) {
+            console.error('Error updating quantity:', error);
+        }
+    };
+
+    const toggleCounter = (stallId) => {
+        setExpandedCounters(prev =>
+            prev.includes(stallId)
+                ? prev.filter(id => id !== stallId)
+                : [...prev, stallId]
+        );
+    };
+
+    // Thêm hàm để chuyển chế độ chỉnh sửa
+    const toggleEdit = (stallId) => {
+        setEditingCounter(prev => prev === stallId ? null : stallId);
+    };
+
+    // Thêm hàm để xóa item
+    const removeItem = async (itemId) => {
+        try {
+            await api.delete(`/s2d/cartdetail/${itemId}`);
+            fetchCartItems();
+        } catch (error) {
+            console.error('Error removing item:', error);
+        }
+    };
+
+    const totalPrice = Object.values(cartItems).reduce((sum, stall) => {
+        return sum + stall.items.reduce((stallSum, item) => {
+            return stallSum + parseInt(item.products.price) * item.quantity;
         }, 0);
     }, 0);
 
-    // Toggle edit mode for a counter
-    const toggleEdit = (counterId) => {
-        if (editingCounter === counterId) {
-            setEditingCounter(null);
-        } else {
-            setEditingCounter(counterId);
+    const handleConfirmOrder = async () => {
+        try {
+            const res = await api.post('/s2d/cart/confirm', {
+                cart: customer.cart,
+                table: customer.idTable
+            });
+            await api.patch(`/s2d/table/${customer.idTable}`, {
+                status: '3'
+            })
+            setOrderResult(res.data);
+            setShowConfirmation(true);
+        } catch (error) {
+            console.error('Error confirming order:', error);
         }
     };
 
-    // Đếm số lượng sản phẩm
-    const toggleCounter = (counterId) => {
-        if (expandedCounters.includes(counterId)) {
-            setExpandedCounters(expandedCounters.filter(id => id !== counterId));
-        } else {
-            setExpandedCounters([...expandedCounters, counterId]);
-        }
+    const handleUnderstand = () => {
+        setShowConfirmation(false);
+        navigate('/orderdetail', { state: { orderData: orderResult } }); // truyền qua state  
     };
 
-    // Điều chỉnh số lượng sản phẩm
-    const adjustQuantity = (counterId, itemId, amount) => {
-        setCartItems(cartItems.map(counter => {
-            if (counter.id === counterId) {
-                return {
-                    ...counter,
-                    items: counter.items.map(item => {
-                        if (item.id === itemId) {
-                            const newQuantity = Math.max(1, item.quantity + amount);
-                            return { ...item, quantity: newQuantity };
-                        }
-                        return item;
-                    })
-                };
-            }
-            return counter;
-        }));
-    };
-
-    // Remove item
-    const removeItem = (counterId, itemId) => {
-        setCartItems(cartItems.map(counter => {
-            if (counter.id === counterId) {
-                return {
-                    ...counter,
-                    items: counter.items.filter(item => item.id !== itemId)
-                };
-            }
-            return counter;
-        }).filter(counter => counter.items.length > 0));
-
-        // Close edit mode after delete
-        if (editingCounter === counterId) {
-            setEditingCounter(null);
-        }
-    };
-
-    // Format price
+    // Hàm để hiển thị giá theo định dạng VND
     const formatPrice = (price) => {
-        return price.toLocaleString() + 'đ';
-    };
-
-    // Get total items in cart
-    const getTotalItems = () => {
-        return cartItems.reduce((total, counter) => {
-            return total + counter.items.length;
-        }, 0);
+        return parseInt(price).toLocaleString() + 'đ';
     };
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl">
-
-            {/* Header */}
-            <div className="bg-primary p-4 text-white flex items-center justify-center sticky top-0 z-20 ">
-                <button
-                    onClick={() => navigate('/menu')}
-                    className="text-white hover:text-gray-200 absolute left-4">
+        <div className="min-h-screen bg-gray-50 flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl overflow-hidden relative">
+            <div className="bg-primary text-white p-4 flex items-center">
+                <button onClick={() => navigate(-1)} className="mr-4">
                     <FaArrowLeft size={20} />
                 </button>
-                {/* <FaArrowLeft size={24} className="absolute left-4" /> */}
-                <span className="font-medium text-center">Các món đang chọn</span>
+                <h1 className="text-xl font-semibold">Các món đang chọn</h1>
             </div>
 
-
-
-            {/* Cart Items */}
-            <div className="flex-1 overflow-y-auto pb-40"> {/* tăng padding-bottom để tránh footer che nội dung */}
-                {cartItems.map(counter => (
-                    <div key={counter.id} className="bg-white mb-3">
-                        {/* Counter Header */}
-                        <div
-                            className="flex justify-between items-center p-3 border-b border-gray-100 cursor-pointer"
-                            onClick={() => toggleCounter(counter.id)}
-                        >
-                            <div className="flex items-center">
-
-                                <FaStore className="text-primary w-5 h-5 mr-2" />
-                                <span className="font-medium">{counter.counter}</span>
-                                <span className="ml-2 text-gray-500 text-sm">
-                                    ({counter.items.length} món)
-                                </span>
-                            </div>
-                            <div className="flex items-center">
-                                <button
-                                    className="text-primary mr-2 text-sm font-medium"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        toggleEdit(counter.id);
-                                    }}
-                                >
-                                    {editingCounter === counter.id ? 'Xong' : 'Sửa'}
-                                </button>
-                                <FaChevronDown
-                                    size={18}
-                                    className={`text-gray-500 transition-transform ${expandedCounters.includes(counter.id) ? 'transform rotate-180' : ''}`}
-                                />
-                            </div>
+            <div className="flex-1 overflow-auto pb-24">
+                {!loading && Object.keys(cartItems).length === 0 ? (
+                    <div className="flex flex-col items-center justify-center py-16 px-4">
+                        <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                            </svg>
                         </div>
-
-                        {/* Counter Items Wrapper với hiệu ứng trượt */}
-                        <div
-                            className={`transition-all duration-300 ease-in-out overflow-hidden ${expandedCounters.includes(counter.id) ? 'max-h-[2000px]' : 'max-h-0'
-                                }`}
+                        <h3 className="text-xl font-semibold text-gray-700 mb-2">Giỏ hàng trống</h3>
+                        <p className="text-gray-500 text-center mb-6">Bạn chưa thêm bất kỳ món ăn nào vào giỏ hàng</p>
+                        <button
+                            onClick={() => navigate('/')}
+                            className="flex items-center justify-center px-6 py-3 bg-primary text-white rounded-full font-medium transition-all hover:bg-opacity-90"
                         >
-                            {counter.items.map(item => (
-                                <div key={item.id} className="border-b border-gray-100 relative overflow-hidden">
-                                    {/* Container for image and item details that slides together */}
-                                    <div className={`flex p-3 transition-all duration-300 ${editingCounter === counter.id ? 'transform -translate-x-32' : ''}`}>
-                                        {/* Item image */}
-                                        <div className="w-16 h-16 rounded-lg overflow-hidden mr-3 bg-gray-100 flex-shrink-0">
-                                            <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                                        </div>
-
-                                        {/* Item details */}
-                                        <div className="flex flex-col flex-1 justify-between">
-                                            <div>
-                                                <div className="font-medium">{item.name}</div>
-                                                <div className="text-primary font-medium mt-1">{formatPrice(item.price)}</div>
-                                            </div>
-
-                                            {/* Quantity controls */}
-                                            <div className="flex items-center justify-end mt-1">
-                                                <button
-                                                    className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm"
-                                                    onClick={() => adjustQuantity(counter.id, item.id, -1)}
-                                                >
-                                                    <FaMinus size={14} color="white" />
-                                                </button>
-                                                <span className="mx-3 font-medium">{item.quantity}</span>
-                                                <button
-                                                    className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm"
-                                                    onClick={() => adjustQuantity(counter.id, item.id, 1)}
-                                                >
-                                                    <FaPlus size={14} color="white" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Extra buttons when editing - positioned absolutely */}
-                                    <div className={`absolute right-0 top-0 bottom-0 flex h-full items-center w-32 transition-opacity ${editingCounter === counter.id ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-                                        <button className="bg-yellow-500 text-white text-xs flex-1 flex items-center justify-center h-full">
-                                            <span className="text-xs px-1">Sản phẩm tương tự</span>
-                                        </button>
-                                        <button
-                                            className="bg-primary text-white text-xs flex-1 flex items-center justify-center h-full"
-                                            onClick={() => removeItem(counter.id, item.id)}
-                                        >
-                                            <span>Xóa</span>
-                                        </button>
+                            <FaStore className="mr-2" />
+                            Khám phá món ăn
+                        </button>
+                    </div>
+                ) : (
+                    Object.entries(cartItems).map(([stallId, stall]) => (
+                        <div key={stallId} className="border-b bg-white mb-3">
+                            <div
+                                className="flex items-center justify-between p-4 cursor-pointer border-b border-gray-100"
+                                onClick={() => toggleCounter(stallId)}
+                            >
+                                <div className="flex flex-col">
+                                    <div className="flex items-center gap-2">
+                                        <FaStore className="text-primary w-5 h-5 mr-2" />
+                                        <span className="font-medium">{stall.stallName}</span>
+                                        <span className="text-gray-500 text-sm">({stall.items.length} món)</span>
                                     </div>
                                 </div>
-                            ))}
+                                <div className="flex items-center">
+                                    <button
+                                        className="text-primary mr-2 text-sm font-medium"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleEdit(stallId);
+                                        }}
+                                    >
+                                        {editingCounter === stallId ? 'Xong' : 'Sửa'}
+                                    </button>
+                                    <FaChevronDown
+                                        size={18}
+                                        className={`text-gray-500 transition-transform ${expandedCounters.includes(stallId) ? 'transform rotate-180' : ''}`}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Counter Items Wrapper với hiệu ứng trượt */}
+                            <div
+                                className={`transition-all duration-300 ease-in-out overflow-hidden ${expandedCounters.includes(stallId) ? 'max-h-[2000px]' : 'max-h-0'
+                                    }`}
+                            >
+                                {stall.items.map((item) => (
+                                    <div key={item._id} className="border-b border-gray-100 relative overflow-hidden">
+                                        {/* Container for image and item details that slides together */}
+                                        <div className={`flex p-3 transition-all duration-300 ${editingCounter === stallId ? 'transform -translate-x-32' : ''}`}>
+                                            {/* Item image */}
+                                            <div className="w-16 h-16 rounded-lg overflow-hidden mr-3 bg-gray-100 flex-shrink-0">
+                                                <img
+                                                    src={`${process.env.REACT_APP_API_URL}/${item.products.image}`}
+                                                    alt={item.products.pd_name}
+                                                    className="w-full h-full object-cover"
+                                                />
+                                            </div>
+
+                                            {/* Item details */}
+                                            <div className="flex flex-col flex-1 justify-between">
+                                                <div>
+                                                    <div className="font-medium">{item.products.pd_name}</div>
+                                                    <div className="text-primary font-medium mt-1">
+                                                        {formatPrice(item.products.price)}
+                                                    </div>
+                                                </div>
+
+                                                {/* Quantity controls */}
+                                                <div className="flex items-center justify-end mt-1">
+                                                    <button
+                                                        onClick={() => handleUpdateQuantity(item, -1)}
+                                                        className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm"
+                                                    >
+                                                        <FaMinus size={14} color="white" />
+                                                    </button>
+                                                    <span className="mx-3 font-medium">{item.quantity}</span>
+                                                    <button
+                                                        onClick={() => handleUpdateQuantity(item, 1)}
+                                                        className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm"
+                                                    >
+                                                        <FaPlus size={14} color="white" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Extra buttons when editing - positioned absolutely */}
+                                        <div className={`absolute right-0 top-0 bottom-0 flex h-full items-center w-32 transition-opacity ${editingCounter === stallId ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                                            }`}>
+                                            <button className="bg-yellow-500 text-white text-xs flex-1 flex items-center justify-center h-full">
+                                                <span className="text-xs px-1">Sản phẩm tương tự</span>
+                                            </button>
+                                            <button
+                                                className="bg-primary text-white text-xs flex-1 flex items-center justify-center h-full"
+                                                onClick={() => removeItem(item._id)}
+                                            >
+                                                <span>Xóa</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
-
-                    </div>
-                ))}
+                    )))}
             </div>
 
-            {/* Footer */}
-            <div className="bg-white p-4 shadow-md z-10 sticky bottom-0 w-full border-t border-gray-200">
-                <div className="flex justify-between items-center mb-4">
+            <div className="bg-white mt-auto">
+                <div className="flex justify-between items-center p-4 border-t">
                     <span className="font-medium">Tổng tiền</span>
-                    <span className="text-primary font-medium">{formatPrice(totalAmount)}</span>
+                    <span className="text-primary font-bold text-xl">
+                        {totalPrice.toLocaleString()}đ
+                    </span>
                 </div>
-                <button className="w-full bg-primary text-white py-3 rounded-lg font-medium">
-                    Xác nhận gửi yêu cầu gọi món
-                </button>
+                <div className="p-4 pt-0">
+                    <button
+                        onClick={handleConfirmOrder}
+                        className="w-full bg-primary text-white py-3 rounded-full font-medium"
+                    >
+                        Xác nhận gửi yêu cầu gọi món
+                    </button>
+                </div>
             </div>
-        </div>
 
+            {showConfirmation && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                    <div className="bg-white rounded-lg p-6 max-w-sm mx-4 text-center">
+                        <div className="mb-4 text-xl font-bold">ĐÃ GỬI YÊU CẦU XÁC NHẬN</div>
+                        <p className="mb-6">Gọi món thành công vui lòng chờ nhân viên đến xác nhận</p>
+                        <button
+                            onClick={handleUnderstand}
+                            className="bg-blue-500 text-white px-8 py-2 rounded-full"
+                        >
+                            Đã hiểu
+                        </button>
+                    </div>
+                </div>
+            )}
+        </div>
     );
-}
+};
+
+export default CartDetails;

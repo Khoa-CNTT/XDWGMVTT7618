@@ -8,6 +8,8 @@ import { FaArrowLeft } from 'react-icons/fa';
 import { CategoryFilter } from '../components/C_CategoryFilter';
 import { useNavigate } from 'react-router-dom';
 import { removeFromCartDetail } from '../server/cartService';
+import { useLocation } from 'react-router-dom';
+
 
 export const Menu = ({ direction }) => {
     const [cart, setCart] = useState([]);
@@ -47,6 +49,16 @@ export const Menu = ({ direction }) => {
             console.error('Error fetching cart:', error);
         }
     };
+    const location = useLocation();
+
+    useEffect(() => {
+        const queryParams = new URLSearchParams(location.search);
+        const categoryFromURL = queryParams.get('category');
+        if (categoryFromURL) {
+            setSelectedCategory(categoryFromURL);
+        }
+    }, [location.search]);
+
 
 
 
