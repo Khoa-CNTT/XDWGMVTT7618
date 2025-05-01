@@ -196,6 +196,7 @@ export const Menu = ({ direction }) => {
                                 onAddToCart={addToCart}
                                 onRemoveFromCart={removeFromCart}
                                 quantity={getItemQuantity(item._id)}
+                                fetchCart={fetchCart}
                             />
                         ))
                     ) : (

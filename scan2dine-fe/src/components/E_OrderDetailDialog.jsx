@@ -3,53 +3,6 @@ import { FaUtensils, FaClock, FaCheckCircle, FaPrint, FaCheck, FaTimes, FaSpinne
 import { toast } from 'react-toastify';
 import api from '../server/api';
 
-
-// Dữ liệu mẫu
-const mockTableInfo = {
-    id: "table-123",
-    name: "Bàn số 15",
-    capacity: 4,
-    status: "occupied",
-    orderTime: "14:30 - 26/04/2025"
-};
-
-const mockOrderItems = [
-    {
-        id: "item-1",
-        name: "Phở bò tái",
-        price: 75000,
-        quantity: 2,
-        image: "https://example.com/pho.jpg", // Sẽ hiển thị icon khi ảnh không load được
-        notes: "Không hành, nhiều ớt"
-    },
-    {
-        id: "item-2",
-        name: "Gỏi cuốn tôm thịt",
-        price: 45000,
-        quantity: 1,
-        image: null,
-        notes: null
-    },
-    {
-        id: "item-3",
-        name: "Cơm rang hải sản",
-        price: 85000,
-        quantity: 1,
-        image: "https://example.com/rice.jpg",
-        notes: "Ít cay"
-    },
-    {
-        id: "item-4",
-        name: "Nước chanh tươi",
-        price: 25000,
-        quantity: 3,
-        image: null,
-        notes: "Ít đường"
-    }
-];
-
-
-
 const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -59,13 +12,13 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
 
     useEffect(() => {
         if (isOpen && tableId) {
-            // Giả lập việc tải dữ liệu với setTimeout
+            setLoading(true);
             setTimeout(() => {
-                fetchInfoOrder();
-                setLoading(false);
-            }, 700); // Giả lập delay 700ms
+                fetchInfoOrder().finally(() => setLoading(false));
+            }, 700);
         }
     }, [isOpen, tableId]);
+
 
     useEffect(() => {
         // Calculate total whenever orderItems change
@@ -77,22 +30,22 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
         }
     }, [orderItems]);
 
+    //lấy dữ liệu order
     const fetchInfoOrder = async () => {
         try {
             const res = await api.get(`/s2d/table/current/${tableId}`);
-            console.log('API của nhân viên', res);
-
-            setTableInfo(res.data.orders[0]); // Lấy đơn đầu tiên
-            console.log('Thông tin bàn', res.data.orders[0]);
-
-            setOrderItems(res.data.orders[0].products); // Lấy danh sách món ăn
-            console.log('Thông tin order', res.data.orders[0].products);
-
+            const order = res.data.orders[0];
+            setTableInfo(order);
+            setOrderItems(order.products);
+            setError(null); // clear error nếu fetch thành công
         } catch (error) {
             console.error('Lỗi fetchOrderItems', error);
+            setError("Không thể tải dữ liệu đơn hàng.");
         }
     };
 
+
+    //chỉnh formatDate
     const formatDate = (dateString) => {
         if (!dateString) return '';
 
@@ -106,6 +59,7 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
         });
     };
 
+    //hoàn thành đơn hàng
     const handleCompleteOrder = async () => {
         try {
             // Cập nhật trạng thái bàn
@@ -126,6 +80,7 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
         }
     };
 
+    //xác nhận món
     const handleConfirm = async () => {
         try {
             // Cập nhật trạng thái bàn
@@ -152,7 +107,6 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
         const printWindow = window.open('', '_blank', 'width=800,height=600');
         if (printWindow) {
             printWindow.document.write(`
-                < !DOCTYPE html >
                     <html lang="vi">
                         <head>
                             <meta charset="UTF-8">

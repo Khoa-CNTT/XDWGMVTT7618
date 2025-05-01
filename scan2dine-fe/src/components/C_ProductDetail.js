@@ -1,64 +1,44 @@
 import React, { useState, useRef } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import FlyItem from './C_FlyItem';
-import { addToCartDetail } from '../server/cartService';
+// import { addToCartDetail } from '../server/cartService';
+import api from '../server/api';
 
-function ProductDetail({ item, product, onClose, onAddToCart }) {
+function ProductDetail({ product, onClose, fetchCart, setShowDetail }) {
     const [quantity, setQuantity] = useState(1);
     const [note, setNote] = useState('');
     const [flyingItems, setFlyingItems] = useState([]);
     const buttonRef = useRef(null);
 
+    //Lấy dữ liệu của người dùng hiện tại
+    const customer = JSON.parse(sessionStorage.getItem("customer"));
+
+    //Tăng số lượng
     const handleIncrement = () => {
         setQuantity(prev => prev + 1);
     };
 
+    //giảm số lượng
     const handleDecrement = () => {
         setQuantity(prev => Math.max(1, prev - 1));
     };
 
-    const handleRemoveFlyingItem = (id) => {
-        setFlyingItems(prev => prev.filter(item => item.id !== id));
-    };
+    //Thêm vào giỏ hàng vs số lượng đã chọn
+    const handleAddToCartInDetail = async () => {
+        try {
+            const response = await api.post('/s2d/cartdetail', {
+                cart: customer.cart,
+                products: product._id,
+                quantity: quantity
+            });
+            fetchCart();
+            setShowDetail(false)
 
-    const createFlyingEffect = async () => {
-        const productImage = document.querySelector('.product-detail-image');
-        const cartIcon = document.querySelector('.cart-icon');
-
-        if (productImage && cartIcon) {
-
-            try {
-                // Add to cart once with the total quantity
-                await addToCartDetail(product._id, quantity);
-
-                // Create flying effect
-                const imgRect = productImage.getBoundingClientRect();
-                const cartRect = cartIcon.getBoundingClientRect();
-
-                const startPosition = {
-                    x: imgRect.left + (imgRect.width / 4),
-                    y: imgRect.top + (imgRect.height / 4)
-                };
-
-                const endPosition = {
-                    x: cartRect.left + (cartRect.width / 2),
-                    y: cartRect.top + (cartRect.height / 2)
-                };
-
-                const id = Date.now();
-                setFlyingItems(prev => [...prev, {
-                    id,
-                    imageUrl: `${process.env.REACT_APP_API_URL}/${product.image}`,
-                    startPosition,
-                    endPosition
-                }]);
-
-                setTimeout(() => {
-                    onClose();
-                }, 800);
-            } catch (error) {
-                console.error('Error adding to cart:', error);
-            }
+            console.log('Thêm vào giỏ hàng thành công:', response.data);
+            // Optional: Hiển thị thông báo thành công cho người dùng
+        } catch (error) {
+            console.error('Lỗi khi thêm vào giỏ hàng:', error);
+            // Optional: Hiển thị thông báo lỗi cho người dùng
         }
     };
 
@@ -66,7 +46,7 @@ function ProductDetail({ item, product, onClose, onAddToCart }) {
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
             <div className="bg-white rounded-3xl w-[90%] max-w-md p-6">
                 <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-[#C5A880] text-xl font-medium capitalize">{product.pd_name}</h3>
+                    <h3 className="text-black text-xl font-medium capitalize">{product.pd_name}</h3>
                     <button onClick={onClose} className="text-gray-400 hover:text-gray-600 rounded-full p-1">
                         <FaTimes size={20} />
                     </button>
@@ -115,7 +95,7 @@ function ProductDetail({ item, product, onClose, onAddToCart }) {
                     </div>
                     <button
                         ref={buttonRef}
-                        onClick={createFlyingEffect}
+                        onClick={handleAddToCartInDetail}
                         className="bg-primary text-white px-8 py-2.5 rounded-full hover:bg-primary/90 transition-colors">
                         Thêm giỏ hàng
                     </button>
@@ -128,7 +108,6 @@ function ProductDetail({ item, product, onClose, onAddToCart }) {
                     imageUrl={item.imageUrl}
                     startPosition={item.startPosition}
                     endPosition={item.endPosition}
-                    onAnimationEnd={handleRemoveFlyingItem}
                 />
             ))}
         </div>

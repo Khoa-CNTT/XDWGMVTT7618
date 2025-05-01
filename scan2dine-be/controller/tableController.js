@@ -168,8 +168,8 @@ const tableController = {
                     totalPrice: detail.quantity * detail.products.price,
 
                     image: detail.products.image,
-                    status: detail.status,
-                    image: detail.image
+                    status: detail.status
+                    // image: detail.image
 
 
                 })),
