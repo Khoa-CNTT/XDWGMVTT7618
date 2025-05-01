@@ -12,6 +12,8 @@ router.get('/:id',orderController.getAorder);
 router.delete('/:id', orderController.deleteOrder);
 // UPDATE ORDER
 router.patch('/:id', orderController.updateOrder);
+
 // update trạng thái tất cả chi tiết đơn hàng trong đơn hàng
-router.patch('/confirm-all/:id', orderController.confirmAllPendingDetails);
+// req: ID stall
+router.patch('/confirm-all/:id', orderController.confirmOrder);
 module.exports = router;
