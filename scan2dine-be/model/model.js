@@ -210,7 +210,10 @@ const tableSchema = new mongoose.Schema({
       ref: "Order",
     },
   ],
-
+  stall : {
+    type: String,
+    ref: "Stall"
+  }
 }, { collection: 'TABLE' });
 const roleSchema = new mongoose.Schema({
   role_name: {
