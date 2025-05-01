@@ -40,8 +40,10 @@ const orderController = {
     // GET ORDER BY ID
     getAorder: async (req, res) => {
         try {
+
             
             const getAorder = await Order.findById(req.params.id)
+
                 .populate({
                     path: "orderdetail",
                     select: "quantity products",
