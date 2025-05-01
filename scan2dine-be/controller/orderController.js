@@ -40,23 +40,27 @@ const orderController = {
     // GET ORDER BY ID
     getAorder: async (req, res) => {
         try {
-
-            
             const getAorder = await Order.findById(req.params.id)
-
                 .populate({
                     path: "orderdetail",
-                    select: "quantity products",
+                    select: "quantity products status",
                     populate: {
                         path: "products",
-                        select: "pd_name price stall",
+                        select: "pd_name image price stall",
                         populate: {
                             path: "stall_id",
                             select: "stall_name"
                         }
                     }
+                })
+                .populate({
+                    path: "customer",
+                    select: "name phone"
+                })
+                .populate({
+                    path: "table",
+                    select: "tb_number"
                 });
-
             if (!getAorder) {
                 return res.status(404).json('not found');
             };
