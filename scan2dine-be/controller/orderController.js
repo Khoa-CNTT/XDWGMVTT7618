@@ -149,6 +149,15 @@ const orderController = {
             return res.status(500).json({ message: "Server error", error: error.message || error });
         }
     },
+    confirmAllPendingDetails: async (req, res) => {
+        try {
+            const result = await confirmAllPendingOrderDetails(req.params.id);
+            res.status(200).json(result);
+        } catch (err) {
+            console.error('Error confirming all OrderDetails:', err);
+            res.status(500).json({ message: 'Internal server error' });
+        }
+    }
 }
 
 module.exports = orderController;
