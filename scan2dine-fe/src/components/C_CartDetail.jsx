@@ -9,6 +9,7 @@ const CartDetails = () => {
   const [loading, setLoading] = useState(true);
   const [expandedCounters, setExpandedCounters] = useState([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [editingCounter, setEditingCounter] = useState(null); // Thêm state cho việc chỉnh sửa
 
   const [orderResult, setOrderResult] = useState(null); //state lưu order
 
@@ -31,7 +32,6 @@ const CartDetails = () => {
       // Lọc những item thuộc cart hiện tại
       const currentCartItems = cartDetailRes.data.filter(
         item => item.cart._id === customer.cart
-
       );
 
       // Tạo map foodstall: id -> { name, itemCount }
@@ -60,8 +60,6 @@ const CartDetails = () => {
       });
 
       setCartItems(groupedItems);
-      // console.log('Grouped items:', groupedItems);
-
       setExpandedCounters(Object.keys(groupedItems)); // Mở tất cả stall khi load
       setLoading(false);
     } catch (error) {
@@ -70,8 +68,6 @@ const CartDetails = () => {
       setLoading(false);
     }
   };
-
-
 
   //thay đổi số lượng
   const handleUpdateQuantity = async (item, change) => {
@@ -96,17 +92,39 @@ const CartDetails = () => {
     );
   };
 
+  // Thêm hàm để chuyển chế độ chỉnh sửa
+  const toggleEdit = (stallId) => {
+    setEditingCounter(prev => prev === stallId ? null : stallId);
+  };
+
+  // Thêm hàm để xóa item
+  const removeItem = async (itemId) => {
+    try {
+      await api.delete(`/s2d/cartdetail/${itemId}`);
+      fetchCartItems();
+    } catch (error) {
+      console.error('Error removing item:', error);
+    }
+  };
+
+  //Sản phẩm tương tự
+  // const handleSimilarClick = (category) => {
+  //   if (!category) {
+  //     console.warn('Category is undefined, cannot navigate');
+  //     return;
+  //   }
+  //   navigate(`/menu?category=${encodeURIComponent(category)}`);
+  // };
+
+
   const totalPrice = Object.values(cartItems).reduce((sum, stall) => {
     return sum + stall.items.reduce((stallSum, item) => {
       return stallSum + parseInt(item.products.price) * item.quantity;
     }, 0);
   }, 0);
 
-
   const handleConfirmOrder = async () => {
     try {
-
-
       const res = await api.post('/s2d/cart/confirm', {
         cart: customer.cart,
         table: customer.idTable
@@ -126,6 +144,11 @@ const CartDetails = () => {
     navigate('/orderdetail', { state: { orderData: orderResult } }); // truyền qua state  
   };
 
+  // Hàm để hiển thị giá theo định dạng VND
+  const formatPrice = (price) => {
+    return parseInt(price).toLocaleString() + 'đ';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl overflow-hidden relative">
       <div className="bg-primary text-white p-4 flex items-center">
@@ -136,58 +159,120 @@ const CartDetails = () => {
       </div>
 
       <div className="flex-1 overflow-auto pb-24">
-        {Object.entries(cartItems).map(([stallId, stall]) => (
-          <div key={stallId} className="border-b">
-            <div className="flex items-center justify-between p-4">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2">
-                  <FaStore className="text-gray-500" />
-                  <span className="font-medium">{stall.stallName}</span>
-                  <span className="text-gray-500">({stall.items.length} món)</span>
-                </div>
-                <span className="text-sm text-gray-400">{stall.location}</span>
-              </div>
-              {/* <button
-                className="text-primary mr-2 text-sm font-medium"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleEdit(counter.id);
-                }}
-              >
-                {editingCounter === counter.id ? 'Xong' : 'Sửa'}
-              </button> */}
-              <button onClick={() => toggleCounter(stallId)} className="text-primary">
-                {expandedCounters.includes(stallId) ? <FaChevronUp /> : <FaChevronDown />}
-              </button>
-
+        {!loading && Object.keys(cartItems).length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 px-4">
+            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
             </div>
-
-            {expandedCounters.includes(stallId) && stall.items.map((item) => (
-              <div key={item._id} className="flex items-center gap-4 p-4 border-t">
-                <img
-                  src={`${process.env.REACT_APP_API_URL}/${item.products.image}`}
-                  alt={item.products.pd_name}
-                  className="w-16 h-16 object-cover rounded-lg"
-                />
-                <div className="flex-1">
-                  <h3 className="font-medium mb-2">{item.products.pd_name}</h3>
-                  <p className="text-primary font-medium mt-1">
-                    {parseInt(item.products.price).toLocaleString()}đ
-                  </p>
+            <h3 className="text-xl font-semibold text-gray-700 mb-2">Giỏ hàng trống</h3>
+            <p className="text-gray-500 text-center mb-6">Bạn chưa thêm bất kỳ món ăn nào vào giỏ hàng</p>
+            <button
+              onClick={() => navigate('/menu')}
+              className="flex items-center justify-center px-6 py-3 bg-primary text-white rounded-full font-medium transition-all hover:bg-opacity-90"
+            >
+              <FaStore className="mr-2" />
+              Khám phá món ăn
+            </button>
+          </div>
+        ) : (
+          Object.entries(cartItems).map(([stallId, stall]) => (
+            <div key={stallId} className="border-b bg-white mb-3">
+              <div
+                className="flex items-center justify-between p-4 cursor-pointer border-b border-gray-100"
+                onClick={() => toggleCounter(stallId)}
+              >
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <FaStore className="text-primary w-5 h-5 mr-2" />
+                    <span className="font-medium">{stall.stallName}</span>
+                    <span className="text-gray-500 text-sm">({stall.items.length} món)</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => handleUpdateQuantity(item, -1)} className="w-8 h-8 rounded-full bg-gray-400 flex items-center justify-center">
-                    <FaMinus className="text-white" />
+                <div className="flex items-center">
+                  <button
+                    className="text-primary mr-2 text-sm font-medium"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleEdit(stallId);
+                    }}
+                  >
+                    {editingCounter === stallId ? 'Xong' : 'Sửa'}
                   </button>
-                  <span className="w-4 text-center">{item.quantity}</span>
-                  <button onClick={() => handleUpdateQuantity(item, 1)} className="w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                    <FaPlus className="text-white" />
-                  </button>
+                  <FaChevronDown
+                    size={18}
+                    className={`text-gray-500 transition-transform ${expandedCounters.includes(stallId) ? 'transform rotate-180' : ''}`}
+                  />
                 </div>
               </div>
-            ))}
-          </div>
-        ))}
+
+              {/* Counter Items Wrapper với hiệu ứng trượt */}
+              <div
+                className={`transition-all duration-300 ease-in-out overflow-hidden ${expandedCounters.includes(stallId) ? 'max-h-[2000px]' : 'max-h-0'
+                  }`}
+              >
+                {stall.items.map((item) => (
+                  <div key={item._id} className="border-b border-gray-100 relative overflow-hidden">
+                    {/* Container for image and item details that slides together */}
+                    <div className={`flex p-3 transition-all duration-300 ${editingCounter === stallId ? 'transform -translate-x-32' : ''}`}>
+                      {/* Item image */}
+                      <div className="w-16 h-16 rounded-lg overflow-hidden mr-3 bg-gray-100 flex-shrink-0">
+                        <img
+                          src={`${process.env.REACT_APP_API_URL}/${item.products.image}`}
+                          alt={item.products.pd_name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+
+                      {/* Item details */}
+                      <div className="flex flex-col flex-1 justify-between">
+                        <div>
+                          <div className="font-medium">{item.products.pd_name}</div>
+                          <div className="text-primary font-medium mt-1">
+                            {formatPrice(item.products.price)}
+                          </div>
+                        </div>
+
+                        {/* Quantity controls */}
+                        <div className="flex items-center justify-end mt-1">
+                          <button
+                            onClick={() => handleUpdateQuantity(item, -1)}
+                            className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm"
+                          >
+                            <FaMinus size={14} color="white" />
+                          </button>
+                          <span className="mx-3 font-medium">{item.quantity}</span>
+                          <button
+                            onClick={() => handleUpdateQuantity(item, 1)}
+                            className="w-6 h-6 rounded-full bg-primary flex items-center justify-center shadow-sm"
+                          >
+                            <FaPlus size={14} color="white" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Extra buttons when editing - positioned absolutely */}
+                    <div
+                      // onClick={() => handleSimilarClick(item.products.category)}
+                      className={`absolute right-0 top-0 bottom-0 flex h-full items-center w-32 transition-opacity ${editingCounter === stallId ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                        }`}>
+                      <button className="bg-yellow-500 text-white text-xs flex-1 flex items-center justify-center h-full">
+                        <span className="text-xs px-1">Sản phẩm tương tự</span>
+                      </button>
+                      <button
+                        className="bg-primary text-white text-xs flex-1 flex items-center justify-center h-full"
+                        onClick={() => removeItem(item._id)}
+                      >
+                        <span>Xóa</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )))}
       </div>
 
       <div className="bg-white mt-auto">
@@ -221,6 +306,8 @@ const CartDetails = () => {
           </div>
         </div>
       )}
+
+
     </div>
   );
 };
