@@ -392,7 +392,7 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                                                     <div className="h-10 w-10 rounded bg-gray-200 mr-3 overflow-hidden">
                                                         {item.image ? (
                                                             <img
-                                                                src={item.image}
+                                                                src={`${process.env.REACT_APP_API_URL}/${item.image}`}
                                                                 alt={item.productName}
                                                                 className="h-full w-full object-cover"
                                                                 onError={(e) => {
