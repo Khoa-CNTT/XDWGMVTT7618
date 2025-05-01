@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FaFileExcel, FaFilePdf, FaChartBar, FaCalendarAlt, FaSearch } from 'react-icons/fa';
 import api from '../server/api';
-import axios from 'axios';
-
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -40,10 +38,11 @@ const O_CounterStatistics = ({ stallId }) => {
 
   const fetchStatistics = async () => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/s2d/statistics`, {
-        params: { startDate, endDate }
+      // This will be replaced with actual API call
+      const response = await api.get(`/s2d/statistics/${stallId}`, {
+        params: { dateRange, startDate, endDate }
       });
-      console.log(response.data);
+      setStatistics(response.data);
     } catch (error) {
       console.error('Error fetching statistics:', error);
     }

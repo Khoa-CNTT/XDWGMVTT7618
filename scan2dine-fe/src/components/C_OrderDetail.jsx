@@ -11,8 +11,6 @@ const formatPrice = (price) => {
 const OrderDetail = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
-    // const [editingCounter, setEditingCounter] = useState(null);
-    // const [expandedCounters, setExpandedCounters] = useState([]);
 
     const [orderDetails, setOrderDetails] = useState({
         orderNumber: '',
@@ -30,103 +28,136 @@ const OrderDetail = () => {
     const orderData = location.state?.orderData;
 
     useEffect(() => {
-        console.log('Order detail:', orderData);
+        console.log('order data', orderData);
+
     }, [orderData]);
 
-    const customer = JSON.parse(sessionStorage.getItem('customer'));
 
     useEffect(() => {
-        fetchOrderDetails();
-    }, []);
+        fetchOrderDetails(orderData);
+    }, [orderData]);
 
-    const fetchOrderDetails = async () => {
+    // const fetchOrderDetails = async () => {
+    //     try {
+
+
+    //         //Lấy danh sách sản phẩm
+    //         const { data: products } = await api.get('/s2d/product');
+    //         const productMap = Object.fromEntries(products.map(p => [p._id, p]));
+
+    //         const items = orderData.order.orderdetail || [];
+    //         let totalItems = 0;
+    //         let totalAmount = 0;
+
+    //         const flatItemsList = items.map(item => {
+    //             const product = productMap[item.product] || {};
+    //             const quantity = item.quantity || 0;
+    //             const price = parseInt(product.price) || 0;
+
+    //             totalItems += quantity;
+    //             totalAmount += price * quantity;
+
+    //             return {
+    //                 id: item.product,
+    //                 name: product.pd_name || 'Sản phẩm không xác định',
+    //                 image: product.image ? `${process.env.REACT_APP_API_URL}/${product.image}` : '',
+    //                 quantity,
+    //                 price,
+    //                 note: item.note,
+    //                 status: item.status
+    //             };
+    //         });
+
+    //         // Đọc từ localStorage một lần
+    //         const phone = orderData.order.customer.phone;
+    //         const customerName = orderData.order.customer.name;
+    //         const table = orderData.order.table.tb_number;
+
+
+    //         setOrderDetails({
+    //             orderNumber: orderData.order.orderCode || '#12345',
+    //             startTime: new Date(orderData.order.createdAt).toLocaleString(),
+    //             endTime: '',
+    //             phone,
+    //             customerName,
+    //             table,
+    //             items: flatItemsList,
+    //             totalAmount,
+    //             totalItems
+    //         });
+
+    //     } catch (error) {
+    //         console.error('Lỗi khi lấy chi tiết đơn hàng:', error);
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // };
+
+
+    const fetchOrderDetails = async (orderData) => {
         try {
-            // Lấy dữ liệu foodstalls từ API
-            const foodstallsRes = await api.get('/s2d/foodstall');
-            const foodstalls = foodstallsRes.data;
+            setLoading(true);
 
-            // Dữ liệu đơn hàng
-            const items = orderData.order.orderdetail;
-            console.log("đơn hàng", items);
+            // 1. Lấy chi tiết đơn hàng
+            const { data: orderRes } = await api.get(`/s2d/order/${orderData.order._id}`);
+            const order = orderRes.order;
 
-            // Nếu cần thêm thông tin sản phẩm (vd: pd_name, image, price),
-            // bạn cần fetch dữ liệu từ API sản phẩm
-            const productsRes = await api.get('/s2d/product');
-            const products = productsRes.data;
+            // 2. Lấy danh sách sản phẩm
+            const { data: products } = await api.get('/s2d/product');
+            const productMap = Object.fromEntries(products.map(p => [p._id, p]));
 
-            // Tạo bản đồ để tra cứu chi tiết sản phẩm
-            const productMap = {};
-            products.forEach(prod => {
-                productMap[prod._id] = prod;
-            });
+            const items = order.orderdetail || [];
+            let totalItems = 0;
+            let totalAmount = 0;
 
-            // Tạo danh sách phẳng các sản phẩm
             const flatItemsList = items.map(item => {
-                const product = productMap[item.product];
+                const product = productMap[item.product] || {};
+                const quantity = item.quantity || 0;
+                const price = parseInt(product.price) || 0;
+
+                totalItems += quantity;
+                totalAmount += price * quantity;
+
                 return {
                     id: item.product,
-                    name: product?.pd_name || 'Sản phẩm không xác định',
-                    image: product?.image ? `${process.env.REACT_APP_API_URL}/${product.image}` : '',
-                    quantity: item.quantity,
-                    price: product?.price || 0,
+                    name: product.pd_name || 'Sản phẩm không xác định',
+                    image: product.image ? `${process.env.REACT_APP_API_URL}/${product.image}` : '',
+                    quantity,
+                    price,
                     note: item.note,
                     status: item.status
                 };
             });
 
-            // Tính tổng
-            const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
-            const totalAmount = items.reduce((sum, item) => {
-                const product = productMap[item.product];
-                return sum + (parseInt(product?.price || 0) * item.quantity);
-            }, 0);
+            const phone = order.customer?.phone || '';
+            const customerName = order.customer?.name || '';
+            const table = order.table?.tb_number || '';
 
-            // Cập nhật state
             setOrderDetails({
-                orderNumber: orderData.order.orderCode || '#12345',
-                startTime: new Date(orderData.order.createdAt).toLocaleString(),
+                orderNumber: order.orderCode || '#12345',
+                startTime: new Date(order.createdAt).toLocaleString(),
                 endTime: '',
-                phone: localStorage.getItem('phone') || '',
-                customerName: localStorage.getItem('customerName') || '',
-                table: localStorage.getItem('tableId') || '',
+                phone,
+                customerName,
+                table,
                 items: flatItemsList,
                 totalAmount,
                 totalItems
             });
 
-            setLoading(false);
         } catch (error) {
-            console.error('Error fetching order details:', error);
+            console.error('Lỗi khi lấy chi tiết đơn hàng:', error);
+        } finally {
             setLoading(false);
         }
     };
-
-    // const adjustQuantity = (itemId, delta) => {
-    //     setOrderDetails(prev => {
-    //         const updatedItems = prev.items.map(item =>
-    //             item.id === itemId
-    //                 ? { ...item, quantity: Math.max(item.quantity + delta, 1) }
-    //                 : item
-    //         );
-
-    //         const newTotalItems = updatedItems.reduce((sum, item) => sum + item.quantity, 0);
-    //         const newTotalAmount = updatedItems.reduce((sum, item) => sum + (parseInt(item.price) * item.quantity), 0);
-
-    //         return {
-    //             ...prev,
-    //             items: updatedItems,
-    //             totalItems: newTotalItems,
-    //             totalAmount: newTotalAmount
-    //         };
-    //     });
-    // };
 
     const handleRequestMore = () => navigate('/menu');
     const handlePayment = () => console.log('Processing payment...');
 
     if (loading) return <div className="min-h-screen flex justify-center items-center">Loading...</div>;
 
-    // Status badge renderer
+    // Custom status
     const renderStatusBadge = (status) => {
         let bgColor = 'bg-gray-200 text-gray-700';
 

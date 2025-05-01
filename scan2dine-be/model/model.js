@@ -49,6 +49,10 @@ const foodstallsSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Review",
   },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
 }, { collection: 'FOODSTALL' });
 
 const cartSchema = new mongoose.Schema({
@@ -206,7 +210,10 @@ const tableSchema = new mongoose.Schema({
       ref: "Order",
     },
   ],
-
+  stall : {
+    type: String,
+    ref: "Stall"
+  }
 }, { collection: 'TABLE' });
 const roleSchema = new mongoose.Schema({
   role_name: {

@@ -14,17 +14,15 @@ const CartDetails = () => {
 
   //lấy thông tin cusomer
   const customer = JSON.parse(sessionStorage.getItem('customer'));
+
+  //load dữ liệu
   useEffect(() => {
     fetchCartItems();
   }, []);
 
+  //lấy dữ liệu
   const fetchCartItems = async () => {
     try {
-      // if (!customer.cart) {
-      //   setCartItems({});
-      //   setLoading(false);
-      //   return;
-      // }
       const [cartDetailRes, foodstallRes] = await Promise.all([
         api.get('/s2d/cartdetail'),
         api.get('/s2d/foodstall')
@@ -75,7 +73,7 @@ const CartDetails = () => {
 
 
 
-
+  //thay đổi số lượng
   const handleUpdateQuantity = async (item, change) => {
     try {
       const newQuantity = item.quantity + change;

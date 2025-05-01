@@ -123,10 +123,10 @@ const tableController = {
             // Log để kiểm tra thông tin bàn
             console.log("Table found:", table);
 
-            // Lọc các đơn hàng có trạng thái "Chưa thanh toán" (mã trạng thái "2")
+            // Lọc các đơn hàng có trạng thái 1, 2
             const orders = await Order.find({
                 table: table._id,
-                od_status: "2"  // Trạng thái "Chưa thanh toán"
+                od_status: { $in: ["1", "2"] }// lọc ra các order có status 1: chờ xác nhận và 2: chưa thanh toán
             })
                 .populate({
                     path: 'orderdetail',
@@ -157,6 +157,7 @@ const tableController = {
                     email: order.customer.email, // Thêm thông tin khách hàng (email)
                 },
                 tableNumber: order.table ? order.table.tb_number : "Not assigned", // Thêm thông tin số bàn
+                tableStatus: table.status,
                 totalAmount: order.total_amount,
                 orderNote: order.od_note,
                 paymentStatus: order.payment ? order.payment.status : "Not paid", // Trạng thái thanh toán
@@ -165,8 +166,12 @@ const tableController = {
                     price: detail.products.price,
                     quantity: detail.quantity,
                     totalPrice: detail.quantity * detail.products.price,
+
                     image: detail.products.image,
-                    status: detail.status
+                    status: detail.status,
+                    image: detail.image
+
+
                 })),
                 updatedAt: order.updatedAt,
                 createdAt: order.od_date,
