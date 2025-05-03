@@ -69,7 +69,7 @@ export const MenuItem = ({ item, onAddToCart, onRemoveFromCart, quantity, fetchC
             {quantity > 0 && (
               <>
                 <button
-                  className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-gray-400 flex items-center justify-center"
+                  className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-gray-400 flex items-center justify-center"
                   onClick={(e) => {
                     e.stopPropagation();
                     onRemoveFromCart(item);
@@ -82,7 +82,7 @@ export const MenuItem = ({ item, onAddToCart, onRemoveFromCart, quantity, fetchC
             )}
             <button
               ref={buttonRef}
-              className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-primary flex items-center justify-center"
+              className="w-5 h-5 sm:w-5 sm:h-5 md:w-6 md:h-6 rounded-full bg-primary flex items-center justify-center"
               onClick={(e) => {
                 e.stopPropagation();
                 onAddToCart(item);
@@ -91,7 +91,7 @@ export const MenuItem = ({ item, onAddToCart, onRemoveFromCart, quantity, fetchC
                 }, 0); // Delay để DOM cập nhật xong
               }}
             >
-              <FaPlus className="text-white w-[60%] h-[60%]" />
+              <FaPlus className="text-white  w-[60%] h-[60%]" />
             </button>
           </div>
         </div>
