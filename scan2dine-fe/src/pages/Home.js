@@ -84,7 +84,7 @@ const Home = ({ direction }) => {
     const handleLogout = () => {
         sessionStorage.removeItem("customer");
         setIsLoggedIn(false);
-        navigate("/");
+        navigate(`/?table=${customer.table}&id=${customer.idTable}`);
     };
 
 
@@ -163,6 +163,7 @@ const Home = ({ direction }) => {
                                     alt="Gọi nhân viên"
                                     className="w-full max-w-[250px] aspect-square rounded-lg shadow-md cursor-pointer hover:scale-105 transition-transform duration-200"
                                     onClick={() => setShowStaffForm(true)}
+
                                 />
                             </div>
 
@@ -175,8 +176,6 @@ const Home = ({ direction }) => {
                                     onClick={() => setShowReviewForm(true)}
                                 />
                             </div>
-
-
                         </div>
                     </div >
 
@@ -185,7 +184,6 @@ const Home = ({ direction }) => {
 
                 </div >
             )}
-
 
             {showConfirmLogout && (
                 <ConfirmLogoutModal

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { FaArrowLeft, FaMinus, FaPlus, FaStore, FaChevronDown, FaChevronUp } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import api from '../server/api';
+import ConfirmModal from './ConfirmModal';
 
 const CartDetails = () => {
   const navigate = useNavigate();
@@ -9,6 +10,9 @@ const CartDetails = () => {
   const [loading, setLoading] = useState(true);
   const [expandedCounters, setExpandedCounters] = useState([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [showUnderstand, setShowUnderstand] = useState(false);
+  const [itemDelete, setItemDelete] = useState([]);
+
   const [editingCounter, setEditingCounter] = useState(null); // Thêm state cho việc chỉnh sửa
 
   const [orderResult, setOrderResult] = useState(null); //state lưu order
@@ -97,6 +101,8 @@ const CartDetails = () => {
     setEditingCounter(prev => prev === stallId ? null : stallId);
   };
 
+
+
   // Thêm hàm để xóa item
   const removeItem = async (itemId) => {
     try {
@@ -116,13 +122,14 @@ const CartDetails = () => {
   //   navigate(`/menu?category=${encodeURIComponent(category)}`);
   // };
 
-
+  // tổng tiền
   const totalPrice = Object.values(cartItems).reduce((sum, stall) => {
     return sum + stall.items.reduce((stallSum, item) => {
       return stallSum + parseInt(item.products.price) * item.quantity;
     }, 0);
   }, 0);
 
+  //xác nhận đơn hàng
   const handleConfirmOrder = async () => {
     try {
       const res = await api.post('/s2d/cart/confirm', {
@@ -133,14 +140,15 @@ const CartDetails = () => {
         status: '3'
       })
       setOrderResult(res.data);
-      setShowConfirmation(true);
+      setShowUnderstand(true);
     } catch (error) {
       console.error('Error confirming order:', error);
     }
   };
 
+  //Nhấn đã hiểu chuyển form
   const handleUnderstand = () => {
-    setShowConfirmation(false);
+    setShowUnderstand(false);
     navigate('/orderdetail', { state: { orderData: orderResult } }); // truyền qua state  
   };
 
@@ -148,6 +156,11 @@ const CartDetails = () => {
   const formatPrice = (price) => {
     return parseInt(price).toLocaleString() + 'đ';
   };
+
+  const handleDelete = (item) => {
+    setShowConfirmation(true);
+    setItemDelete(item)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl overflow-hidden relative">
@@ -263,7 +276,8 @@ const CartDetails = () => {
                       </button>
                       <button
                         className="bg-primary text-white text-xs flex-1 flex items-center justify-center h-full"
-                        onClick={() => removeItem(item._id)}
+                        onClick={() => handleDelete(item)
+                        }
                       >
                         <span>Xóa</span>
                       </button>
@@ -291,8 +305,7 @@ const CartDetails = () => {
           </button>
         </div>
       </div>
-
-      {showConfirmation && (
+      {showUnderstand && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-sm mx-4 text-center">
             <div className="mb-4 text-xl font-bold">ĐÃ GỬI YÊU CẦU XÁC NHẬN</div>
@@ -305,7 +318,19 @@ const CartDetails = () => {
             </button>
           </div>
         </div>
-      )}
+      )},
+      {showConfirmation && (
+        <ConfirmModal
+          title="Xác nhận xóa sản phẩm khỏi giỏ hàng"
+          message="Bạn có chắc chắn muốn xóa sản phẩm này khỏi giỏ hàng không?"
+          onConfirm={() => {
+            removeItem(itemDelete._id);
+            setShowConfirmation(false);
+          }
+          }
+          onCancel={() => setShowConfirmation(false)}
+        />
+      )},
 
 
     </div>
