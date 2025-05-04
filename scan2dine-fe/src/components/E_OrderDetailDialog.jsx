@@ -10,16 +10,18 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     const [orderItems, setOrderItems] = useState([]);
     const [total, setTotal] = useState(0);
 
+    //load dữ liệu thông tin đơn hàng
     useEffect(() => {
         if (isOpen && tableId) {
             setLoading(true);
             setTimeout(() => {
                 fetchInfoOrder().finally(() => setLoading(false));
-            }, 700);
+            }, 500);
         }
+
     }, [isOpen, tableId]);
 
-
+    //load dữ liệu thông tin tổng đơn hàng
     useEffect(() => {
         // Calculate total whenever orderItems change
         if (orderItems.length > 0) {
@@ -35,12 +37,15 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
         try {
             const res = await api.get(`/s2d/table/current/${tableId}`);
             const order = res.data.orders[0];
+            console.log(order);
+
             setTableInfo(order);
             setOrderItems(order.products);
+
             setError(null); // clear error nếu fetch thành công
         } catch (error) {
             console.error('Lỗi fetchOrderItems', error);
-            setError("Không thể tải dữ liệu đơn hàng.");
+            setError("Bàn trống.");
         }
     };
 
@@ -83,15 +88,8 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     //xác nhận món
     const handleConfirm = async () => {
         try {
-            // Cập nhật trạng thái bàn
-            await api.patch(`/s2d/table/${tableId}`, {
-                status: '2',
-            });
-
-            // Cập nhật trạng thái đơn hàng
-            await api.patch(`/s2d/order/${tableInfo.orderId}`, {
-                status: '2',
-            });
+            // Cập nhật trạng thái bàn,order và orderdetail
+            await api.patch(`/s2d/order/confirm-all/${tableInfo.orderId}`);
             fetchInfoOrder()
             fetchTables()
             // Nếu cần, thêm thông báo thành công
@@ -226,6 +224,7 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     };
 
+    //chuyển đổi tình trạng đơn hàng
     const getStatusLabel = (status) => {
         switch (status) {
             case '1':
@@ -386,12 +385,12 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                                             <span className="font-medium">{formatCurrency(total)}</span>
                                         </div>
                                         <div className="flex justify-between py-1">
-                                            <span className="text-gray-600">Thuế (8%)</span>
-                                            <span className="font-medium">{formatCurrency(total * 0.08)}</span>
+                                            <span className="text-gray-600">VAT (0%)</span>
+                                            <span className="font-medium">{formatCurrency(total * 0.00)}</span>
                                         </div>
                                         <div className="flex justify-between py-2 text-lg font-bold mt-1">
                                             <span>Tổng cộng</span>
-                                            <span className="text-primary">{formatCurrency(total * 1.08)}</span>
+                                            <span className="text-primary">{formatCurrency(total * 1.00)}</span>
                                         </div>
                                     </div>
                                 )}
@@ -406,11 +405,18 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                         <div className="grid grid-cols-3 gap-3">
                             <button
                                 onClick={handleConfirm}
-                                className="px-3 py-2 bg-blue-500 text-white rounded-md flex items-center justify-center hover:bg-blue-600 transition-colors text-sm"
+                                disabled={tableInfo.tableStatus === '2'} // Chỉ disabled khi status của bàn là '2'
+                                className={`px-3 py-2 rounded-md flex items-center justify-center text-sm transition-colors 
+                                    ${tableInfo.tableStatus === '2'
+                                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed' // Nút mờ khi status là '2'
+                                        : 'bg-blue-500 text-white hover:bg-blue-600'} // Nút bình thường khi status không phải '2'
+                                `}
                             >
                                 <FaCheck className="mr-1" size={12} />
                                 Xác nhận
                             </button>
+
+
                             <button
                                 onClick={handlePrintBill}
                                 className="px-3 py-2 bg-gray-700 text-white rounded-md flex items-center justify-center hover:bg-gray-800 transition-colors text-sm"

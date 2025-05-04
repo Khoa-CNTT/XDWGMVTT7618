@@ -4,7 +4,10 @@ import { useNavigate } from 'react-router-dom';
 
 const CartBar = ({ totalItems, totalPrice }) => {
     const navigate = useNavigate();
-
+    //custom fortmat giá tiền
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    };
     return (
         <div className="fixed bottom-4 left-4 z-40">
             <div className="fixed bottom-0 left-0 right-0 z-40 flex justify-center px-4">
@@ -13,7 +16,7 @@ const CartBar = ({ totalItems, totalPrice }) => {
                         <FaShoppingCart id="cart-icon" className="text-primary relative" />
                         <span className="text-sm font-medium">{totalItems} món</span>
                         <span className="text-sm font-semibold text-primary">
-                            {totalPrice.toLocaleString()}đ
+                            {formatCurrency(totalPrice)}
                         </span>
                     </div>
                     <button

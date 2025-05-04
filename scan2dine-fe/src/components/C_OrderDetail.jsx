@@ -125,6 +125,11 @@ const OrderDetail = () => {
         }
     };
 
+    //custom fortmat giá tiền
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+    };
+
     return (
         <div className="min-h-screen bg-white flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl">
             <div className="bg-primary text-white p-4 relative">
@@ -169,7 +174,7 @@ const OrderDetail = () => {
                 <div className="flex justify-between items-center mb-4">
                     <span className="font-medium">Tổng tiền ({orderDetails.totalItems} món):</span>
                     <span className="text-primary font-bold text-xl">
-                        {orderDetails.totalAmount.toLocaleString()}đ
+                        {formatCurrency(orderDetails.totalAmount)}
                     </span>
                 </div>
                 <div className="flex gap-4">
