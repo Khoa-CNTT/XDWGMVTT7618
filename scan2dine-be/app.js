@@ -11,7 +11,11 @@ const cartRoute = require('./routes/cart');
 const categoryRoute = require('./routes/category');
 const productRoute = require('./routes/product');
 const foodstallRoute = require('./routes/foodstall');
+
+//------------------------------------------
 const zalopay = require('./routes/zaloRoute');
+const vietqrRoutes = require('./routes/vietqrRouter');
+const emailRoutes = require('./routes/emailRouter');
 //-----------------------------
 const bodyParser = require('body-parser');
 //-------------------------------
@@ -78,6 +82,8 @@ app.use('/s2d/table', tableRoute);
 app.use('/s2d/user', userRoute);
 app.use('/s2d/role',roleRoute);
 app.use('/s2d/orderpayment',zalopay);
+app.use('/s2d/vietqr', vietqrRoutes);
+app.use('/s2d/check-email', emailRoutes);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
