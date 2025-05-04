@@ -278,7 +278,7 @@ const paymentSchema = new mongoose.Schema({
     type: String,
   },
   status: {
-    types: String,
+    type: String,
   },
 }, { collection: 'PAYMENT' });
 let Customer = mongoose.model("Customer", customerSchema);

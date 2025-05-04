@@ -11,7 +11,7 @@ const cartRoute = require('./routes/cart');
 const categoryRoute = require('./routes/category');
 const productRoute = require('./routes/product');
 const foodstallRoute = require('./routes/foodstall');
-
+const zalopay = require('./routes/zaloRoute');
 //-----------------------------
 const bodyParser = require('body-parser');
 //-------------------------------
@@ -24,6 +24,10 @@ const orderdetailRoute = require('./routes/orderdetail');
 const tableRoute = require('./routes/table');
 const userRoute = require('./routes/User');
 const roleRoute = require('./routes/role')
+//------------------------------------------
+require("dotenv").config();
+
+
 var app = express();
 const dotenv = require("dotenv");
 dotenv.config();
@@ -43,7 +47,7 @@ connectDB();
 //Hàng của front-end
 const cors = require('cors');
 app.use(cors());
-// hello fen
+
 
 
 // view engine setup
@@ -73,6 +77,8 @@ app.use('/s2d/orderdetail', orderdetailRoute);
 app.use('/s2d/table', tableRoute);
 app.use('/s2d/user', userRoute);
 app.use('/s2d/role',roleRoute);
+app.use('/s2d/orderpayment',zalopay);
+
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
