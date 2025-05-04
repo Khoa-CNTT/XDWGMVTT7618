@@ -22,5 +22,4 @@ const vietqrController = {
     }
   }
 };
-
 module.exports = vietqrController;
