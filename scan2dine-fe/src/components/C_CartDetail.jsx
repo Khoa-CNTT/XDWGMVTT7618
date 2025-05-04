@@ -152,15 +152,16 @@ const CartDetails = () => {
     navigate('/orderdetail', { state: { orderData: orderResult } }); // truyền qua state  
   };
 
-  // Hàm để hiển thị giá theo định dạng VND
-  const formatPrice = (price) => {
-    return parseInt(price).toLocaleString() + 'đ';
-  };
+
 
   const handleDelete = (item) => {
     setShowConfirmation(true);
     setItemDelete(item)
   }
+
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl overflow-hidden relative">
@@ -243,7 +244,7 @@ const CartDetails = () => {
                         <div>
                           <div className="font-medium">{item.products.pd_name}</div>
                           <div className="text-primary font-medium mt-1">
-                            {formatPrice(item.products.price)}
+                            {formatCurrency(item.products.price)}
                           </div>
                         </div>
 
@@ -293,7 +294,7 @@ const CartDetails = () => {
         <div className="flex justify-between items-center p-4 border-t">
           <span className="font-medium">Tổng tiền</span>
           <span className="text-primary font-bold text-xl">
-            {totalPrice.toLocaleString()}đ
+            {formatCurrency(totalPrice)}
           </span>
         </div>
         <div className="p-4 pt-0">

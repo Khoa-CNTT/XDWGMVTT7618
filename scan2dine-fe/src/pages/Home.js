@@ -11,6 +11,8 @@ import { Footer } from '../components/Footer';
 import CustomerLogin from './FillInfo';
 import ConfirmLogoutModal from '../components/ConfirmLogoutModal';
 import { FaArrowLeft } from 'react-icons/fa';
+import { C_ConfirmCallStaff } from '../components/C_ConfirmCallStaff';
+import api from '../server/api';
 
 
 const Home = ({ direction }) => {
@@ -78,6 +80,29 @@ const Home = ({ direction }) => {
         setIsLoggedIn(true);
         sessionStorage.setItem("customer", JSON.stringify({ phone, name }));
     };
+
+    //gọi nhân viên
+    const callStaff = async (idTable) => {
+        try {
+            await api.patch(`/s2d/table/${idTable}`, {
+                status: '4',
+            })
+
+        } catch (error) {
+
+        }
+    }
+    const cancelCallStaff = async (idTable) => {
+        try {
+            await api.patch(`/s2d/table/${idTable}`, {
+                status: '2',
+            })
+            setShowStaffForm(false)
+
+        } catch (error) {
+
+        }
+    }
 
 
     //thích thì dùng
@@ -162,7 +187,10 @@ const Home = ({ direction }) => {
                                     src={imgBtnGoiNV}
                                     alt="Gọi nhân viên"
                                     className="w-full max-w-[250px] aspect-square rounded-lg shadow-md cursor-pointer hover:scale-105 transition-transform duration-200"
-                                    onClick={() => setShowStaffForm(true)}
+                                    onClick={() => {
+                                        setShowStaffForm(true);
+                                        callStaff(customer.idTable)
+                                    }}
 
                                 />
                             </div>
@@ -184,6 +212,17 @@ const Home = ({ direction }) => {
 
                 </div >
             )}
+            {
+                showStaffForm && (
+                    <C_ConfirmCallStaff
+                        title="Đã gửi yêu cầu đến nhân viên"
+                        message="Nhân viên đang đến bạn vui lòng chờ một chút ..."
+                        onConfirm={() => setShowStaffForm(false)}
+                        onCancel={() => cancelCallStaff(customer.idTable)}
+                    />
+                )
+
+            }
 
             {showConfirmLogout && (
                 <ConfirmLogoutModal

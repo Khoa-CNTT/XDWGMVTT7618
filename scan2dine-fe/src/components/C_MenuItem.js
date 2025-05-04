@@ -43,6 +43,10 @@ export const MenuItem = ({ item, onAddToCart, onRemoveFromCart, quantity, fetchC
     setFlyingItems(prev => prev.filter(item => item.id !== id));
   };
 
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+  };
+
   return (
     <>
       <div className="bg-white p-2 relative mt-2 transition duration-300 hover:shadow-lg hover:scale-[1.02] rounded-lg">
@@ -62,7 +66,7 @@ export const MenuItem = ({ item, onAddToCart, onRemoveFromCart, quantity, fetchC
         <div className="flex items-center justify-between px-1 mt-auto">
           <div className="px-3 py-1 rounded-full mr-3 flex-shrink-0">
             <p className="text-primary font-medium whitespace-nowrap">
-              {parseInt(item.price).toLocaleString()}đ
+              {formatCurrency(item.price)}
             </p>
           </div>
           <div className="flex items-center gap-1">

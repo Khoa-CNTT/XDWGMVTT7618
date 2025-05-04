@@ -76,7 +76,7 @@ export const EmployeePage = () => {
             {/* Header */}
             <div className="bg-primary p-4 text-white flex items-center justify-between shadow-md">
                 <div className="flex items-center">
-                    <span className="font-medium text-lg">{`Xin chào, ${userName}`}</span>
+                    <span className="font-medium text-lg">{`Xin chào, ${user.user?.full_name}`}</span>
                 </div>
                 <div
                     className="flex items-center cursor-pointer hover:bg-primary-dark p-2 rounded-full transition-all duration-300"

@@ -1,7 +1,7 @@
 import React from 'react'
 
-const formatPrice = (price) => {
-    return parseInt(price).toLocaleString() + 'đ';
+const formatPrice = (amount) => {
+    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
 };
 
 export const C_OrderDetailItem = ({ item, renderStatusBadge }) => {

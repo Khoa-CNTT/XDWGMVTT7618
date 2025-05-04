@@ -163,30 +163,30 @@ const orderController = {
             // cập nhật trạng thái của table
             await Table.findByIdAndUpdate(result.order.table, {
                 $set: {
-                    status: '3' 
-                } 
+                    status: '2' //chổ này là 2 thay vì '3' vì lúc này mình xác nhận 
+                }
             })
-             // Lấy lại đơn hàng sau khi cập nhật để gửi về client
+            // Lấy lại đơn hàng sau khi cập nhật để gửi về client
             const updatedOrder = await Order.findById(req.params.id)
-            .populate('customer', 'name phone')
-            .populate('table', 'tb_number status') // lấy luôn trạng thái bàn
-            .populate({
-                path: 'orderdetail',
-                populate: { path: 'products', select: 'pd_name price' }
-            });
+                .populate('customer', 'name phone')
+                .populate('table', 'tb_number status') // lấy luôn trạng thái bàn
+                .populate({
+                    path: 'orderdetail',
+                    populate: { path: 'products', select: 'pd_name price' }
+                });
 
-        // Trả về thông tin chi tiết đã được cập nhật
-        res.status(200).json({
-            message: 'Xác nhận món thành công',
-            order: {
-                _id: updatedOrder._id,
-                customer: updatedOrder.customer,
-                table: updatedOrder.table,
-                status: updatedOrder.od_status,
-                orderdetail: updatedOrder.orderdetail,
-                updatedAt: updatedOrder.updatedAt
-            }
-        });
+            // Trả về thông tin chi tiết đã được cập nhật
+            res.status(200).json({
+                message: 'Xác nhận món thành công',
+                order: {
+                    _id: updatedOrder._id,
+                    customer: updatedOrder.customer,
+                    table: updatedOrder.table,
+                    status: updatedOrder.od_status,
+                    orderdetail: updatedOrder.orderdetail,
+                    updatedAt: updatedOrder.updatedAt
+                }
+            });
         } catch (err) {
             console.error('Error confirming all OrderDetails:', err);
             res.status(500).json({ message: 'Internal server error' });
