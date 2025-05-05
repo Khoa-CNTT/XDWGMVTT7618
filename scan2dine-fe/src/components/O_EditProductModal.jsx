@@ -12,8 +12,6 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
     });
 
     useEffect(() => {
-        console.log("📦 Product passed to modal:", product);
-    
         if (product) {
             setFormData({
                 pd_name: !product.pd_name || product.pd_name === 'undefined' ? '' : product.pd_name,
