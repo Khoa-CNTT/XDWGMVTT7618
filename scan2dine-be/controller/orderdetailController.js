@@ -42,9 +42,9 @@ const orderdetailCOntroller = {
             const getOrderdetail = await Orderdetail.find().select("quantity products status order total") // lấy quantity và products
                 .populate({
                     path: "products",
-                    select: "pd_name price stall",
+                    select: "pd_name price stall_id",
                     populate: {
-                        path: "stall",
+                        path: "stall_id",
                         select: "stall_name" // chỉ lấy tên quầy hàng
                     }
                 });

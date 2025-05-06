@@ -221,10 +221,10 @@ const foodstallController = {
   // lấy thông tin đơn hàng của quầy hàng
   getOrderDetailByStall: async (req, res) => {
     try {
-        const { stall } = req.params;
+        const { id: stall } = req.params;
+
         const orderDetails = await Orderdetail.find({
-            stall: stall,
-            status: { $ne: "1" },
+            status: { $ne: "Xác nhận" },
         }).populate({
             path: "order",
             select: "table od_status orderdetail",
@@ -232,55 +232,49 @@ const foodstallController = {
                 {
                     path: "table",
                     select: "tb_number status",
-                },  
+                },
                 {
                     path: "orderdetail",
                     populate: {
                         path: "products",
-                        select: "pd_name price total image ",
-                    }
+                        select: "pd_name price total stall_id",
+                        populate: {
+                            path: "stall_id",
+                            select: "stall_name",
+                        },
+                    },
                 },
             ],
         });
 
-        // Format ban đầu từ mỗi Orderdetail
         const formatted = orderDetails.map((od) => {
             const order = od.order;
+
+            const filteredDetails = order.orderdetail.filter((item) => {
+                console.log(">>> item stall ID:", item.products?.stall_id?._id?.toString());
+                console.log(">>> param stall:", stall);
+                return item.products?.stall_id?._id?.toString() === stall;
+            });
+            
+
             return {
-                order_id: order._id.toString(), // hoặc order._id nếu bạn dùng ObjectId
+                order_id: order._id.toString(),
                 order_status: order.od_status,
                 table_number: order.table?.tb_number,
                 table_status: order.table?.status,
-                orderdetail: order.orderdetail.map((item) => ({
+                orderdetail: filteredDetails.map((item) => ({
                     product_name: item.products?.pd_name,
                     price: item.products?.price,
                     quantity: item.quantity,
-                    image: item.products?.image,
                     status: item.status,
-                    total: item.total,
-                    stall: item.products?.stall_name
+                    stall: item.products?.stall_id?.stall_name,
                 })),
             };
         });
 
-        // Gom nhóm các order theo order_id
-        const ordersMap = formatted.reduce((acc, curr) => {
-            if (!acc[curr.order_id]) {
-                acc[curr.order_id] = { ...curr };
-            } else {
-                // Nếu order đã tồn tại, gộp mảng orderdetail lại
-                acc[curr.order_id].orderdetail = [
-                    ...acc[curr.order_id].orderdetail,
-                    ...curr.orderdetail,
-                ];
-            }
-            return acc;
-        }, {});
+        const filteredOrders = formatted.filter(order => order.orderdetail.length > 0);
 
-        // Chuyển sang mảng
-        const dedupedOrders = Object.values(ordersMap);
-
-        res.status(200).json(dedupedOrders);
+        res.status(200).json(filteredOrders);
     } catch (error) {
         res.status(500).json({ message: "Lỗi server", error: error.message });
     }
