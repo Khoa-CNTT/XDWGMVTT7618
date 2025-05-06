@@ -221,7 +221,7 @@ const foodstallController = {
   // lấy thông tin đơn hàng của quầy hàng
   getOrderDetailByStall: async (req, res) => {
     try {
-        const { id: stall } = req.params;
+        const { id: stall } = req.params; // Lấy stall ID từ param
 
         const orderDetails = await Orderdetail.find({
             status: { $ne: "Xác nhận" },
@@ -247,33 +247,46 @@ const foodstallController = {
             ],
         });
 
-        const formatted = orderDetails.map((od) => {
+        const ordersMap = {};
+
+        orderDetails.forEach((od) => {
             const order = od.order;
 
-            const filteredDetails = order.orderdetail.filter((item) => {
-                console.log(">>> item stall ID:", item.products?.stall_id?._id?.toString());
-                console.log(">>> param stall:", stall);
-                return item.products?.stall_id?._id?.toString() === stall;
-            });
-            
+            if (!order || !order.orderdetail) return;
 
-            return {
-                order_id: order._id.toString(),
-                order_status: order.od_status,
-                table_number: order.table?.tb_number,
-                table_status: order.table?.status,
-                orderdetail: filteredDetails.map((item) => ({
+            const filteredDetails = order.orderdetail.filter((item) => {
+                return (
+                    item.products?.pd_name &&
+                    item.products?.stall_id?._id?.toString() === stall
+                );
+            });
+
+            if (filteredDetails.length === 0) return;
+
+            const orderId = order._id.toString();
+
+            if (!ordersMap[orderId]) {
+                ordersMap[orderId] = {
+                    order_id: orderId,
+                    order_status: order.od_status,
+                    table_number: order.table?.tb_number,
+                    table_status: order.table?.status,
+                    orderdetail: [],
+                };
+            }
+
+            ordersMap[orderId].orderdetail.push(
+                ...filteredDetails.map((item) => ({
                     product_name: item.products?.pd_name,
                     price: item.products?.price,
                     quantity: item.quantity,
                     status: item.status,
                     stall: item.products?.stall_id?.stall_name,
-                })),
-            };
+                }))
+            );
         });
 
-        const filteredOrders = formatted.filter(order => order.orderdetail.length > 0);
-
+        const filteredOrders = Object.values(ordersMap);
         res.status(200).json(filteredOrders);
     } catch (error) {
         res.status(500).json({ message: "Lỗi server", error: error.message });
