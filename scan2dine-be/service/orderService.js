@@ -71,6 +71,8 @@ const createOrderFromCartService = async (cartId, tableId) => {
         if (existingDetail) {
             // Nếu có rồi thì cộng thêm số lượng
             existingDetail.quantity += item.quantity;
+            // nếu số order thay đổi thì tính lại total 
+            existingDetail.total = existingDetail.quantity * item.products.price;
             await existingDetail.save();
             orderDetails.push(existingDetail);
         } else {
@@ -80,7 +82,7 @@ const createOrderFromCartService = async (cartId, tableId) => {
                 foodstall: item.products.stall, // stall từ product
                 products: item.products._id,
                 quantity: item.quantity,
-                
+                total: item.products.price * item.quantity,
                 status: '1'
             });
             orderDetails.push(newDetail);

@@ -49,7 +49,7 @@ const orderController = {
                         path: "products",
                         select: "pd_name price stall image",
                         populate: {
-                            path: "stall",
+                            path: "stall_id",
                             select: "stall_name"
                         }
                     }

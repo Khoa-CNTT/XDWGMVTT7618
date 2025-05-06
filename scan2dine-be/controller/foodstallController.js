@@ -237,7 +237,7 @@ const foodstallController = {
                     path: "orderdetail",
                     populate: {
                         path: "products",
-                        select: "pd_name price total",
+                        select: "pd_name price total image",
                     },
                 },
             ],

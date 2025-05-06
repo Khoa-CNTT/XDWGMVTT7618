@@ -193,7 +193,8 @@ const orderdetailSchema = new mongoose.Schema({
     enum: ['1', '2', '3', '4'],  // danh sách các trạng thái hợp lệ
   },
   total: {
-    type:Number
+    type:Number,
+    default:0
   }
 }, { collection: 'ORDERDETAIL' });
 const tableSchema = new mongoose.Schema({
