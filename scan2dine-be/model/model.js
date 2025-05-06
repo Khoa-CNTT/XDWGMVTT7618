@@ -148,7 +148,8 @@ const orderSchema = new mongoose.Schema({
     type: String,
   },
   total_amount: {
-    type: String,
+    type: Number,
+    default: 0
   },
   od_status: {
     type: String,
@@ -191,6 +192,9 @@ const orderdetailSchema = new mongoose.Schema({
     // enum: ['Chờ xác nhận', 'Xác nhận', 'Đang xử lý', 'Hoàn thành'],  // danh sách các trạng thái hợp lệ
     enum: ['1', '2', '3', '4'],  // danh sách các trạng thái hợp lệ
   },
+  total: {
+    type:Number
+  }
 }, { collection: 'ORDERDETAIL' });
 const tableSchema = new mongoose.Schema({
   tb_number: {

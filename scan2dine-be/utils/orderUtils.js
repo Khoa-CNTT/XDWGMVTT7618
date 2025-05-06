@@ -40,6 +40,27 @@ const mergeDuplicateOrderDetails = async (orderId) => {
         order
     };
 };
+const calculateTotalOrderPrice = async (orderId) => {
+    try {
+        // Lấy các OrderDetail liên quan đến đơn hàng
+        const orderDetails = await Orderdetail.find({ order: orderId });
+
+        // Tính tổng tiền
+        let total = 0;
+        for (let item of orderDetails) {
+            total  += item.total || 0;
+        }
+
+        // Cập nhật vào Order nếu cần
+        await Order.findByIdAndUpdate(orderId, { total_amount: total });
+
+        return total;
+    } catch (error) {
+        console.error('Error calculating total order price:', error);
+        throw error;
+    }
+};
 module.exports = {
-    mergeDuplicateOrderDetails
+    mergeDuplicateOrderDetails,
+    calculateTotalOrderPrice
 };
