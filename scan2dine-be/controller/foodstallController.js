@@ -221,7 +221,7 @@ const foodstallController = {
   // lấy thông tin đơn hàng của quầy hàng
   getOrderDetailByStall: async (req, res) => {
     try {
-        const { id: stall } = req.params; // Lấy stall ID từ param
+        const { id: stall } = req.params;
 
         const orderDetails = await Orderdetail.find({
             status: { $ne: "Xác nhận" },
@@ -251,18 +251,6 @@ const foodstallController = {
 
         orderDetails.forEach((od) => {
             const order = od.order;
-
-            if (!order || !order.orderdetail) return;
-
-            const filteredDetails = order.orderdetail.filter((item) => {
-                return (
-                    item.products?.pd_name &&
-                    item.products?.stall_id?._id?.toString() === stall
-                );
-            });
-
-            if (filteredDetails.length === 0) return;
-
             const orderId = order._id.toString();
 
             if (!ordersMap[orderId]) {
@@ -275,22 +263,42 @@ const foodstallController = {
                 };
             }
 
-            ordersMap[orderId].orderdetail.push(
-                ...filteredDetails.map((item) => ({
-                    product_name: item.products?.pd_name,
-                    price: item.products?.price,
-                    quantity: item.quantity,
-                    status: item.status,
-                    stall: item.products?.stall_id?.stall_name,
-                }))
+            const filteredDetails = order.orderdetail.filter((item) =>
+                item.products?.stall_id?._id?.toString() === stall
             );
+
+            // Gộp orderdetail
+            filteredDetails.forEach((item) => {
+                const existing = ordersMap[orderId].orderdetail.find(
+                    (d) =>
+                        d.product_name === item.products?.pd_name &&
+                        d.status === item.status
+                );
+
+                if (existing) {
+                    existing.quantity += item.quantity;
+                } else {
+                    ordersMap[orderId].orderdetail.push({
+                        product_name: item.products?.pd_name,
+                        price: item.products?.price,
+                        quantity: item.quantity,
+                        status: item.status,
+                        stall: item.products?.stall_id?.stall_name,
+                    });
+                }
+            });
         });
 
-        const filteredOrders = Object.values(ordersMap);
+        // Lọc đơn hàng nào có orderdetail
+        const filteredOrders = Object.values(ordersMap).filter(
+            (order) => order.orderdetail.length > 0
+        );
+
         res.status(200).json(filteredOrders);
     } catch (error) {
         res.status(500).json({ message: "Lỗi server", error: error.message });
     }
 },
+
 }
 module.exports = foodstallController;
