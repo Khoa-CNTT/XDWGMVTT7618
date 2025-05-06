@@ -237,8 +237,8 @@ const foodstallController = {
                     path: "orderdetail",
                     populate: {
                         path: "products",
-                        select: "pd_name price total image",
-                    },
+                        select: "pd_name price total image ",
+                    }
                 },
             ],
         });
@@ -258,6 +258,7 @@ const foodstallController = {
                     image: item.products?.image,
                     status: item.status,
                     total: item.total,
+                    stall: item.products?.stall_name
                 })),
             };
         });
