@@ -26,7 +26,7 @@ const O_OrderManage = ({ stallId }) => {
             console.log("API data:", response.data);
             // Lọc các đơn hàng đã được nhân viên xác nhận (ví dụ: order_status === 'processing')
             const confirmedOrders = Array.isArray(response.data)
-                ? response.data.filter(order => order.order_status === '2' && order.table_number === 3)
+                ? response.data.filter(order => order.order_status === '2')
                 : [];
             setOrders(confirmedOrders);
             setSelectedOrder(confirmedOrders.length > 0 ? confirmedOrders[0] : null);
@@ -82,7 +82,7 @@ const O_OrderManage = ({ stallId }) => {
     const confirmOrderCompleted = async (orderId) => {
         try {
             await api.patch(`/s2d/orders/${orderId}`, {
-                od_status: 'completed'
+                od_status: '4'
             });
             fetchOrders();
         } catch (error) {
@@ -164,7 +164,6 @@ const O_OrderManage = ({ stallId }) => {
                         <div className="space-y-4">
                             {mergeOrderDetails(selectedOrder.orderdetail).map((item, idx) => (
                                 <div key={idx} className="flex gap-4 bg-white rounded-lg p-4 items-start shadow-sm">
-                                    {console.log(item)}
                                     <img
                                         src={item.products?.image || ""}
                                         alt={item.products?.pd_name || ""}
@@ -209,12 +208,15 @@ const O_OrderManage = ({ stallId }) => {
 
 
 
-                        <div className="mt-6 text-right font-semibold">
-                            Tổng tiền ({mergeOrderDetails(selectedOrder.orderdetail).length} món ăn):{" "}
-                            <span className="text-red-600">{formatPrice(getTotal(mergeOrderDetails(selectedOrder.orderdetail)))}</span>
-                        </div>
-
                         <div className="mt-4 flex flex-wrap gap-2 justify-center">
+                            {allItemsCompleted && selectedOrder?.order_status !== '4' && (
+                                <button
+                                    onClick={() => confirmOrderCompleted(selectedOrder.order_id)}
+                                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                >
+                                    Hoàn thành đơn hàng
+                                </button>
+                            )}
                             <button className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Sửa đơn</button>
                             <button className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Xem hóa đơn</button>
                             <button className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Xuất PDF</button>
