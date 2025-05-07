@@ -224,74 +224,76 @@ const foodstallController = {
       const { id: stall } = req.params;
 
       const orderDetails = await Orderdetail.find({
-          status: '2',//{ $ne: "2" },
+        status: '2'
+
+
       }).populate({
-          path: "order",
-          select: "table od_status",
-          populate: {
-              path: "table",
-              select: "tb_number status",
-          },
+        path: "order",
+        select: "table od_status",
+        populate: {
+          path: "table",
+          select: "tb_number status",
+        },
       }).populate({
-          path: "products",
-          select: "pd_name price total image stall_id",
-          populate: {
-              path: "stall_id",
-              select: "stall_name",
-          },
+        path: "products",
+        select: "pd_name price total image stall_id",
+        populate: {
+          path: "stall_id",
+          select: "stall_name",
+        },
       });
 
       const ordersMap = {};
 
       orderDetails.forEach((od) => {
-          const order = od.order;
-          const product = od.products;
+        const order = od.order;
+        const product = od.products;
 
-          // Bỏ qua sản phẩm không thuộc stall cần lọc
-          if (product?.stall_id?._id?.toString() !== stall) return;
+        // Bỏ qua sản phẩm không thuộc stall cần lọc
+        if (product?.stall_id?._id?.toString() !== stall) return;
 
-          const orderId = order._id.toString();
+        const orderId = order._id.toString();
 
-          if (!ordersMap[orderId]) {
-              ordersMap[orderId] = {
-                  order_id: orderId,
-                  order_status: order.od_status,
-                  table_number: order.table?.tb_number,
-                  table_status: order.table?.status,
-                  orderdetail: [],
-              };
-          }
+        if (!ordersMap[orderId]) {
+          ordersMap[orderId] = {
+            order_id: orderId,
+            order_status: order.od_status,
+            table_number: order.table?.tb_number,
+            table_status: order.table?.status,
+            orderdetail: [],
+          };
+        }
 
-          const existing = ordersMap[orderId].orderdetail.find(
-              (d) =>
-                  d.product_name === product.pd_name &&
-                  d.status === od.status
-          );
+        const existing = ordersMap[orderId].orderdetail.find(
+          (d) =>
+            d.product_name === product.pd_name &&
+            d.status === od.status
+        );
 
-          if (existing) {
-              existing.quantity += od.quantity;
-          } else {
-              ordersMap[orderId].orderdetail.push({
-                  product_name: product.pd_name,
-                  price: product.price,
-                  quantity: od.quantity,
-                  status: od.status,
-                  image: product.image,
-                  stall: product.stall_id?.stall_name,
-              });
-          }
+        if (existing) {
+          existing.quantity += od.quantity;
+        } else {
+          ordersMap[orderId].orderdetail.push({
+            product_name: product.pd_name,
+            price: product.price,
+            quantity: od.quantity,
+            status: od.status,
+            image: product.image,
+            stall: product.stall_id?.stall_name,
+          });
+        }
       });
 
       const filteredOrders = Object.values(ordersMap).filter(
-          (order) => order.orderdetail.length > 0
+        (order) => order.orderdetail.length > 0
       );
 
       res.status(200).json(filteredOrders);
 
     } catch (error) {
-        res.status(500).json({ message: "Lỗi server", error: error.message });
+      res.status(500).json({ message: "Lỗi server", error: error.message });
     }
-},
+  },
 
 }
 module.exports = foodstallController;

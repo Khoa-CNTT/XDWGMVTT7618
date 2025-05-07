@@ -102,7 +102,7 @@ const OrderDetail = () => {
     const handleRequestMore = () => navigate('/menu');
     const handlePayment = () => console.log('Processing payment...');
 
-    if (loading) return <div className="min-h-screen flex justify-center items-center">Loading...</div>;
+    // if (loading) return <div className="min-h-screen flex justify-center items-center">Loading...</div>;
 
     // Custom status
     const renderStatusBadge = (status) => {
@@ -150,7 +150,7 @@ const OrderDetail = () => {
 
             <div className="border-t border-b p-4 space-y-2">
                 <div className="flex justify-between"><span>Đơn hàng:</span><span className="text-primary font-medium uppercase">{orderDetails.orderNumber}</span></div>
-                <div className="flex justify-between"><span>Giờ bắt đầu:</span><span>{orderDetails.startTime}</span></div>
+                <div className="flex justify-between"><span>Giờ bắt đầu:</span><span>{orderDetails.at}</span></div>
                 <div className="flex justify-between"><span>Số điện thoại:</span><span>{orderDetails.phone}</span></div>
                 <div className="flex justify-between"><span>Tên khách hàng:</span><span>{orderDetails.customerName}</span></div>
                 <div className="flex justify-between"><span>Bàn:</span><span>{orderDetails.table}</span></div>
