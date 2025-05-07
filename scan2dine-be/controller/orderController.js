@@ -192,7 +192,37 @@ const orderController = {
             console.error('Error confirming all OrderDetails:', err);
             res.status(500).json({ message: 'Internal server error' });
         }
-    }
+    },
+    removeOrderdetailbyStatus: async (req, res) => {
+        try {
+            const order = await Order.findById(req.params.id).populate('orderdetail');
+            if (!order) {
+                return res.status(404).json({ message: 'Order not found' });
+            }
+            // Lọc ra các OrderDetail có status là "Chờ xác nhận"
+            const filterStatusOrderdetail = order.orderdetail.filter(orderdetail => orderdetail.status === '1');
+            // lấy danh sách Id của orderdetail có trạng thái là "Chờ xác nhận"
+            const orderdetailID = filterStatusOrderdetail.map(orderdetail => orderdetail._id);
+            // check xem có orderdetail nào có trangj thái là "Chờ xác nhận" không 
+            // nếu khoong có trả về thông báo không có để xóa
+            if (orderdetailID.length === 0) return res.status(404).json({ message: 'Không có orderdetail nào để xóa' });
+
+            // xóa các orderdetail có status là "Chờ xác nhận"
+            await Orderdetail.deleteMany({ _id: { $in: orderdetailID } });
+            // cập nhật trạng thái của orderdetail trong order
+            await Order.findByIdAndUpdate(req.params.id,
+                {
+                    $pull: {
+                        orderdetail: { $in: orderdetailID }
+                    }
+                }
+            );
+            return res.status(200).json({ message: 'Xóa thành công', removed: orderdetailID });
+        } catch (error) {
+            console.error('Error removing pending order details:', error);
+            return res.status(500).json({ message: 'Server error', error: error.message });
+        }
+    },
 }
 
 module.exports = orderController;
