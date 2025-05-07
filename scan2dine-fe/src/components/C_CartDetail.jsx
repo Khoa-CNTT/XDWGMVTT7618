@@ -299,13 +299,22 @@ const CartDetails = () => {
         </div>
         <div className="p-4 pt-0">
           <button
-            onClick={handleConfirmOrder}
-            className="w-full bg-primary text-white py-3 rounded-full font-medium"
+            onClick={() => {
+              if (totalPrice === 0) {
+                alert('Vui lòng chọn ít nhất một món trước khi gửi yêu cầu.');
+                return;
+              }
+              handleConfirmOrder();
+            }}
+            className={`w-full py-3 rounded-full font-medium text-white transition 
+    ${totalPrice === 0 ? 'bg-primary opacity-50 cursor-not-allowed' : 'bg-primary hover:opacity-90'}`}
           >
             Xác nhận gửi yêu cầu gọi món
           </button>
+
         </div>
       </div>
+
       {showUnderstand && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-sm mx-4 text-center">
