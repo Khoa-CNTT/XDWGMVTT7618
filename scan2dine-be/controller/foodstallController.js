@@ -221,68 +221,77 @@ const foodstallController = {
   // lấy thông tin đơn hàng của quầy hàng
   getOrderDetailByStall: async (req, res) => {
     try {
-        const { stall } = req.params;
-        const orderDetails = await Orderdetail.find({
-            stall: stall,
-            status: { $ne: "1" },
-        }).populate({
-            path: "order",
-            select: "table od_status orderdetail",
-            populate: [
-                {
-                    path: "table",
-                    select: "tb_number status",
-                },  
-                {
-                    path: "orderdetail",
-                    populate: {
-                        path: "products",
-                        select: "pd_name price total image",
-                    },
-                },
-            ],
-        });
+      const { id: stall } = req.params;
 
-        // Format ban đầu từ mỗi Orderdetail
-        const formatted = orderDetails.map((od) => {
-            const order = od.order;
-            return {
-                order_id: order._id.toString(), // hoặc order._id nếu bạn dùng ObjectId
-                order_status: order.od_status,
-                table_number: order.table?.tb_number,
-                table_status: order.table?.status,
-                orderdetail: order.orderdetail.map((item) => ({
-                    product_name: item.products?.pd_name,
-                    price: item.products?.price,
-                    quantity: item.quantity,
-                    image: item.products?.image,
-                    status: item.status,
-                    total: item.total,
-                })),
-            };
-        });
+      const orderDetails = await Orderdetail.find({
+          status: '2',//{ $ne: "2" },
+      }).populate({
+          path: "order",
+          select: "table od_status",
+          populate: {
+              path: "table",
+              select: "tb_number status",
+          },
+      }).populate({
+          path: "products",
+          select: "pd_name price total image stall_id",
+          populate: {
+              path: "stall_id",
+              select: "stall_name",
+          },
+      });
 
-        // Gom nhóm các order theo order_id
-        const ordersMap = formatted.reduce((acc, curr) => {
-            if (!acc[curr.order_id]) {
-                acc[curr.order_id] = { ...curr };
-            } else {
-                // Nếu order đã tồn tại, gộp mảng orderdetail lại
-                acc[curr.order_id].orderdetail = [
-                    ...acc[curr.order_id].orderdetail,
-                    ...curr.orderdetail,
-                ];
-            }
-            return acc;
-        }, {});
+      const ordersMap = {};
 
-        // Chuyển sang mảng
-        const dedupedOrders = Object.values(ordersMap);
+      orderDetails.forEach((od) => {
+          const order = od.order;
+          const product = od.products;
 
-        res.status(200).json(dedupedOrders);
+          // Bỏ qua sản phẩm không thuộc stall cần lọc
+          if (product?.stall_id?._id?.toString() !== stall) return;
+
+          const orderId = order._id.toString();
+
+          if (!ordersMap[orderId]) {
+              ordersMap[orderId] = {
+                  order_id: orderId,
+                  order_status: order.od_status,
+                  table_number: order.table?.tb_number,
+                  table_status: order.table?.status,
+                  orderdetail: [],
+              };
+          }
+
+          const existing = ordersMap[orderId].orderdetail.find(
+              (d) =>
+                  d.product_name === product.pd_name &&
+                  d.status === od.status
+          );
+
+          if (existing) {
+              existing.quantity += od.quantity;
+          } else {
+              ordersMap[orderId].orderdetail.push({
+                  product_name: product.pd_name,
+                  price: product.price,
+                  quantity: od.quantity,
+                  status: od.status,
+                  image: product.image,
+                  stall: product.stall_id?.stall_name,
+              });
+          }
+      });
+
+      const filteredOrders = Object.values(ordersMap).filter(
+          (order) => order.orderdetail.length > 0
+      );
+
+      res.status(200).json(filteredOrders);
+
     } catch (error) {
         res.status(500).json({ message: "Lỗi server", error: error.message });
     }
 },
+
 }
 module.exports = foodstallController;

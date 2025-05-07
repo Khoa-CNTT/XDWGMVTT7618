@@ -39,12 +39,22 @@ const orderdetailCOntroller = {
     // GET ORDERDETAIL 
     getOrderdetail: async (req, res) => {
         try {
-            const getOrderdetail = await Orderdetail.find();
+            const getOrderdetail = await Orderdetail.find().select("quantity products status order total") // lấy quantity và products
+                .populate({
+                    path: "products",
+                    select: "pd_name price stall_id",
+                    populate: {
+                        path: "stall_id",
+                        select: "stall_name" // chỉ lấy tên quầy hàng
+                    }
+                });
+                console.log("OrderDetail:", getOrderdetail);
             if (getOrderdetail.length <= 0) return "không có order detail"
-            res.status(200).json(getOrderdetail);
+            return res.status(200).json(getOrderdetail);
+            
         } catch (error) {
             console.error("Error in DELETEREVIEW:", error);
-            res.status(500).json({ message: "Server error", error: error.message || error });
+            return res.status(500).json({ message: "Server error", error: error.message || error });
         }
     },
     // DELETE ORDER DETAIL 
