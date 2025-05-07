@@ -144,9 +144,7 @@ const orderSchema = new mongoose.Schema({
   od_date: {
     type: Date, default: Date.now
   },
-  od_note: {
-    type: String,
-  },
+  
   total_amount: {
     type: Number,
     default: 0
@@ -195,7 +193,11 @@ const orderdetailSchema = new mongoose.Schema({
   total: {
     type:Number,
     default:0
-  }
+  },
+  note: {
+    type: String,
+    default:''
+  },
 }, { collection: 'ORDERDETAIL' });
 const tableSchema = new mongoose.Schema({
   tb_number: {

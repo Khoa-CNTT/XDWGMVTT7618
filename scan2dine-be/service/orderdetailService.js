@@ -2,11 +2,15 @@
 const {Orderdetail, Order, Product } = require('../model/model');
 
 // Hàm tăng số lượng
-const increaseOrderQuantity = async (orderID, productID, quantity = 1) => {
+const increaseOrderQuantity = async (orderID, productID, quantity = 1, note='') => {
     let orderDetailItem = await Orderdetail.findOne({ order: orderID, products: productID });
     console.log(orderDetailItem);
     if (orderDetailItem) {
         orderDetailItem.quantity += quantity; // Tăng số lượng
+        // Gộp note mới nếu có truyền vào
+        if (note) {
+            orderDetailItem.note = note;
+        }
         await orderDetailItem.save();
         return { updated: true, detail: orderDetailItem };
     } else {
@@ -14,7 +18,8 @@ const increaseOrderQuantity = async (orderID, productID, quantity = 1) => {
         const newItem = new Orderdetail({
             order:orderID,
             products: productID,
-            quantity: quantity
+            quantity: quantity,
+            note: note,
         });
         await newItem.save();
         return { updated: false, detail: newItem };
