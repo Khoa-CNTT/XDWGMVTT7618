@@ -41,13 +41,13 @@ const orderController = {
     // GET ORDER BY ID
     getAorder: async (req, res) => {
         try {
-            const getAorder = await Order.findById(req.params.id)
+            const getAorder = await Order.findById(req.params.id).select('total_amount od_status')
                 .populate({
                     path: "orderdetail",
-                    select: "quantity products status",
+                    select: "quantity products status total",
                     populate: {
                         path: "products",
-                        select: "pd_name image price stall",
+                        select: "pd_name price stall image",
                         populate: {
                             path: "stall_id",
                             select: "stall_name"
@@ -60,11 +60,12 @@ const orderController = {
                 })
                 .populate({
                     path: "table",
-                    select: "tb_number"
+                    select: "tb_number status"
                 });
             if (!getAorder) {
                 return res.status(404).json('not found');
             };
+            console.log(getAorder);
             return res.status(200).json(getAorder);
         } catch (error) {
             console.error("Error in DELETEREVIEW:", error);

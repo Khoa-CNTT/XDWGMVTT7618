@@ -1,6 +1,6 @@
 const { Cart, Customer, Table, CartDetail, Orderdetail, Order, Product } = require('../model/model');
 const moment = require('moment');
-const { mergeDuplicateOrderDetails } = require('../utils/orderUtils');
+const { mergeDuplicateOrderDetails, calculateTotalOrderPrice } = require('../utils/orderUtils');
 const { deleteCartDetailsByCartId } = require('../utils/cartUtils');
 const { updateOrderDetailStatus } = require('../utils/orderDetailUtils');
 
@@ -71,6 +71,8 @@ const createOrderFromCartService = async (cartId, tableId) => {
         if (existingDetail) {
             // Nếu có rồi thì cộng thêm số lượng
             existingDetail.quantity += item.quantity;
+            // nếu số order thay đổi thì tính lại total 
+            existingDetail.total = existingDetail.quantity * item.products.price;
             await existingDetail.save();
             orderDetails.push(existingDetail);
         } else {
@@ -80,6 +82,7 @@ const createOrderFromCartService = async (cartId, tableId) => {
                 foodstall: item.products.stall, // stall từ product
                 products: item.products._id,
                 quantity: item.quantity,
+                total: item.products.price * item.quantity,
                 status: '1'
             });
             orderDetails.push(newDetail);
@@ -102,7 +105,8 @@ const createOrderFromCartService = async (cartId, tableId) => {
 
     // Xoá toàn bộ chi tiết giỏ hàng đã xử lý
     await deleteCartDetailsByCartId(cartId);
-
+    // tôgnr tiền cho order
+    const totalPrice = await calculateTotalOrderPrice(order._id);
     // Lấy lại đơn hàng sau khi populate đầy đủ
     const populatedOrder = await Order.findById(order._id)
         .populate('customer', 'name phone')
@@ -116,7 +120,8 @@ const createOrderFromCartService = async (cartId, tableId) => {
         price: item.products.price,
         name: item.products.pd_name,
         status: item.status,
-        quantity: item.quantity
+        quantity: item.quantity, 
+        total: item.total
     }));
 
     // Định dạng thời gian tạo đơn
@@ -131,6 +136,7 @@ const createOrderFromCartService = async (cartId, tableId) => {
             table: populatedOrder.table,
             orderdetail: orderItems,
             status: populatedOrder.od_status,
+            total_amount: totalPrice,
             createdAt: formattedCreatedAt
         }
     };

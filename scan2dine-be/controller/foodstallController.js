@@ -232,12 +232,12 @@ const foodstallController = {
                 {
                     path: "table",
                     select: "tb_number status",
-                },
+                },  
                 {
                     path: "orderdetail",
                     populate: {
                         path: "products",
-                        select: "pd_name price",
+                        select: "pd_name price total image",
                     },
                 },
             ],
@@ -255,7 +255,9 @@ const foodstallController = {
                     product_name: item.products?.pd_name,
                     price: item.products?.price,
                     quantity: item.quantity,
+                    image: item.products?.image,
                     status: item.status,
+                    total: item.total,
                 })),
             };
         });
