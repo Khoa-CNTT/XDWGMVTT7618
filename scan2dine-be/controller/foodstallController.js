@@ -225,6 +225,8 @@ const foodstallController = {
 
       const orderDetails = await Orderdetail.find({
         status: '2'
+
+
       }).populate({
         path: "order",
         select: "table od_status",
