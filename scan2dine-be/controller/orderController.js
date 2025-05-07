@@ -199,28 +199,59 @@ const orderController = {
             if (!order) {
                 return res.status(404).json({ message: 'Order not found' });
             }
-            // Lọc ra các OrderDetail có status là "Chờ xác nhận"
-            const filterStatusOrderdetail = order.orderdetail.filter(orderdetail => orderdetail.status === '1');
-            // lấy danh sách Id của orderdetail có trạng thái là "Chờ xác nhận"
-            const orderdetailID = filterStatusOrderdetail.map(orderdetail => orderdetail._id);
-            // check xem có orderdetail nào có trangj thái là "Chờ xác nhận" không 
-            // nếu khoong có trả về thông báo không có để xóa
-            if (orderdetailID.length === 0) return res.status(404).json({ message: 'Không có orderdetail nào để xóa' });
 
-            // xóa các orderdetail có status là "Chờ xác nhận"
-            await Orderdetail.deleteMany({ _id: { $in: orderdetailID } });
-            // cập nhật trạng thái của orderdetail trong order
-            await Order.findByIdAndUpdate(req.params.id,
-                {
+            // Lọc các OrderDetail theo trạng thái <=> od = orderdetail
+            const filterStatusOrderdetail = order.orderdetail.filter(od => od.status === '1');
+            // lấy danh sách id của orderdetail có trạng thái là "Chờ xác nhận"
+            const orderdetailIDs = filterStatusOrderdetail.map(od => od._id);
+
+            if (orderdetailIDs.length === 0) {
+                return res.status(200).json({ message: 'Không có OrderDetail nào "Chờ xác nhận (1)" để xóa.' });
+            }
+
+            if (filterStatusOrderdetail.length === order.orderdetail.length) {
+                // So sánh: nếu tất cả orderdetail đều là "Chờ xác nhận"
+                // 1. Xoá các OrderDetail
+                await Orderdetail.deleteMany({ _id: { $in: orderdetailIDs } });
+
+                // 2. Xoá đơn hàng
+                await Order.findByIdAndDelete(order._id);
+
+                // 3. Cập nhật Customer (xoá order ID khỏi customer.orders)
+                await Customer.findByIdAndUpdate(order.customer, {
+                    $pull: { order: order._id }
+                });
+
+                // 4. Cập nhật Table (xoá order ID và cập nhật trạng thái = "Trống")
+                await Table.findByIdAndUpdate(order.table, {
+                    $pull: { order: order._id },
+                    $set: { status: '1' }
+                });
+
+                return res.status(200).json({ message: 'Đã xóa toàn bộ đơn hàng và OrderDetail "Chờ xác nhận (1)" .' });
+            } else {
+                // Trường hợp: có cả "Xác nhận" → Chỉ xóa các OrderDetail "Chờ xác nhận"
+
+                // 1. Xoá các OrderDetail
+                await Orderdetail.deleteMany({ _id: { $in: orderdetailIDs } });
+
+                // 2. Cập nhật lại mảng orderdetail trong Order
+                await Order.findByIdAndUpdate(order._id, {
                     $pull: {
-                        orderdetail: { $in: orderdetailID }
+                        orderdetail: { $in: orderdetailIDs }
                     }
-                }
-            );
-            return res.status(200).json({ message: 'Xóa thành công', removed: orderdetailID });
+                });
+                // 3. Cập nhật Table cập nhật trạng thái = "Đang phục vụ")
+                await Table.findByIdAndUpdate(order.table, {
+                    $set: { status: '2' }
+                });
+
+                return res.status(200).json({ message: 'Đã xóa các OrderDetail "Chờ xác nhận (1)".', removed: orderdetailIDs });
+            }
+
         } catch (error) {
             console.error('Error removing pending order details:', error);
-            return res.status(500).json({ message: 'Server error', error: error.message });
+            return res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
         }
     },
 }

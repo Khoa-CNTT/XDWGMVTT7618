@@ -58,7 +58,7 @@ const createOrderFromCartService = async (cartId, tableId) => {
     }
 
     const orderDetails = [];
-
+    let shouldUpdateTableStatus = false;
     // Lặp qua từng item trong chi tiết giỏ hàng
     for (const item of cartDetails) {
         // Kiểm tra xem đã có OrderDetail cùng sản phẩm & trạng thái "Chờ xác nhận" chưa
@@ -94,8 +94,15 @@ const createOrderFromCartService = async (cartId, tableId) => {
 
             // Thêm OrderDetail vào danh sách order
             order.orderdetail.push(newDetail._id);
+            // Ghi nhận rằng có thêm sản phẩm mới cần cập nhật trạng thái bàn
+            shouldUpdateTableStatus = true;
         }
     }
+    if (shouldUpdateTableStatus) {
+        await Table.findByIdAndUpdate(tableId, {
+            $set: { status: 'Yêu cầu xác nhận món' }
+        });
+    }    
 
     // Lưu lại thay đổi trong đơn hàng
     await order.save();
