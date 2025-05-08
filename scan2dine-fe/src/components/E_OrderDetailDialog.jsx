@@ -102,12 +102,13 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     //Hủy đơn
     const handleCancel = async () => {
         try {
-
+            await api.delete(`/s2d/order/removestatus/${tableInfo.orderId}`);
+            fetchInfoOrder()
+            fetchTables()
         } catch (error) {
 
         }
     }
-
 
     //in hóa đơn
     const handlePrintBill = async () => {
@@ -213,7 +214,7 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
 </div>
 
 
-                            <div class="footer">
+                            <div class="footer" style="text-align: center;">
                                 <p>Cảm ơn Quý khách! Hẹn gặp lại!</p>
                             </div>
 
