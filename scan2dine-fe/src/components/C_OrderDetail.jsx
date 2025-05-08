@@ -5,10 +5,6 @@ import api from '../server/api';
 import { Footer } from './Footer'
 import { C_OrderDetailItem } from './C_OrderDetailItem';
 
-const formatPrice = (price) => {
-    return parseInt(price).toLocaleString() + 'đ';
-};
-
 const OrderDetail = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -35,6 +31,7 @@ const OrderDetail = () => {
 
     useEffect(() => {
         fetchOrderDetails(orderData);
+
     }, [orderData]);
 
     const fetchOrderDetails = async (orderData) => {
@@ -45,6 +42,7 @@ const OrderDetail = () => {
 
             // 1. Lấy thông tin đơn hàng từ server theo ID
             const { data: orderRes } = await api.get(`/s2d/order/${orderData.order._id}`);
+
             if (!orderRes) throw new Error('Không tìm thấy đơn hàng');
 
             // 2. Lấy danh sách sản phẩm từ server
@@ -89,6 +87,7 @@ const OrderDetail = () => {
             });
 
 
+
         } catch (error) {
             console.error('Lỗi khi lấy chi tiết đơn hàng:', error);
             alert('Không thể tải chi tiết đơn hàng. Vui lòng thử lại sau.');
@@ -101,8 +100,6 @@ const OrderDetail = () => {
 
     const handleRequestMore = () => navigate('/menu');
     const handlePayment = () => console.log('Processing payment...');
-
-    // if (loading) return <div className="min-h-screen flex justify-center items-center">Loading...</div>;
 
     // Custom status
     const renderStatusBadge = (status) => {
@@ -150,7 +147,7 @@ const OrderDetail = () => {
 
             <div className="border-t border-b p-4 space-y-2">
                 <div className="flex justify-between"><span>Đơn hàng:</span><span className="text-primary font-medium uppercase">{orderDetails.orderNumber}</span></div>
-                <div className="flex justify-between"><span>Giờ bắt đầu:</span><span>{orderDetails.at}</span></div>
+                <div className="flex justify-between"><span>Giờ bắt đầu:</span><span>{orderDetails.startTime}</span></div>
                 <div className="flex justify-between"><span>Số điện thoại:</span><span>{orderDetails.phone}</span></div>
                 <div className="flex justify-between"><span>Tên khách hàng:</span><span>{orderDetails.customerName}</span></div>
                 <div className="flex justify-between"><span>Bàn:</span><span>{orderDetails.table}</span></div>
@@ -179,7 +176,7 @@ const OrderDetail = () => {
                 </div>
                 <div className="flex gap-4">
                     <button onClick={handleRequestMore} className="flex-1 bg-red-100 text-primary py-3 rounded-full font-medium">Yêu cầu thêm món</button>
-                    <button onClick={handlePayment} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-full font-medium">Thanh toán</button>
+                    <button onClick={handlePayment} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-full font-medium">Yêu cầu thanh toán</button>
                 </div>
             </div>
 

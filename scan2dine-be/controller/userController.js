@@ -6,36 +6,21 @@ const userController = {
     // get user
     getAllUsers: async (req, res) => {
         try {
-          const users = await User.find()
-            .populate({ path: 'role_id', select: 'role_name' })
-            .populate({ path: 'stall_id', select: 'stall_name' });
-      
-          if (!users || users.length === 0) {
-            return res.status(404).json({ message: 'No users found' });
-          }
-      
-          res.status(200).json(users);
-        } catch (error) {
-          console.error(error);
-          res.status(500).json({ message: 'Internal server error' });
-        }
-      },
-    // add user
-    addUser: async (req, res) => {
-        try {
-            const { full_name, username, email, password, role_id } = req.body;
+            const users = await User.find()
+                .populate({ path: 'role_id', select: 'role_name' })
+                .populate({ path: 'stall_id', select: 'stall_name' });
 
-            const user = new User({ full_name, username, email, password, role_id });
-            await user.save();
-            await Role.findByIdAndUpdate(role_id, {
-                $push: { user: user._id }
-            });
+            if (!users || users.length === 0) {
+                return res.status(404).json({ message: 'No users found' });
+            }
 
-            res.status(201).json({ message: 'User created successfully', user });
+            res.status(200).json(users);
         } catch (error) {
-            res.status(400).json({ error: error.message });
+            console.error(error);
+            res.status(500).json({ message: 'Internal server error' });
         }
     },
+
     // update user
     updateUser: async (req, res) => {
         try {
@@ -114,6 +99,23 @@ const userController = {
         } catch (error) {
             console.error('Lỗi khi xoá user:', error);
             res.status(500).json({ error: error.message });
+        }
+    },
+
+    // add user
+    addUser: async (req, res) => {
+        try {
+            const { full_name, username, email, password, role_id } = req.body;
+
+            const user = new User({ full_name, username, email, password, role_id });
+            await user.save();
+            await Role.findByIdAndUpdate(role_id, {
+                $push: { user: user._id }
+            });
+
+            res.status(201).json({ message: 'User created successfully', user });
+        } catch (error) {
+            res.status(400).json({ error: error.message });
         }
     },
 

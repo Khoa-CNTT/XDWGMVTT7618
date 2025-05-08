@@ -216,7 +216,7 @@ const Home = ({ direction }) => {
                 showStaffForm && (
                     <C_ConfirmCallStaff
                         title="Đã gửi yêu cầu đến nhân viên"
-                        message="Nhân viên đang đến bạn vui lòng chờ một chút ..."
+                        message="Nhân viên đang đến bạn hãy chờ một lát ..."
                         onConfirm={() => setShowStaffForm(false)}
                         onCancel={() => cancelCallStaff(customer.idTable)}
                     />

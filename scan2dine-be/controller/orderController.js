@@ -41,7 +41,7 @@ const orderController = {
     // GET ORDER BY ID
     getAorder: async (req, res) => {
         try {
-            const getAorder = await Order.findById(req.params.id).select('total_amount od_status')
+            const getAorder = await Order.findById(req.params.id).select('total_amount od_status od_date')
                 .populate({
                     path: "orderdetail",
                     select: "quantity products status total",

@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
 import {
-    FaTrash,
-    FaEdit,
     FaUserPlus,
     FaSearch,
-    FaTimes,
-    FaCheck,
     FaChevronDown,
     FaChevronUp
 } from 'react-icons/fa';
 import api from '../server/api';
+import { A_OneUser } from './A_OneUser';
+import { A_ModalCUUser } from './A_ModalCUUser';
+import ConfirmModal from './ConfirmModal';
 
 
 
@@ -18,36 +17,42 @@ export default function UserManagementSystem() {
 
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [currentUser, setCurrentUser] = useState({ _id: null, full_name: '', username: '', role_name: 'User' });
+    const [currentUser, setCurrentUser] = useState({ full_name: '', username: '', role_id: '67fccd928de55697fbc965a9' });
     const [searchTerm, setSearchTerm] = useState('');
     const [sortField, setSortField] = useState('id');
     const [sortDirection, setSortDirection] = useState('asc');
+    const [showConfirm, setShowConfirm] = useState(false);
+    const [userToDelete, setUserToDelete] = useState(null);
 
-    const availableRoles = ['Admin', 'Editor', 'User'];
+
+
+
 
     //Lấy dữ liệu từ data User
     useEffect(() => {
-        const fetchUser = async () => {
-            try {
-                const getUsers = await api.get('/s2d/user');
-                setUsers(getUsers.data);
-            } catch (error) {
-                console.error('Lỗi khi tải danh mục sản phẩm:', error);
-            }
-        };
         fetchUser();
     }, []);
+    const fetchUser = async () => {
+        try {
+            const getUsers = await api.get('/s2d/user');
+            setUsers(getUsers.data);
+        } catch (error) {
+            console.error('Lỗi khi tải danh mục sản phẩm:', error);
+        }
+    };
 
 
     const resetForm = () => {
-        setCurrentUser({ _id: null, full_name: '', username: '', role_name: 'User' });
+        setCurrentUser({ full_name: '', email: '', password: '', username: '', role_id: '67fccd928de55697fbc965a9' });
         setIsEditing(false);
     };
 
     const handleOpenModal = (editing = false, user = null) => {
         if (editing && user) {
-            setCurrentUser({ ...user });
-            setIsEditing(true);
+            setCurrentUser({
+                ...user,
+                role_id: typeof user.role_id === 'object' ? user.role_id._id : user.role_id,
+            }); setIsEditing(true);
         } else {
             resetForm();
         }
@@ -61,27 +66,43 @@ export default function UserManagementSystem() {
 
     const handleInputChange = (e) => {
         const { name, value } = e.target;
-        setCurrentUser({ ...currentUser, [name]: value });
+
+        setCurrentUser((prev) => ({
+            ...prev,
+            [name]: value, // luôn là string
+        }));
     };
 
-    const handleSubmit = () => {
-        // if (!currentUser.full_name || !currentUser.username) return;
 
-        // if (isEditing) {
-        //     setUsers(users.map(user => user._id === currentUser._id ? currentUser : user));
-        // } else {
-        //     const newId = users.length > 0 ? Math.max(...users.map(user => user._id)) + 1 : 1;
-        //     setUsers([...users, { ...currentUser, id: newId }]);
-        // }
 
-        // handleCloseModal();
-    };
+    //
+    const handleSubmit = async () => {
+        if (!currentUser.full_name || !currentUser.username) return;
 
-    const handleDelete = (id) => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa người dùng này?')) {
-            setUsers(users.filter(user => user.id !== id));
+        try {
+            if (isEditing) {
+                await api.patch(`/s2d/user/${currentUser._id}`, currentUser);
+            } else {
+                await api.post('/s2d/user/register', currentUser);
+            }
+
+            fetchUser();
+            handleCloseModal();
+        } catch (error) {
+            console.error('Lỗi khi lưu người dùng:', error);
         }
     };
+
+
+    const handleDelete = async (id) => {
+        try {
+            await api.delete(`/s2d/user/${id}`);
+            fetchUser()
+        } catch (error) {
+
+        }
+    };
+
 
     const handleSort = (field) => {
         if (sortField === field) {
@@ -95,13 +116,14 @@ export default function UserManagementSystem() {
     const filteredUsers = users.filter(user =>
         user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.role.toLowerCase().includes(searchTerm.toLowerCase())
+        user.role_name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const sortedUsers = [...filteredUsers].sort((a, b) => {
         if (sortField === 'id') {
             return sortDirection === 'asc' ? a.id - b.id : b.id - a.id;
-        } else {
+        }
+        else {
             const valueA = a[sortField].toLowerCase();
             const valueB = b[sortField].toLowerCase();
             if (valueA < valueB) return sortDirection === 'asc' ? -1 : 1;
@@ -188,6 +210,7 @@ export default function UserManagementSystem() {
                                             )}
                                         </div>
                                     </th>
+
                                     <th
                                         className="text-left py-3 px-4 font-semibold text-sm text-gray-600 cursor-pointer"
                                         onClick={() => handleSort('username')}
@@ -201,7 +224,18 @@ export default function UserManagementSystem() {
                                     </th>
                                     <th
                                         className="text-left py-3 px-4 font-semibold text-sm text-gray-600 cursor-pointer"
-                                        onClick={() => handleSort('role')}
+                                        onClick={() => handleSort('email')}
+                                    >
+                                        <div className="flex items-center">
+                                            Email
+                                            {sortField === 'email' && (
+                                                sortDirection === 'asc' ? <FaChevronUp size={16} /> : <FaChevronDown size={16} />
+                                            )}
+                                        </div>
+                                    </th>
+                                    <th
+                                        className="text-left py-3 px-4 font-semibold text-sm text-gray-600 cursor-pointer"
+                                        onClick={() => handleSort('role_name')}
                                     >
                                         <div className="flex items-center">
                                             Vai Trò
@@ -216,53 +250,16 @@ export default function UserManagementSystem() {
                             <tbody>
                                 {sortedUsers.length > 0 ? (
                                     sortedUsers.map((user, index) => (
-                                        <tr key={user._id} className="border-b border-gray-200 hover:bg-gray-50">
-                                            {/* STT */}
-                                            <td className="py-3 px-4">{index + 1}</td>
-
-                                            {/* ID */}
-                                            <td className="py-3 px-4 uppercase">{user._id}</td>
-
-                                            {/* Họ và tên */}
-                                            <td className="py-3 px-4">{user.full_name}</td>
-
-                                            {/* Tên đăng nhập */}
-                                            <td className="py-3 px-4">{user.username}</td>
-
-                                            {/* Vai trò */}
-                                            <td className="py-3 px-4">
-                                                {(() => {
-                                                    const role = getRoleInfo(user.role_id?.role_name);
-
-                                                    return (
-                                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${role.color}`}>
-                                                            {role.text}
-                                                        </span>
-                                                    );
-                                                })()}
-                                            </td>
-
-
-                                            {/* Thao tác */}
-                                            <td className="py-3 px-4">
-                                                <div className="flex space-x-2">
-                                                    <button
-                                                        onClick={() => handleOpenModal(true, user)}
-                                                        className="text-blue-600 hover:text-blue-800"
-                                                        title="Chỉnh sửa"
-                                                    >
-                                                        <FaEdit size={18} />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleDelete(user._id)}
-                                                        className="text-red-600 hover:text-red-800"
-                                                        title="Xóa"
-                                                    >
-                                                        <FaTrash size={18} />
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
+                                        <A_OneUser
+                                            key={user._id}
+                                            user={user}
+                                            index={index}
+                                            handleOpenModal={handleOpenModal}
+                                            handleDelete={handleDelete}
+                                            getRoleInfo={getRoleInfo}
+                                            setShowConfirm={setShowConfirm}
+                                            setUserToDelete={setUserToDelete}
+                                        />
                                     ))
                                 ) : (
                                     <tr>
@@ -280,75 +277,28 @@ export default function UserManagementSystem() {
 
             {/* Modal */}
             {showModal && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 mx-4">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold text-gray-800">
-                                {isEditing ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
-                            </h2>
-                            <button onClick={handleCloseModal} className="text-gray-500 hover:text-gray-700">
-                                <FaEdit size={20} />
-                            </button>
-                        </div>
+                <A_ModalCUUser
+                    isEditing={isEditing}
+                    currentUser={currentUser}
+                    handleCloseModal={handleCloseModal}
+                    handleInputChange={handleInputChange}
+                    handleSubmit={handleSubmit}
+                />)}
+            {showConfirm && (
+                <ConfirmModal
+                    title="Xóa user"
+                    message="Bạn có chắc chắn muốn xóa user này không?"
+                    onConfirm={() => {
+                        if (userToDelete) {
+                            handleDelete(userToDelete._id);
+                            setShowConfirm(false);
+                        }
+                    }}
+                    onCancel={() => setShowConfirm(false)}
+                />
+            )
 
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
-                                <input
-                                    type="text"
-                                    name="fullName"
-                                    value={currentUser.fullName}
-                                    onChange={handleInputChange}
-                                    placeholder="Nhập họ và tên"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                                <input
-                                    type="text"
-                                    name="username"
-                                    value={currentUser.username}
-                                    onChange={handleInputChange}
-                                    placeholder="Nhập username"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
-                                <select
-                                    name="role"
-                                    value={currentUser.role}
-                                    onChange={handleInputChange}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    {availableRoles.map(role => (
-                                        <option key={role} value={role}>{role}</option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="flex justify-end space-x-3 mt-6">
-                                <button
-                                    onClick={handleCloseModal}
-                                    className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-100"
-                                >
-                                    Hủy
-                                </button>
-                                <button
-                                    onClick={handleSubmit}
-                                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
-                                >
-                                    <FaCheck size={18} className="mr-1" />
-                                    {isEditing ? 'Cập nhật' : 'Thêm mới'}
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+            }
         </div>
     );
 }
