@@ -224,9 +224,7 @@ const foodstallController = {
       const { id: stall } = req.params;
 
       const orderDetails = await Orderdetail.find({
-        status: '2'
-
-
+        status: { $in: ['2', '3', '4'] }
       }).populate({
         path: "order",
         select: "table od_status",
