@@ -1,5 +1,5 @@
 const { default: mongoose } = require("mongoose");
-const { Product, Category, Foodstall, User, Table, Orderdetail } = require("../model/model");
+const { Product, Category, Foodstall, User, Orderdetail, Order } = require("../model/model");
 const foodstallController = {
   //  GET ALL FOODSTALL
   getAllFoodstall: async (req, res) => {
@@ -294,6 +294,141 @@ const foodstallController = {
       res.status(500).json({ message: "Lỗi server", error: error.message });
     }
   },
-
+  getNumberOfProduct: async (req, res) => {
+    try {
+      const { stall_id } = req.body;
+      if (!stall_id) {
+        return res.status(400).json({ error: "Thiếu stall_id" });
+      }
+  
+      const objectId = new mongoose.Types.ObjectId(stall_id);
+  
+      // Tổng số món đã bán của quầy
+      const soldData = await Orderdetail.aggregate([
+        {
+          $lookup: {
+            from: "PRODUCT",
+            localField: "products",
+            foreignField: "_id",
+            as: "productInfo"
+          }
+        },
+        { $unwind: "$productInfo" },
+        { $match: { "productInfo.stall_id": objectId } },
+        {
+          $group: {
+            _id: "$productInfo.stall_id",
+            total_sold: { $sum: "$quantity" }
+          }
+        }
+      ]);
+  
+      // Tổng số đơn hàng của quầy
+      const orderCountData = await Orderdetail.aggregate([
+        {
+          $lookup: {
+            from: "PRODUCT",
+            localField: "products",
+            foreignField: "_id",
+            as: "productInfo"
+          }
+        },
+        { $unwind: "$productInfo" },
+        { $match: { "productInfo.stall_id": objectId } },
+        {
+          $group: {
+            _id: "$order", // gom theo đơn
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            total_orders: { $sum: 1 }
+          }
+        }
+      ]);
+  
+      // Lấy thông tin quầy
+      const stall = await Foodstall.findById(stall_id).lean();
+      if (!stall) {
+        return res.status(404).json({ error: "Không tìm thấy quầy" });
+      }
+  
+      // Kết quả trả về
+      const result = {
+        stall_id: stall._id,
+        stall_name: stall.stall_name,
+        total_sold: soldData[0]?.total_sold || 0,
+        total_orders: orderCountData[0]?.total_orders || 0,
+      };
+  
+      res.json(result);
+    } catch (err) {
+      console.error("Lỗi thống kê quầy:", err);
+      res.status(500).json({ error: "Lỗi server" });
+    }
+  },
+  getAllDoanhThu: async (req, res) => {
+    try {
+      // Lấy thống kê: món bán, số đơn và doanh thu theo stall
+      const stats = await Orderdetail.aggregate([
+        {
+          $lookup: {
+            from: "PRODUCT",
+            localField: "products",
+            foreignField: "_id",
+            as: "productInfo"
+          }
+        },
+        { $unwind: "$productInfo" },
+        {
+          $addFields: {
+            // Chuyển giá trị price thành số
+            price: { $toDouble: "$productInfo.price" }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              stall_id: "$productInfo.stall_id",
+              order: "$order"
+            },
+            total_quantity: { $sum: "$quantity" },
+            total_revenue: {
+              $sum: { $multiply: ["$quantity", "$price"] }
+            }
+          }
+        },
+        {
+          $group: {
+            _id: "$_id.stall_id",
+            total_orders: { $sum: 1 },
+            total_sold: { $sum: "$total_quantity" },
+            total_revenue: { $sum: "$total_revenue" }
+          }
+        }
+      ]);
+  
+      // Lấy danh sách các quầy
+      const stalls = await Foodstall.find().lean();
+  
+      // Ghép dữ liệu thống kê với danh sách quầy
+      const result = stalls.map(stall => {
+        const found = stats.find(s => s._id?.toString() === stall._id.toString());
+        return {
+          stall_id: stall._id,
+          stall_name: stall.stall_name,
+          total_sold: found?.total_sold || 0,
+          total_orders: found?.total_orders || 0,
+          total_revenue: found?.total_revenue || 0
+        };
+      });
+  
+      res.json(result);
+    } catch (err) {
+      console.error("Lỗi thống kê tất cả quầy:", err);
+      res.status(500).json({ error: "Lỗi server" });
+    }
+  }
 }
 module.exports = foodstallController;

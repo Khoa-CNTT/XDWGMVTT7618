@@ -6,6 +6,9 @@ const foodstallController = require("../controller/foodstallController");
 router.get("/user/:userId", foodstallController.getFoodstallByUserId);
 router.get("/search/:id", foodstallController.getFoodstallByTableNumber);
 
+router.get("/numberofproduct", foodstallController.getNumberOfProduct);
+//
+router.get("/allDoanhthu", foodstallController.getAllDoanhThu);
 // General routes
 router.get("/", foodstallController.getAllFoodstall);
 
@@ -20,5 +23,7 @@ router.get("/:id", foodstallController.getAStall);
 // GET ORDER BY STALL ID
 // req: ID stall
 router.get('/orderstall/:id', foodstallController.getOrderDetailByStall);
+
+
 
 module.exports = router;
