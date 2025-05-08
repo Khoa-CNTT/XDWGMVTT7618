@@ -274,6 +274,7 @@ const foodstallController = {
           existing.quantity += od.quantity;
         } else {
           ordersMap[orderId].orderdetail.push({
+            orderdetail: od._id,
             product_name: product.pd_name,
             price: product.price,
             quantity: od.quantity,

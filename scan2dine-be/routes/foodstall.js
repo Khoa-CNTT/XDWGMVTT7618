@@ -23,7 +23,4 @@ router.get("/:id", foodstallController.getAStall);
 // GET ORDER BY STALL ID
 // req: ID stall
 router.get('/orderstall/:id', foodstallController.getOrderDetailByStall);
-
-
-
 module.exports = router;
