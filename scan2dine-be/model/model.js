@@ -187,7 +187,7 @@ const orderdetailSchema = new mongoose.Schema({
   status: {
     type: String,
     default: "1",
-    // enum: ['Chờ xác nhận', 'Xác nhận', 'Đang xử lý', 'Hoàn thành'],  // danh sách các trạng thái hợp lệ
+    // enum: ['Chờ xác nhận', 'Xác nhận', 'Đang chuẩn bị', 'Hoàn thành'],  // danh sách các trạng thái hợp lệ
     enum: ['1', '2', '3', '4'],  // danh sách các trạng thái hợp lệ
   },
   total: {

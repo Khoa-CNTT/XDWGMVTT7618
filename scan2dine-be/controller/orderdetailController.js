@@ -187,6 +187,57 @@ const orderdetailCOntroller = {
             console.error("Error in downQuantity:", error);
             return res.status(500).json({ message: "Server error", error: error.message || error });
         }
+    },
+    // confirm orderdetail with status xác nhận -> đang chuẩn bị 
+    confirmStatus3: async (req, res) => {
+        try {
+            const { orderdetail } = req.params;
+            const { order, newStatus = "3" } = req.body;
+    
+            if (!order || !orderdetail) {
+                return res.status(400).json({ message: "Thiếu order hoặc orderdetail" });
+            }
+    
+            const confirmStatus = await updateOrderDetailStatus(order, orderdetail, newStatus);
+    
+            if (!confirmStatus) {
+                return res.status(404).json({ message: "Không tìm thấy orderdetail để cập nhật" });
+            }
+    
+            return res.status(200).json({
+                message: "Cập nhật trạng thái thành công",
+                detail: confirmStatus
+            });
+    
+        } catch (error) {
+            console.error("Error in confirmStatus3:", error);
+            return res.status(500).json({ message: "Server error", error: error.message || error });
+        }
+    },
+    confirmStatusComplete: async (req, res) => {
+        try {
+            const { orderdetail } = req.params;
+            const { order, newStatus = "4" } = req.body;
+    
+            if (!order || !orderdetail) {
+                return res.status(400).json({ message: "Thiếu order hoặc orderdetail" });
+            }
+    
+            const confirmStatus = await updateOrderDetailStatus(order, orderdetail, newStatus);
+    
+            if (!confirmStatus) {
+                return res.status(404).json({ message: "Không tìm thấy orderdetail để cập nhật" });
+            }
+    
+            return res.status(200).json({
+                message: "Cập nhật trạng thái 'Hoàn thành' thành công",
+                detail: confirmStatus
+            });
+    
+        } catch (error) {
+            console.error("Error in confirmStatus3:", error);
+            return res.status(500).json({ message: "Server error", error: error.message || error });
+        }
     }
 }
 
