@@ -119,78 +119,74 @@ const tableController = {
             if (!table) {
                 return res.status(404).json({ message: "Table not found" });
             }
-
+    
             // Log để kiểm tra thông tin bàn
             console.log("Table found:", table);
-
+    
             // Lọc các đơn hàng có trạng thái 1, 2
             const orders = await Order.find({
                 table: table._id,
-                od_status: { $in: ["1", "2"] }// lọc ra các order có status 1: chờ xác nhận và 2: chưa thanh toán
+                od_status: { $in: ["1", "2"] } // 1: chờ xác nhận, 2: chưa thanh toán
             })
                 .populate({
                     path: 'orderdetail',
                     populate: {
-                        path: 'products', // trong Orderdetail -> products (chính là Product)
+                        path: 'products',
                         model: 'Product'
                     }
                 })
-                .populate('customer')  // Thêm thông tin khách hàng vào đơn hàng
-                .populate('payment')   // Thêm thông tin thanh toán (nếu có)
-                .populate('notification')  // Thêm thông báo (nếu có)
-                .populate('table');    // Thêm thông tin bàn vào đơn hàng
-
-            // Log để kiểm tra thông tin các đơn hàng của bàn
+                .populate('customer')
+                .populate('payment')
+                .populate('notification')
+                .populate('table');
+    
+            // Log thông tin các đơn hàng
             console.log("Orders found:", orders);
-
+    
             if (orders.length === 0) {
                 return res.status(404).json({ message: "No unpaid orders for this table" });
             }
-
-            // Xử lý danh sách sản phẩm từ tất cả các đơn hàng
+    
+            // Xử lý danh sách đơn hàng
             const ordersDetails = orders.map(order => ({
                 orderId: order._id,
                 od_note: order.od_status,
                 customer: {
                     name: order.customer.name,
                     phone: order.customer.phone,
-                    email: order.customer.email, // Thêm thông tin khách hàng (email)
+                    email: order.customer.email,
                 },
-                tableNumber: order.table ? order.table.tb_number : "Not assigned", // Thêm thông tin số bàn
+                tableNumber: order.table ? order.table.tb_number : "Not assigned",
                 tableStatus: table.status,
                 totalAmount: order.total_amount,
                 orderNote: order.od_note,
-                paymentStatus: order.payment ? order.payment.status : "Not paid", // Trạng thái thanh toán
+                paymentStatus: order.payment ? order.payment.status : "Not paid",
                 products: order.orderdetail.map(detail => ({
+                    id: detail._id, // 🆕 ID của orderdetail
+                    productId: detail.products._id,
                     productName: detail.products.pd_name,
                     price: detail.products.price,
                     quantity: detail.quantity,
                     totalPrice: detail.quantity * detail.products.price,
-
                     image: detail.products.image,
                     status: detail.status
-                    // image: detail.image
-
-
                 })),
                 updatedAt: order.updatedAt,
                 createdAt: order.od_date,
             }));
-
-            // Trả về thông tin bàn và các đơn hàng
+    
+            // Trả về kết quả
             res.status(200).json({
                 tableNumber: table.tb_number,
                 orders: ordersDetails
             });
-
+    
         } catch (error) {
-            // Log lỗi và trả về thông báo lỗi
             console.error("Error fetching orders:", error);
             return res.status(500).json({ message: "Server error", error: error.message });
         }
-
-
-    },
+    }
+    ,
     // xóa bàn khi có status bằng 1
     deleteTableById: async (req, res) => {
         try {
