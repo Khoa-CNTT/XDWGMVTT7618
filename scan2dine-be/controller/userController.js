@@ -1,5 +1,5 @@
 const { User, Role, Foodstall } = require('../model/model');
-const { deleteFoodstall } = require('./foodstallController');
+const { deleteFoodstallById  } = require('./foodstallController');
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 const userController = {
@@ -64,43 +64,46 @@ const userController = {
         }
     },
     // delete user
-    deleteUser: async (req, res) => {
+    deleteUser : async (req, res) => {
         try {
             const userId = req.params.id;
-
+    
             // Tìm user
             const user = await User.findById(userId);
-            if (!user) return res.status(404).json({ message: 'User not found' });
-
+            if (!user) {
+                return res.status(404).json({ message: 'User not found' });
+            }
+    
             // Xoá user khỏi Role
             await Role.findByIdAndUpdate(user.role_id, {
                 $pull: { user: userId }
             });
-
+    
             // Kiểm tra nếu user là chủ quầy (Foodstall)
             const foodstall = await Foodstall.findOne({ user: userId });
             if (foodstall) {
                 const stallId = foodstall._id;
-
-                // Gọi hàm để xoá quầy và sản phẩm liên quan
-                const foodstallDeletionResult = await deleteFoodstall(stallId);
+    
+                // Gọi hàm logic xóa foodstall và sản phẩm liên quan
+                const foodstallDeletionResult = await deleteFoodstallById(stallId);
                 if (foodstallDeletionResult.error) {
                     return res.status(500).json({ error: foodstallDeletionResult.error });
                 }
             }
-
-            // Xoá liên kết Review nếu có (khi nào có thì mở hàm)
+    
+            // TODO: Nếu có review thì mở dòng sau để xóa review của user
             // await Review.deleteMany({ user: userId });
-
+    
             // Cuối cùng xoá user
             await User.findByIdAndDelete(userId);
-
+    
             res.status(200).json({ message: 'User and related data deleted successfully' });
         } catch (error) {
             console.error('Lỗi khi xoá user:', error);
             res.status(500).json({ error: error.message });
         }
-    },
+    }
+    ,
 
     // add user
     addUser: async (req, res) => {
