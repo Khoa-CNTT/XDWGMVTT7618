@@ -3,7 +3,7 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-
+const socketIO = require('socket.io');
 
 
 
@@ -40,7 +40,25 @@ var app = express();
 const dotenv = require("dotenv");
 dotenv.config();
 const connectDB = require('./config/db');
+const io = socketIO(server, {
+  cors: {
+    origin: '*', // Thay bằng domain frontend thực tế
+    methods: ['GET', 'POST'],
+  },
+});
+app.set('io', io); // Lưu io vào app để dùng trong controller
 connectDB();
+
+io.on('connection', (socket) => {
+  console.log('Người dùng kết nối:', socket.id);
+  socket.on('join_room', ({ room }) => {
+    socket.join(room);
+    console.log(`Người dùng tham gia phòng: ${room}`);
+  });
+  socket.on('disconnect', () => {
+    console.log('Người dùng ngắt kết nối:', socket.id);
+  });
+});
 
 
 

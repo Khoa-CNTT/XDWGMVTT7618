@@ -25,7 +25,7 @@ const confirmAllPendingOrderDetails = async (orderId) => {
     };
 };
 
-const createOrderFromCartService = async (cartId, tableId) => {
+const createOrderFromCartService = async (cartId, tableId, io) => {
     // Tìm giỏ hàng theo cartId
     const cart = await Cart.findById(cartId);
     if (!cart) throw new Error('Không tìm thấy giỏ hàng');
@@ -52,6 +52,10 @@ const createOrderFromCartService = async (cartId, tableId) => {
         await order.save();
         // Cập nhật trạng thái bàn : yêu cầu xác nhận món ăn
         await Table.findByIdAndUpdate(tableId, { $set: { status: '3' } });
+        notifyTableUpdated(io, tableId, {
+            tableId,
+            status: 'Yêu cầu xác nhận món'
+        });
         // Cập nhật mối quan hệ vào bảng Table và Customer
         await Table.findByIdAndUpdate(tableId, { $push: { order: order._id } });
         await Customer.findByIdAndUpdate(customerId, { $push: { order: order._id } });
@@ -103,7 +107,10 @@ const createOrderFromCartService = async (cartId, tableId) => {
             $set: { status: 'Yêu cầu xác nhận món' }
         });
     }    
-
+    notifyTableUpdated(io, tableId, {
+        tableId,
+        status: 'Yêu cầu xác nhận món'
+    });
     // Lưu lại thay đổi trong đơn hàng
     await order.save();
 
@@ -112,6 +119,7 @@ const createOrderFromCartService = async (cartId, tableId) => {
 
     // Xoá toàn bộ chi tiết giỏ hàng đã xử lý
     await deleteCartDetailsByCartId(cartId);
+    notifyCartUpdated(io, cartId, { cartId, message: 'Giỏ hàng đã được xóa sau khi tạo đơn hàng' });
     // tôgnr tiền cho order
     const totalPrice = await calculateTotalOrderPrice(order._id);
     // Lấy lại đơn hàng sau khi populate đầy đủ
@@ -135,17 +143,25 @@ const createOrderFromCartService = async (cartId, tableId) => {
     const formattedCreatedAt = moment(populatedOrder.createdAt).format('DD/MM/YYYY HH:mm:ss');
 
     // Trả kết quả cho controller sử dụng
+
+    const orderData = {
+        _id: populatedOrder._id,
+        customer: populatedOrder.customer,
+        table: populatedOrder.table,
+        orderdetail: orderItems,
+        status: populatedOrder.od_status,
+        total_amount: totalPrice,
+        createdAt: formattedCreatedAt
+    }
+    if (isNewOrder) {
+        notifyOrderCreated(io, order._id, orderData);
+    } else {
+        notifyOrderUpdated(io, order._id, orderData);
+    }
+
     return {
         message: 'Đơn hàng đã được xử lý thành công!',
-        order: {
-            _id: populatedOrder._id,
-            customer: populatedOrder.customer,
-            table: populatedOrder.table,
-            orderdetail: orderItems,
-            status: populatedOrder.od_status,
-            total_amount: totalPrice,
-            createdAt: formattedCreatedAt
-        }
+        order: orderData,
     };
 };
 
