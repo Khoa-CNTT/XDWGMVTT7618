@@ -32,6 +32,7 @@ const orderdetailRoute = require('./routes/orderdetail');
 const tableRoute = require('./routes/table');
 const userRoute = require('./routes/User');
 const roleRoute = require('./routes/role')
+const http = require('http');
 //------------------------------------------
 require("dotenv").config();
 
@@ -40,6 +41,7 @@ var app = express();
 const dotenv = require("dotenv");
 dotenv.config();
 const connectDB = require('./config/db');
+const server = http.createServer(app);
 const io = socketIO(server, {
   cors: {
     origin: '*', // Thay bằng domain frontend thực tế
