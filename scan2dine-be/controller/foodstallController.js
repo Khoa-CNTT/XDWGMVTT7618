@@ -302,7 +302,7 @@ const foodstallController = {
   
       const objectId = new mongoose.Types.ObjectId(stall_id);
   
-      // Tổng số món đã bán của quầy
+      // Tổng số món đã bán và tổng doanh thu của quầy
       const soldData = await Orderdetail.aggregate([
         {
           $lookup: {
@@ -316,13 +316,16 @@ const foodstallController = {
         { $match: { "productInfo.stall_id": objectId } },
         {
           $group: {
-            _id: "$productInfo.stall_id",
-            total_sold: { $sum: "$quantity" }
+            _id: null,
+            total_sold: { $sum: "$quantity" },
+            total_revenue: {
+              $sum: { $multiply: ["$quantity", "$productInfo.price"] }
+            }
           }
         }
       ]);
   
-      // Tổng số đơn hàng của quầy
+      // Tổng số đơn hàng
       const orderCountData = await Orderdetail.aggregate([
         {
           $lookup: {
@@ -336,7 +339,7 @@ const foodstallController = {
         { $match: { "productInfo.stall_id": objectId } },
         {
           $group: {
-            _id: "$order", // gom theo đơn
+            _id: "$order"
           }
         },
         {
@@ -345,6 +348,61 @@ const foodstallController = {
             total_orders: { $sum: 1 }
           }
         }
+      ]);
+  
+      // Món bán được nhiều nhất
+      const topProductData = await Orderdetail.aggregate([
+        {
+          $lookup: {
+            from: "PRODUCT",
+            localField: "products",
+            foreignField: "_id",
+            as: "productInfo"
+          }
+        },
+        { $unwind: "$productInfo" },
+        { $match: { "productInfo.stall_id": objectId } },
+        {
+          $group: {
+            _id: "$productInfo._id",
+            pd_name: { $first: "$productInfo.pd_name" },
+            total_sold: { $sum: "$quantity" }
+          }
+        },
+        { $sort: { total_sold: -1 } },
+        { $limit: 1 }
+      ]);
+  
+      // Doanh thu theo tuần (7 ngày gần nhất)
+      const startOfWeek = new Date();
+      startOfWeek.setDate(startOfWeek.getDate() - 6); // 6 ngày trước + hôm nay
+      startOfWeek.setHours(0, 0, 0, 0);
+  
+      const weeklyRevenueData = await Orderdetail.aggregate([
+        {
+          $lookup: {
+            from: "PRODUCT",
+            localField: "products",
+            foreignField: "_id",
+            as: "productInfo"
+          }
+        },
+        { $unwind: "$productInfo" },
+        {
+          $match: {
+            "productInfo.stall_id": objectId,
+            updatedAt: { $gte: startOfWeek }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: "%Y-%m-%d", date: "$updatedAt" }
+            },
+            revenue: { $sum: { $multiply: ["$quantity", "$productInfo.price"] } }
+          }
+        },
+        { $sort: { _id: 1 } }
       ]);
   
       // Lấy thông tin quầy
@@ -359,6 +417,9 @@ const foodstallController = {
         stall_name: stall.stall_name,
         total_sold: soldData[0]?.total_sold || 0,
         total_orders: orderCountData[0]?.total_orders || 0,
+        total_revenue: soldData[0]?.total_revenue || 0,
+        top_product: topProductData[0] || {},
+        weekly_revenue: weeklyRevenueData // [{ _id: 'yyyy-mm-dd', revenue: xxx }]
       };
   
       res.json(result);
@@ -366,7 +427,8 @@ const foodstallController = {
       console.error("Lỗi thống kê quầy:", err);
       res.status(500).json({ error: "Lỗi server" });
     }
-  },
+  }
+  ,
   getAllDoanhThu: async (req, res) => {
     try {
       // Lấy thống kê: món bán, số đơn và doanh thu theo stall
