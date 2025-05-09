@@ -71,8 +71,7 @@ const cartController = {
     createOrderFromCart: async (req, res) => {
         try {
             const { cart, table } = req.body;
-            const io = req.app.get('io');
-            const result = await createOrderFromCartService(cart, table,io);
+            const result = await createOrderFromCartService(cart, table);
             res.status(201).json(result);
         } catch (error) {
             console.error('Lỗi khi xử lý đơn hàng từ giỏ:', error);

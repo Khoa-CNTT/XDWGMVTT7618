@@ -3,7 +3,6 @@ const moment = require('moment');
 const { mergeDuplicateOrderDetails, calculateTotalOrderPrice } = require('../utils/orderUtils');
 const { deleteCartDetailsByCartId } = require('../utils/cartUtils');
 const { updateOrderDetailStatus } = require('../utils/orderDetailUtils');
-const { notifyOrderCreated, notifyTableUpdated, notifyCartUpdated, notifyOrderUpdated } = require('../utils/socketUtils');
 const confirmAllPendingOrderDetails = async (orderId) => {
     const order = await Order.findById(orderId).populate('orderdetail');
     if (!order) throw new Error('Order not found');
@@ -25,7 +24,7 @@ const confirmAllPendingOrderDetails = async (orderId) => {
     };
 };
 
-const createOrderFromCartService = async (cartId, tableId, io) => {
+const createOrderFromCartService = async (cartId, tableId) => {
     // Tìm giỏ hàng theo cartId
     const cart = await Cart.findById(cartId);
     if (!cart) throw new Error('Không tìm thấy giỏ hàng');
@@ -41,7 +40,7 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
         table: tableId, 
         od_status: { $in: ['2', '1']}
     });
-    let isNewOrder = false;
+    
     // Nếu chưa có đơn hàng chưa thanh toán cho bàn → tạo mới
     if (!order) {
         order = new Order({
@@ -52,10 +51,6 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
         await order.save();
         // Cập nhật trạng thái bàn : yêu cầu xác nhận món ăn
         await Table.findByIdAndUpdate(tableId, { $set: { status: '3' } });
-        notifyTableUpdated(io, tableId, {
-            tableId,
-            status: 'Yêu cầu xác nhận món'
-        });
         // Cập nhật mối quan hệ vào bảng Table và Customer
         await Table.findByIdAndUpdate(tableId, { $push: { order: order._id } });
         await Customer.findByIdAndUpdate(customerId, { $push: { order: order._id } });
@@ -107,10 +102,6 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
             $set: { status: 'Yêu cầu xác nhận món' }
         });
     }    
-    notifyTableUpdated(io, tableId, {
-        tableId,
-        status: 'Yêu cầu xác nhận món'
-    });
     // Lưu lại thay đổi trong đơn hàng
     await order.save();
 
@@ -119,7 +110,6 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
 
     // Xoá toàn bộ chi tiết giỏ hàng đã xử lý
     await deleteCartDetailsByCartId(cartId);
-    notifyCartUpdated(io, cartId, { cartId, message: 'Giỏ hàng đã được xóa sau khi tạo đơn hàng' });
     // tôgnr tiền cho order
     const totalPrice = await calculateTotalOrderPrice(order._id);
     // Lấy lại đơn hàng sau khi populate đầy đủ
@@ -153,16 +143,7 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
         total_amount: totalPrice,
         createdAt: formattedCreatedAt
     }
-    if (isNewOrder) {
-        notifyOrderCreated(io, order._id, orderData);
-    } else {
-        notifyOrderUpdated(io, order._id, orderData);
-    }
-
-    return {
-        message: 'Đơn hàng đã được xử lý thành công!',
-        order: orderData,
-    };
+    return res.status(200).json({order: orderData})
 };
 
 
