@@ -4,24 +4,44 @@
  * Module dependencies.
  */
 
-var app = require('../app');
-var debug = require('debug')('scan2dine-be:server');
-var http = require('http');
+var app = require("../app");
+var debug = require("debug")("scan2dine-be:server");
+var http = require("http");
+const socketIO = require("socket.io");
 
 /**
  * Get port from environment and store in Express.
  */
 
-var port = normalizePort(process.env.PORT || '5000');
-app.set('port', port);
+var port = normalizePort(process.env.PORT || "5000");
+app.set("port", port);
 
 /**
  * Create HTTP server.
  */
 
-var server = http.createServer(app);
+// Chỉ khai báo server một lần
+if (!global.server) {
+  global.server = http.createServer(app);
+  const io = socketIO(global.server, {
+    cors: {
+      origin: "*", // Thay bằng domain frontend thực tế
+      methods: ["GET", "POST"],
+    },
+  });
+  app.set("io", io); // Lưu io vào app để dùng trong controller
 
-
+  io.on("connection", (socket) => {
+    console.log("Người dùng kết nối:", socket.id);
+    socket.on("join_room", ({ room }) => {
+      socket.join(room);
+      console.log(`Người dùng tham gia phòng: ${room}`);
+    });
+    socket.on("disconnect", () => {
+      console.log("Người dùng ngắt kết nối:", socket.id);
+    });
+  });
+}
 
 
 /**
@@ -29,9 +49,9 @@ var server = http.createServer(app);
  */
 
 //Hiếu chỉnh chổ ni thêm '0,0,0,0'
-server.listen(port, '0.0.0.0');
-server.on('error', onError);
-server.on('listening', onListening);
+server.listen(port, "0.0.0.0");
+server.on("error", onError);
+server.on("listening", onListening);
 
 /**
  * Normalize a port into a number, string, or false.
@@ -58,22 +78,20 @@ function normalizePort(val) {
  */
 
 function onError(error) {
-  if (error.syscall !== 'listen') {
+  if (error.syscall !== "listen") {
     throw error;
   }
 
-  var bind = typeof port === 'string'
-    ? 'Pipe ' + port
-    : 'Port ' + port;
+  var bind = typeof port === "string" ? "Pipe " + port : "Port " + port;
 
   // handle specific listen errors with friendly messages
   switch (error.code) {
-    case 'EACCES':
-      console.error(bind + ' requires elevated privileges');
+    case "EACCES":
+      console.error(bind + " requires elevated privileges");
       process.exit(1);
       break;
-    case 'EADDRINUSE':
-      console.error(bind + ' is already in use');
+    case "EADDRINUSE":
+      console.error(bind + " is already in use");
       process.exit(1);
       break;
     default:
@@ -87,8 +105,6 @@ function onError(error) {
 
 function onListening() {
   var addr = server.address();
-  var bind = typeof addr === 'string'
-    ? 'pipe ' + addr
-    : 'port ' + addr.port;
-  debug('Listening on ' + bind);
+  var bind = typeof addr === "string" ? "pipe " + addr : "port " + addr.port;
+  debug("Listening on " + bind);
 }
