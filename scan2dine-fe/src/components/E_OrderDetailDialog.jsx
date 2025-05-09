@@ -751,12 +751,14 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                                             <FaPhone className="mr-2 text-gray-500" size={14} />
                                             <span>{tableInfo.customer.phone}</span>
                                         </div>
+
                                     )}
 
                                     {tableInfo?.createdAt && (
                                         <div className="flex items-center text-gray-700">
                                             <FaClock className="mr-2 text-gray-500" size={14} />
                                             <span>{formatDate(tableInfo.createdAt)}</span>
+
                                         </div>
                                     )}
 
@@ -802,7 +804,6 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                                         <div className="flex justify-between py-1">
                                             <span className="text-gray-600">VAT (0%)</span>
                                             <span className="font-medium">{formatCurrency(total * 0.00)}</span>
-
                                         </div>
                                         <div className="flex justify-between py-2 text-lg font-bold mt-1">
                                             <span>Tổng cộng</span>
