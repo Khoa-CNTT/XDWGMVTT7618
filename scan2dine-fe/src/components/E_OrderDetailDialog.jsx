@@ -802,6 +802,7 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                                         <div className="flex justify-between py-1">
                                             <span className="text-gray-600">VAT (0%)</span>
                                             <span className="font-medium">{formatCurrency(total * 0.00)}</span>
+
                                         </div>
                                         <div className="flex justify-between py-2 text-lg font-bold mt-1">
                                             <span>Tổng cộng</span>
