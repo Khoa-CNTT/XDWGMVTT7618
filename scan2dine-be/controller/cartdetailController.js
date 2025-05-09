@@ -1,5 +1,6 @@
 const { Cart, Product, CartDetail } = require('../model/model');
 const { increaseCartQuantity, decreaseCartQuantity } = require('../service/cartdetailService');
+const { notifyCartDetailAdded, notifyCartDetailUpdated, notifyCartDetailDeleted, notifyCartDetailQuantityDecreased } = require('../utils/socketUtils');
 
 const cartdetailController = {
   addCartdetail: async (req, res) => {
@@ -37,8 +38,14 @@ const cartdetailController = {
           $addToSet: { cartdetail: upProduttoCartdetail.detail._id }
         });
 
-        // console.log("Product updated:", product);
+        console.log("Product updated:", product);
       };
+      const io = req.app.get('io'); // Lấy io từ app
+            notifyCartDetailAdded(io, cart, {
+                cartId: cart,
+                detail: upProduttoCartdetail.detail,
+                message: upProduttoCartdetail.updated ? "Tăng số lượng sản phẩm" : "Thêm sản phẩm mới",
+            });
       // const amountItem = await calculateCartdetail(cart);
       res.status(200).json({
         message: upProduttoCartdetail.updated ? "Tăng số lượng sản phẩm trong giỏ hàng" : "Thêm sản phẩm vào giỏ hàng",
@@ -77,6 +84,12 @@ const cartdetailController = {
       });
 
       await cartDetail.deleteOne();
+      const io = req.app.get('io');
+            notifyCartDetailDeleted(io, deleteCartdetail.cart, {
+                cartId: deleteCartdetail.cart,
+                detailId: deleteCartdetail._id,
+                message: "Sản phẩm đã bị xóa khỏi giỏ hàng",
+            });
       res.status(200).json({ message: 'Cart detail deleted successfully' });
     } catch (error) {
       res.status(500).json(error);
@@ -100,7 +113,12 @@ const cartdetailController = {
       if (!updatedCartDetail) {
         return res.status(404).json({ message: 'Cart detail not found' });
       }
-
+      const io = req.app.get('io');
+            notifyCartDetailUpdated(io, updateCartdetail.cart, {
+                cartId: updateCartdetail.cart,
+                detailId: updateCartdetail._id,
+                message: "Thông tin chi tiết giỏ hàng đã được cập nhật",
+            })
       res.status(200).json(updatedCartDetail);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -127,7 +145,11 @@ const cartdetailController = {
           detail: downQuantity
         });
       }
-
+      notifyCartDetailQuantityDecreased(io, cart ,{
+                cartId: cart,
+                detailId: downQuantity,
+                message: "Số lượng sản phẩm đã giảm",
+            })
       res.status(200).json({
         message: "Giảm số lượng sản phẩm trong giỏ hàng",
         detail: downQuantity

@@ -2,6 +2,7 @@ const { Cart, Customer} = require('../model/model');
 const { creatCart } = require('../service/cartService');
 const { deleteCartDetailsByCartId } = require('../utils/cartUtils');
 const { createOrderFromCartService } = require('../service/orderService');
+const { notifyCartAdded, notifyCartDetailsDeleted, notifyCartDeleted } = require('../utils/socketUtils');
 const cartController = {
     // add a cart
     addCart: async (req, res) => {
@@ -16,6 +17,12 @@ const cartController = {
                     }
                 })
             };
+            const io = req.app.get('io'); // Lấy io từ app
+            notifyCartAdded(io, newCart._id, {
+                cartId: newCart._id,
+                customerId: req.body.customer,
+                message: 'Giỏ hàng mới đã được thêm',
+            });
             return res.status(200).json(newCart);
         } catch (error) {
             console.error("Error in:", error);
@@ -35,7 +42,13 @@ const cartController = {
     //delete all cartdetail theo id của giỏ hàng
     deleteCartdetail: async (req, res) => {
         try {
+            const io = req.app.get('io'); // Lấy io từ app
             const deletedIds = await deleteCartDetailsByCartId(req.params.id);
+            notifyCartDetailsDeleted(io, req.params.id, {
+                cartId: req.params.id,
+                deletedCartDetailIds: deletedIds,
+                message: 'Chi tiết giỏ hàng đã bị xóa',
+            });
             return res.status(200).json({
                 message: "CartDetails deleted successfully",
                 deletedCartDetailIds: deletedIds
@@ -56,8 +69,6 @@ const cartController = {
                         select: "pd_name price "
                     }
                 });
-
-
             if (!cart) {
                 return res.status(404).json({ message: "Cart not found" });
             }
@@ -67,11 +78,42 @@ const cartController = {
             res.status(500).json({ error: error.message });
         }
     },
+    deleteCart: async (req, res) => {
+        try {
+            const deleteCart = await Cart.findByIdAndDelete(req.params.id);
+            if (!deleteCart) {
+                return res.status(404).json({ message: "not found" });
+            }
 
+            // Gỡ liên kết với Customer
+            if (deleteCart.customer) {
+                await Customer.findByIdAndUpdate(deleteCart.customer, {
+                    $pull: { cart: deleteCart._id },
+                });
+            }
+
+            const io = req.app.get('io');
+            notifyCartDeleted(io, deleteCart._id, {
+                cartId: deleteCart._id,
+                customerId: deleteCart.customer,
+                message: 'Giỏ hàng đã bị xóa',
+            });
+
+            return res.status(200).json({ message: "Cart deleted successfully", delete: deleteCart });
+        } catch (error) {
+            console.error("Error in deleteCart:", error);
+            return res.status(500).json({ message: "Server error", error: error.message || error });
+        }
+    },
     createOrderFromCart: async (req, res) => {
         try {
             const { cart, table } = req.body;
-            const result = await createOrderFromCartService(cart, table);
+            const io = req.app.get('io'); // Lấy io từ app
+            if (!io) {
+                console.error('Socket.IO is not initialized');
+                return res.status(500).json({ message: 'Socket.IO not available' });
+            }
+            const result = await createOrderFromCartService(cart, table,io);
             res.status(201).json(result);
         } catch (error) {
             console.error('Lỗi khi xử lý đơn hàng từ giỏ:', error);

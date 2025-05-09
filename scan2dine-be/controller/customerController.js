@@ -1,6 +1,7 @@
 const { default: mongoose } = require("mongoose");
 const { Customer, Cart, Order } = require("../model/model");
 const { creatCart } = require("../service/cartService");
+const { notifyCustomerAdded, notifyCustomerUpdated, notifyCustomerDeleted } = require("../utils/socketUtils");
 const customerController = {
   //  ADD CUSTOMER
   addCustomer: async (req, res) => {
@@ -15,12 +16,21 @@ const customerController = {
       }
       // nếu chưa tồn tại thì tạo mới
       const newCustomer = new Customer(req.body);
-      const cart = await creatCart();
+      const io = req.app.get("io");
+      const cart = await creatCart(null, io);
       newCustomer.cart = cart._id;
       const saveCustomer = await newCustomer.save();
       // Gắn lại customerId vào cart (đảm bảo schema Cart có trường customer)
       await Cart.findByIdAndUpdate(cart._id, {
         customer: saveCustomer._id,
+      });
+      // thông báo cho client
+      notifyCustomerAdded(io, saveCustomer._id, {
+        customer: saveCustomer._id,
+        phone: saveCustomer.phone,
+        name: saveCustomer.name,
+        cart: cart._id,
+        message: "Khách hàng mới đã được thêm",
       });
       res.status(200).json(saveCustomer);
     } catch (error) {
@@ -72,6 +82,14 @@ const customerController = {
         },
         { new: true }
       );
+      const io = req.app.get('io');
+      notifyCustomerUpdated(io, updateCustomer._id, {
+        customerId: updateCustomer._id,
+        phone: updateCustomer.phone,
+        name: updateCustomer.name,
+        cartId: updateCustomer.cart,
+        message: 'Thông tin khách hàng đã được cập nhật',
+      });
       res.status(200).json(updateCustomer);
     } catch (error) {
       res.status(500).json(error);
@@ -91,7 +109,13 @@ const customerController = {
           customer: deleteCustomer._id,
         },
       });
-      //
+      const io = req.app.get('io');
+      notifyCustomerDeleted(io, deleteCustomer._id, {
+        customerId: deleteCustomer._id,
+        phone: deleteCustomer.phone,
+        name: deleteCustomer.name,
+        message: 'Khách hàng đã bị xóa',
+      });
       res.status(200).json("Delete Succesfully");
     } catch (error) {
       res.status(500).json(error);

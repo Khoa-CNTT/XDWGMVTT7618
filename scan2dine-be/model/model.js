@@ -21,7 +21,7 @@ const productSchema = new mongoose.Schema({
   orderdetail: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "OrderDetail",
+      ref: "Orderdetail",
     },
   ],
 
