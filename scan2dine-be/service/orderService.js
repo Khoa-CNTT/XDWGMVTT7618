@@ -3,7 +3,7 @@ const moment = require('moment');
 const { mergeDuplicateOrderDetails, calculateTotalOrderPrice } = require('../utils/orderUtils');
 const { deleteCartDetailsByCartId } = require('../utils/cartUtils');
 const { updateOrderDetailStatus } = require('../utils/orderDetailUtils');
-
+const { notifyOrderCreated, notifyTableUpdated, notifyCartUpdated, notifyOrderUpdated } = require('../utils/socketUtils');
 const confirmAllPendingOrderDetails = async (orderId) => {
     const order = await Order.findById(orderId).populate('orderdetail');
     if (!order) throw new Error('Order not found');
@@ -41,7 +41,7 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
         table: tableId, 
         od_status: { $in: ['2', '1']}
     });
-
+    let isNewOrder = false;
     // Nếu chưa có đơn hàng chưa thanh toán cho bàn → tạo mới
     if (!order) {
         order = new Order({

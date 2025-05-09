@@ -7,7 +7,6 @@ import CartBar from '../components/C_Carbar';
 import { FaArrowLeft } from 'react-icons/fa';
 import { CategoryFilter } from '../components/C_CategoryFilter';
 import { useNavigate } from 'react-router-dom';
-import { removeFromCartDetail } from '../server/cartService';
 import { useLocation } from 'react-router-dom';
 
 

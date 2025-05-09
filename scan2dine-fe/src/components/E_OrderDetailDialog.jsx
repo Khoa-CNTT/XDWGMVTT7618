@@ -751,12 +751,14 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                                             <FaPhone className="mr-2 text-gray-500" size={14} />
                                             <span>{tableInfo.customer.phone}</span>
                                         </div>
+
                                     )}
 
                                     {tableInfo?.createdAt && (
                                         <div className="flex items-center text-gray-700">
                                             <FaClock className="mr-2 text-gray-500" size={14} />
                                             <span>{formatDate(tableInfo.createdAt)}</span>
+
                                         </div>
                                     )}
 

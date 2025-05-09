@@ -4,7 +4,6 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const socketIO = require('socket.io');
-const http = require('http');
 
 
 
@@ -33,6 +32,7 @@ const orderdetailRoute = require('./routes/orderdetail');
 const tableRoute = require('./routes/table');
 const userRoute = require('./routes/User');
 const roleRoute = require('./routes/role')
+const http = require('http');
 //------------------------------------------
 require("dotenv").config();
 
@@ -41,16 +41,13 @@ var app = express();
 const dotenv = require("dotenv");
 dotenv.config();
 const connectDB = require('./config/db');
-// Create server HTTP from Express
 const server = http.createServer(app);
-
 const io = socketIO(server, {
   cors: {
-    origin: '*', // Thay bằng domain frontend thực tế khi triển khai thật
-    methods: ['GET', 'POST', 'DELETE', 'PATCH'],
+    origin: '*', // Thay bằng domain frontend thực tế
+    methods: ['GET', 'POST'],
   },
 });
-
 app.set('io', io); // Lưu io vào app để dùng trong controller
 connectDB();
 
