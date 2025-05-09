@@ -143,7 +143,7 @@ const createOrderFromCartService = async (cartId, tableId) => {
         total_amount: totalPrice,
         createdAt: formattedCreatedAt
     }
-    return res.status(200).json({order: orderData})
+    return orderData;
 };
 
 
