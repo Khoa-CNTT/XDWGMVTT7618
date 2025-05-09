@@ -344,10 +344,10 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                                                     key={item.id}
                                                     item={item}
                                                     index={index}
-                                                    expandedItemId={expandedItemId}
-                                                    onToggleExpand={handleToggleExpand}
-                                                    onUpdateQuantity={handleUpdateQuantity}
-                                                    onDeleteItem={handleDeleteItem}
+                                                    // expandedItemId={expandedItemId}
+                                                    // onToggleExpand={handleToggleExpand}
+                                                    // onUpdateQuantity={handleUpdateQuantity}
+                                                    // onDeleteItem={handleDeleteItem}
                                                 />))}
                                         </div>
                                     )}

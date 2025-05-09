@@ -1,41 +1,25 @@
-// src/services/api.js
-const API_URL = process.env.REACT_APP_URL || "http://localhost:3000";
+// // src/services/api.js
+// import axios from 'axios';
 
-const api = {
-  // Thêm giỏ hàng
-  addCart: async (customerId) => {
-    const response = await fetch(`${API_URL}/s2d/cart`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ customer: customerId }),
-    });
-    return response.json();
-  },
+// const API_URL = `${process.env.REACT_APP_URL}`;
 
-  // Xóa giỏ hàng
-  deleteCart: async (cartId) => {
-    const response = await fetch(`${API_URL}/s2d/cart/${cartId}`, {
-      method: "DELETE",
-    });
-    return response.json();
-  },
+// const api = axios.create({
+//   baseURL: API_URL,
+//   headers: {
+//     'Content-Type': 'application/json',
+//   },
+// });
 
-  // Xóa chi tiết giỏ hàng
-  deleteCartDetails: async (cartId) => {
-    const response = await fetch(
-      `${API_URL}/s2d/cart/deleteCartdetail/${cartId}`,
-      {
-        method: "DELETE",
-      }
-    );
-    return response.json();
-  },
+// // Các phương thức API
+// export const get = (url) => api.get(url);
+// export const post = (url, data) => api.post(url, data);
+// export const patch = (url, data) => api.patch(url, data);
+// export const del = (url) => api.delete(url);
 
-  // Lấy danh sách giỏ hàng
-  getCarts: async () => {
-    const response = await fetch(`${API_URL}/s2d/cart`);
-    return response.json();
-  },
-};
-
-export default api;
+// // Export default để giữ tính tương thích (nếu cần)
+// export default {
+//   get,
+//   post,
+//   patch,
+//   delete: del,
+// };
