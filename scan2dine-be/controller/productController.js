@@ -8,25 +8,25 @@ const productController = {
     addProduct: async (req, res) => {
         try {
             let newProductData = { ...req.body };
-    
+
             if (req.file) {
                 const imagePath = req.file.path.replace(/\\/g, '/'); // windows path fix
                 newProductData.image = imagePath.replace('public/', '/'); // clean path
             }
-            
+
             const newProduct = new Product(newProductData);
             const saveProduct = await newProduct.save();
-    
+
             if (req.body.category) {
                 const categoryID = await Category.findById(req.body.category);
                 await categoryID.updateOne({ $push: { products: saveProduct._id } });
             }
-    
+
             if (req.body.stall_id) {
                 const stall = await Foodstall.findById(req.body.stall_id);
                 await stall.updateOne({ $push: { products: saveProduct._id } });
             }
-    
+
             res.status(200).json(saveProduct);
         } catch (error) {
             res.status(500).json(error);
@@ -136,7 +136,35 @@ const productController = {
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
+    },
+    filterProductsByPrice: async (req, res) => {
+        try {
+            const { min, max } = req.body;
+            const query = {};
+    
+            if (min !== undefined && max !== undefined) {
+                query.price = { $gte: Number(min), $lte: Number(max) };
+            } else if (min !== undefined) {
+                query.price = { $gte: Number(min) };
+            } else if (max !== undefined) {
+                query.price = { $lte: Number(max) };
+            }
+    
+            console.log("Query:", query);
+    
+            const products = await Product.find(query).select("-orderdetail -cartdetail");
+    
+            console.log("Tổng số:", products.length);
+            products.forEach(p => {
+                console.log("->", p.pd_name, "-", p.price);
+            });
+    
+            res.status(200).json(products);
+        } catch (error) {
+            res.status(500).json({ error: error.message });
+        }
     }
+    
 }
 
 module.exports = productController;

@@ -428,6 +428,30 @@ const foodstallController = {
       console.error("Lỗi thống kê tất cả quầy:", err);
       res.status(500).json({ error: "Lỗi server" });
     }
-  }
+  },
+  /// nội bộ
+  deleteFoodstallById : async (stallId) => {
+    try {
+        const foodstall = await Foodstall.findById(stallId);
+        if (!foodstall) {
+            return { error: "Foodstall not found" };
+        }
+
+        const productsToDelete = await Product.find({ stall_id: stallId });
+        if (productsToDelete.length > 0) {
+            await Product.deleteMany({ stall_id: stallId });
+            await Category.updateMany(
+                { products: { $in: productsToDelete.map(p => p._id) } },
+                { $pull: { products: { $in: productsToDelete.map(p => p._id) } } }
+            );
+        }
+
+        await foodstall.deleteOne();
+        return { success: true };
+    } catch (error) {
+        console.error("Error in deleteFoodstallById:", error);
+        return { error: error.message || error };
+    }
+}
 }
 module.exports = foodstallController;
