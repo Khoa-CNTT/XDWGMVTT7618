@@ -114,26 +114,48 @@ export const E_ItemOrderDetail = ({
                         <div className="flex items-center">
                             <button
                                 onClick={handleDecreaseQuantity}
-                                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
-                                disabled={item.quantity <= 1}
+                                className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors
+            ${item.status === '1' || item.status === '2'
+                                        ? 'bg-gray-200 hover:bg-gray-300'
+                                        : 'bg-gray-100 cursor-not-allowed pointer-events-none'}
+        `}
+                                disabled={item.quantity <= 1 || (item.status !== '1' && item.status !== '2')}
                             >
-                                <FaMinus className={`${item.quantity <= 1 ? 'text-gray-400' : 'text-gray-600'}`} size={12} />
+                                <FaMinus
+                                    className={`${item.quantity <= 1 || (item.status !== '1' && item.status !== '2')
+                                        ? 'text-gray-400'
+                                        : 'text-gray-600'
+                                        }`}
+                                    size={12}
+                                />
                             </button>
                             <span className="mx-4 font-medium text-gray-700">{item.quantity}</span>
                             <button
                                 onClick={handleIncreaseQuantity}
-                                className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 transition-colors"
+                                className={`w-8 h-8 flex items-center justify-center rounded-full transition-colors
+            ${item.status === '1' || item.status === '2'
+                                        ? 'bg-gray-200 hover:bg-gray-300'
+                                        : 'bg-gray-100 cursor-not-allowed pointer-events-none'}
+        `}
+                                disabled={item.status !== '1' && item.status !== '2'}
                             >
-                                <FaPlus className="text-gray-600" size={12} />
+                                <FaPlus
+                                    className={`${item.status !== '1' && item.status !== '2'
+                                        ? 'text-gray-400'
+                                        : 'text-gray-600'
+                                        }`}
+                                    size={12}
+                                />
                             </button>
                         </div>
+
                         <button
                             onClick={() => {
                                 console.log('thông tin item', item);
                             }}
                             className={`p-2 rounded-full transition-colors ${item.status === '1' || item.status === '2'
-                                    ? 'text-red-500 hover:bg-red-50'
-                                    : 'text-gray-400 pointer-events-none cursor-not-allowed'
+                                ? 'text-red-500 hover:bg-red-50'
+                                : 'text-gray-400 pointer-events-none cursor-not-allowed'
                                 }`}
                         >
                             <FaTrash size={16} />
