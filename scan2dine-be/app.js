@@ -46,10 +46,11 @@ const server = http.createServer(app);
 
 const io = socketIO(server, {
   cors: {
-    origin: '*', // Thay bằng domain frontend thực tế
-    methods: ['GET', 'POST'],
+    origin: '*', // Thay bằng domain frontend thực tế khi triển khai thật
+    methods: ['GET', 'POST', 'DELETE', 'PATCH'],
   },
 });
+
 app.set('io', io); // Lưu io vào app để dùng trong controller
 connectDB();
 
