@@ -5,6 +5,7 @@ import O_OrderManage from '../components/O_OrderManage';
 import O_MenuManage from '../components/O_MenuManage';
 import api from '../server/api';
 import O_CounterStatistics from '../components/O_CounterStatistics';
+import { FaHome, FaClipboardList, FaUtensils, FaSignOutAlt } from 'react-icons/fa';
 
 export const Owner = () => {
   const navigate = useNavigate();
@@ -63,85 +64,97 @@ export const Owner = () => {
     setCurrentView('dashboard');
     localStorage.setItem('ownerCurrentView', 'dashboard');
   };
+  
   return (
     <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header className="w-full px-6 py-3 bg-gray-900 text-white flex justify-between items-center">
-        <div
-          onClick={handleLogoClick}
-          className="text-lg font-bungee font-extrabold cursor-pointer hover:opacity-80"
-        >
-          SCAN<span className='text-primary'>2</span>DINE
+      {/* Sidebar */}
+      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-gray-900 text-white flex flex-col">
+        <div className="p-4 border-b border-gray-700">
+          <div className="text-lg font-bungee font-extrabold cursor-pointer hover:opacity-80" onClick={handleLogoClick}>
+            <div>Chủ quầy</div>
+            <div>SCAN<span className='text-primary'>2</span>DINE</div>
+          </div>
         </div>
-        <div className="absolute left-1/2 transform -translate-x-1/2">
-          <span>Xin chào, {stallName}!</span>
-        </div>
-        <div>
+        
+        <div className="p-4 border-b border-gray-700">
+          <div className="text-sm uppercase font-semibold text-gray-400 mb-2">TỔNG QUAN</div>
           <button
             onClick={() => {
-              localStorage.removeItem('user');
-              navigate('/login');
+              setCurrentView('dashboard');
+              localStorage.setItem('ownerCurrentView', 'dashboard');
             }}
-            className="text-white hover:underline"
+            className={`w-full flex items-center p-2 rounded-lg transition hover:bg-gray-800 ${currentView === 'dashboard' ? 'bg-gray-800' : ''}`}
           >
-            Đăng xuất
+            <FaHome className="mr-2" /> Thống kê tổng quan
           </button>
         </div>
-      </header>
-
-      {/* Body: Sidebar + Main content */}
-      <div className="flex flex-1">
-        {/* Sidebar */}
-        <aside className="w-64 bg-gray-300 flex flex-col">
-          <nav className="flex-1 p-4 space-y-4">
-            <button
-              onClick={() => {
-                setCurrentView('dashboard');
-                localStorage.setItem('ownerCurrentView', 'dashboard');
-              }}
-              className="w-full block p-3 rounded-lg transition bg-primary text-white hover:bg-red-500"
-            >
-              Thống kê tổng quan
-            </button>
+        
+        <div className="p-4">
+          <div className="text-sm uppercase font-semibold text-gray-400 mb-2">QUẢN LÝ</div>
+          <div className="space-y-2">
             <button
               onClick={() => {
                 setCurrentView('orders');
                 localStorage.setItem('ownerCurrentView', 'orders');
               }}
-              className="w-full block p-3 rounded-lg transition bg-primary text-white hover:bg-red-500"
+              className={`w-full flex items-center p-2 rounded-lg transition hover:bg-gray-800 ${currentView === 'orders' ? 'bg-gray-800' : ''}`}
             >
-              Quản lý đơn hàng
+              <FaClipboardList className="mr-2" /> Đơn hàng
             </button>
-            <div className="space-y-2">
-              <button
-                onClick={() => {
-                  setCurrentView('menu');
-                  localStorage.setItem('ownerCurrentView', 'menu');
-                }}
-                className="w-full block p-3 rounded-lg transition bg-primary text-white hover:bg-red-500"
-              >
-                Quản lý thực đơn
-              </button>
-            </div>
-          </nav>
-        </aside>
-
-        {/* Main Content + Footer */}
-        <div className="flex-1 flex flex-col">
-          <main className="flex-1">
-            {currentView === 'orders' ? (
-              <O_OrderManage stallId={currentStallId} />
-            ) : currentView === 'menu' ? (
-              <O_MenuManage stallId={currentStallId} />
-            ) : (
-              <O_CounterStatistics stallId={currentStallId} />
-            )}
-          </main>
-          <Footer />
+            <button
+              onClick={() => {
+                setCurrentView('menu');
+                localStorage.setItem('ownerCurrentView', 'menu');
+              }}
+              className={`w-full flex items-center p-2 rounded-lg transition hover:bg-gray-800 ${currentView === 'menu' ? 'bg-red-700' : ''}`}
+            >
+              <FaUtensils className="mr-2" /> Thực đơn
+            </button>
+            <button
+              onClick={() => {
+                localStorage.removeItem('user');
+                navigate('/login');
+              }}
+              className="w-full flex items-center p-2 rounded-lg transition hover:bg-gray-800"
+            >
+              <FaSignOutAlt className="mr-2" /> Đăng xuất
+            </button>
+          </div>
         </div>
+      </aside>
+
+      {/* Main Content */}
+      <div className="ml-64 flex-1 flex flex-col">
+        {/* Header */}
+        <header className="w-full px-6 py-4 bg-white border-b shadow-sm flex justify-center items-center">
+          <div className='text-center'>
+            <span className="font-medium text-lg">Xin chào, {stallName}!</span>
+          </div>
+        </header>
+
+        {/* Content Area */}
+        <div className="flex-grow p-6 bg-gray-100">
+          {currentView === 'dashboard' && (
+            <O_CounterStatistics
+              stallId={currentStallId}
+            />
+          )}
+          {currentView === 'orders' && (
+            <O_OrderManage
+              stallId={currentStallId}
+            />
+          )}
+          {currentView === 'menu' && (
+            <O_MenuManage
+              stallId={currentStallId}
+            />
+          )}
+        </div>
+        
+        <Footer />
       </div>
     </div>
   )
 }
 
-export default Owner;
+export default Owner; 

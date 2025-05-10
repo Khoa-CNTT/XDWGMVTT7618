@@ -16,6 +16,10 @@ const O_MenuManage = ({ stallId }) => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
 
+    // Thêm state cho phân trang
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(5);
+
     useEffect(() => {
         fetchProducts();
         fetchCategories();
@@ -99,7 +103,7 @@ const O_MenuManage = ({ stallId }) => {
                     'Content-Type': 'multipart/form-data',
                 }
             });
-    
+
             if (response.status === 200) {
                 await fetchProducts();
                 setIsEditModalOpen(false);
@@ -143,10 +147,22 @@ const O_MenuManage = ({ stallId }) => {
     });
 
     const sortedProducts = [...filteredProducts].sort((a, b) => {
+
         if (priceSort === 'asc') return parseFloat(a.price) - parseFloat(b.price);
         if (priceSort === 'desc') return parseFloat(b.price) - parseFloat(a.price);
         return 0;
     });
+
+    // Tính toán các giá trị cho phân trang
+    const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentItems = sortedProducts.slice(indexOfFirstItem, indexOfLastItem);
+
+    // Hàm xử lý chuyển trang
+    const paginate = (pageNumber) => setCurrentPage(pageNumber);
+    const nextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
+    const prevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
 
     return (
         <div className="flex-1 bg-white flex flex-col">
@@ -192,7 +208,7 @@ const O_MenuManage = ({ stallId }) => {
                         </div>
                         <button
                             onClick={() => setIsAddModalOpen(true)}
-                            className="bg-primary text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-red-600"
+                            className="bg-primary text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-red-600 ml-4"
                         >
                             <FaPlus />
                             <span>Thêm món mới</span>
@@ -214,12 +230,12 @@ const O_MenuManage = ({ stallId }) => {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-200">
-                            {sortedProducts.map((product, index) => {
+                            {currentItems.map((product, index) => {
                                 const category = categories.find(c => c._id === product.category);
 
                                 return (
                                     <tr key={product._id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{indexOfFirstItem + index + 1}</td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <img
                                                 src={`${process.env.REACT_APP_API_URL}${product.image}`}
@@ -228,14 +244,16 @@ const O_MenuManage = ({ stallId }) => {
                                             />
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.pd_name}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{parseInt(product.price).toLocaleString()}đ</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {parseInt(product.price).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".")} đ
+                                        </td>
                                         <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{product.description}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{category?.cate_name}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             <div className="flex justify-center space-x-2">
                                                 <button
                                                     onClick={() => {
-                                                        setSelectedProduct(product); // Đảm bảo product là object, không phải null
+                                                        setSelectedProduct(product);
                                                         setIsEditModalOpen(true);
                                                     }}
                                                     className="text-blue-600 hover:text-blue-900 transition-colors"
@@ -256,7 +274,39 @@ const O_MenuManage = ({ stallId }) => {
                         </tbody>
                     </table>
                 </div>
+                {/* Thêm phân trang */}
+                <div className="flex justify-between items-center mt-4 px-4">
+                    <div className="text-sm text-gray-500">
+                        Hiển thị {indexOfFirstItem + 1} đến {Math.min(indexOfLastItem, sortedProducts.length)} trong tổng số {sortedProducts.length} món ăn
+                    </div>
+                    <div className="flex space-x-1">
+                        <button
+                            onClick={prevPage}
+                            disabled={currentPage === 1}
+                            className={`px-3 py-1 rounded border ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                        >
+                            Trước
+                        </button>
 
+                        {[...Array(totalPages)].map((_, index) => (
+                            <button
+                                key={index}
+                                onClick={() => paginate(index + 1)}
+                                className={`px-3 py-1 rounded border ${currentPage === index + 1 ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                            >
+                                {index + 1}
+                            </button>
+                        ))}
+
+                        <button
+                            onClick={nextPage}
+                            disabled={currentPage === totalPages}
+                            className={`px-3 py-1 rounded border ${currentPage === totalPages ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                        >
+                            Sau
+                        </button>
+                    </div>
+                </div>
                 <O_AddProductModal
                     isOpen={isAddModalOpen}
                     onClose={() => setIsAddModalOpen(false)}

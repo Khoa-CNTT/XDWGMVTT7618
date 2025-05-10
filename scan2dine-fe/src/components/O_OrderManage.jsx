@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { FaSearch } from 'react-icons/fa';
 import api from '../server/api';
+import axios from 'axios';
+
 
 const statusMap = {
+    '1': { label: "Chờ xác nhận", color: "text-gray-600" },
     '2': { label: "Đã xác nhận", color: "text-blue-600" },
     '3': { label: "Đang chuẩn bị", color: "text-orange-500" },
     '4': { label: "Đã hoàn thành", color: "text-green-600" },
@@ -19,101 +22,128 @@ const O_OrderManage = ({ stallId }) => {
         if (stallId) fetchOrders();
     }, [stallId]);
 
+    // const fetchOrders = async () => {
+    //     try {
+    //         const prevSelectedOrderId = selectedOrder?.order_id;
+    //         const response = await api.get(`/s2d/foodstall/orderstall/${stallId}`);
+    //         const confirmedOrders = Array.isArray(response.data)
+    //             ? response.data.filter(order => ['2'].includes(order.order_status))
+    //             : [];
+    //         setOrders(confirmedOrders);
+    //         setSelectedOrder(confirmedOrders.length > 0 ? confirmedOrders[0] : null);
+    //         if (confirmedOrders.length > 0) {
+    //             const found = confirmedOrders.find(order => order.order_id === prevSelectedOrderId);
+    //             setSelectedOrder(found || confirmedOrders[0]);
+    //             if ((found || confirmedOrders[0]).orderdetail) {
+    //                 console.log("DEBUG orderdetail:", (found || confirmedOrders[0]).orderdetail);
+    //             }
+    //         } else {
+    //             setSelectedOrder(null);
+    //         }
+    //     } catch (error) {
+    //         console.error('Lỗi khi tải đơn hàng:', error);
+    //     }
+    // };
+
     const fetchOrders = async () => {
         try {
-            // Gọi API backend lấy danh sách đơn hàng theo stallId
+            const prevSelectedOrderId = selectedOrder?.order_id;
             const response = await api.get(`/s2d/foodstall/orderstall/${stallId}`);
-            console.log("API data:", response.data);
-            // Lọc các đơn hàng đã được nhân viên xác nhận (ví dụ: order_status === 'processing')
-            const confirmedOrders = Array.isArray(response.data)
-                ? response.data.filter(order => order.order_status === '2')
+            let confirmedOrders = Array.isArray(response.data)
+                ? response.data.filter(order => ['2'].includes(order.order_status))
                 : [];
+
+            // Update order_status based on orderdetail statuses
+            confirmedOrders = confirmedOrders.map(order => {
+                if (Array.isArray(order.orderdetail) && order.orderdetail.length > 0) {
+                    const allCompleted = order.orderdetail.every(item => item.status === '4' || item.status === 'completed');
+                    const anyPreparing = order.orderdetail.some(item => item.status === '3');
+                    if (allCompleted) {
+                        return { ...order, order_status: '4' };
+                    } else if (anyPreparing) {
+                        return { ...order, order_status: '3' };
+                    }
+                }
+                return order;
+            });
+
             setOrders(confirmedOrders);
-            setSelectedOrder(confirmedOrders.length > 0 ? confirmedOrders[0] : null);
+            if (confirmedOrders.length > 0) {
+                const found = confirmedOrders.find(order => order.order_id === prevSelectedOrderId);
+                setSelectedOrder(found || confirmedOrders[0]);
+                if ((found || confirmedOrders[0]).orderdetail) {
+                    console.log("DEBUG orderdetail:", (found || confirmedOrders[0]).orderdetail);
+                }
+            } else {
+                setSelectedOrder(null);
+            }
         } catch (error) {
             console.error('Lỗi khi tải đơn hàng:', error);
         }
     };
 
-    const formatPrice = (price) => {
-        return parseInt(price).toLocaleString() + 'đ';
-    };
+    const formatPrice = (price) => parseInt(price).toLocaleString() + 'đ';
 
     const renderStatusBadge = (status) => {
         const map = statusMap[status] || { label: status, color: "text-gray-500" };
         return <span className={`font-semibold ${map.color}`}>{map.label}</span>;
     };
-    // Merge duplicate items by product_name and price
-    const mergeOrderDetails = (orderdetail) => {
-        const merged = [];
-        const map = {};
-        orderdetail.forEach(item => {
-            const key = item.product_name + '_' + item.price;
-            if (!map[key]) {
-                map[key] = { ...item };
-            } else {
-                map[key].quantity += item.quantity;
+
+    const getTotal = (items) => items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+
+    const updateOrderItemStatus = async (orderdetailId, newStatus, orderId) => {
+        try {
+            if (!orderdetailId || !orderId) {
+                console.error("❌ ID is undefined");
+                return;
             }
-        });
-        return Object.values(map);
-    };
 
-    // Use merged items for total calculation
-    const getTotal = (items) => {
-        return items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    };
+            if (newStatus === '3') {
+                // Đang chuẩn bị
+                await api.patch(`/s2d/orderdetail/confirm/prepare/${orderdetailId}`, {
+                    order: orderId,
+                });
+            } else if (newStatus === '4') {
+                // Đã hoàn thành - gọi đúng API như backend bạn gửi
+                await api.patch(`/s2d/orderdetail/confirm/complete/${orderdetailId}`, {
+                    order: orderId,
+                });
+            } else {
+                // Các trạng thái khác (nếu có)
+                await api.patch(`/s2d/orderdetail/newStatus/${orderdetailId}`, {
+                    status: newStatus
+                });
+            }
 
-    const updateOrderItemStatus = async (orderdetailId, newStatus) => {
-        try {
-            await api.patch(`/s2d/orderdetails/newStatus/${orderdetailId}`, {
-                status: newStatus
-            });
             fetchOrders();
         } catch (error) {
-            console.error('Error updating item status:', error);
+            console.error("Lỗi khi cập nhật trạng thái:", error.response?.data || error.message);
         }
     };
-
-    // Use merged items for completion check
-    const allItemsCompleted = selectedOrder
-        ? mergeOrderDetails(selectedOrder.orderdetail).every(item => item.status === 'completed')
-        : false;
-
-    const confirmOrderCompleted = async (orderId) => {
-        try {
-            await api.patch(`/s2d/orders/${orderId}`, {
-                od_status: '4'
-            });
-            fetchOrders();
-        } catch (error) {
-            console.error('Error confirming order status:', error);
-        }
-    };
-
+    
     const filteredOrders = orders.filter(order =>
         order.order_id.toLowerCase().includes(searchTerm.toLowerCase())
     );
+    
 
     const formatDateTime = (dateString) => {
         let date;
         if (!dateString) {
-            date = new Date(); // Use current time if missing
+            date = new Date();
         } else {
             date = new Date(dateString);
-            if (isNaN(date.getTime())) date = new Date(); // Use current time if invalid
+            if (isNaN(date.getTime())) date = new Date();
         }
-        // Format: dd - mm - yyyy hh:mm
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear();
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${hours} : ${minutes} - ${day}/${month}/${year} `;
+        return `${hours} : ${minutes} - ${day}/${month}/${year}`;
     };
 
     return (
         <div className="flex gap-6 bg-white p-6">
-            {/* Sidebar Order List */}
             <div className="w-1/3">
                 <div className="mb-4 relative">
                     <input
@@ -140,7 +170,6 @@ const O_OrderManage = ({ stallId }) => {
                 </div>
             </div>
 
-            {/* Order Detail */}
             <div className="flex-1 bg-gray-50 p-4 rounded-lg">
                 {selectedOrder ? (
                     <>
@@ -162,72 +191,95 @@ const O_OrderManage = ({ stallId }) => {
                         <div className="text-center font-bold text-lg mb-4 uppercase">Bàn {selectedOrder.table_number}</div>
 
                         <div className="space-y-4">
-                            {mergeOrderDetails(selectedOrder.orderdetail).map((item, idx) => (
-                                <div key={idx} className="flex gap-4 bg-white rounded-lg p-4 items-start shadow-sm">
-                                    <img
-                                        src={item.products?.image || ""}
-                                        alt={item.products?.pd_name || ""}
-                                        className="w-20 h-20 object-cover rounded-md"
-                                    />
-                                    <div className="flex-1">
-                                        <div className="flex justify-between items-start">
-                                            <div>
-                                                <div className="font-semibold">{item.product_name}</div>
-                                                <div className="text-sm text-gray-600">Ghi chú: {item.note || "Không có"}</div>
+                            {selectedOrder.orderdetail.map((item, idx) => {
+                                // Try to get the ID from possible fields
+                                const itemId = item.orderdetail || item._id || item.id || item.orderdetail;
+
+                                return (
+                                    <div key={itemId || idx} className="flex gap-4 bg-white rounded-lg p-4 items-start shadow-sm">
+                                        {item.image ? (
+                                            <img
+                                                src={`${process.env.REACT_APP_API_URL}/${item.image}`}
+                                                alt={item.product_name || "Sản phẩm"}
+                                                className="w-20 h-20 object-cover rounded-md"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = "";
+                                                    e.target.parentNode.innerHTML = '<div class="w-20 h-20 bg-gray-200 rounded-md flex items-center justify-center text-gray-500">No Image</div>';
+                                                }}
+                                            />
+                                        ) : (
+                                            <div className="w-20 h-20 bg-gray-200 rounded-md flex items-center justify-center text-gray-500">
+                                                No Image
                                             </div>
-                                            {item.status === "completed" ? (
-                                                <div className="ml-2 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded font-medium">
-                                                    Đã hoàn thành
+                                        )}
+                                        <div className="flex-1">
+                                            <div className="flex justify-between items-start">
+                                                <div>
+                                                    <div className="font-semibold">{item.product_name}</div>
+                                                    <div className="text-sm text-gray-600">Ghi chú: {item.note || "Không có"}</div>
+                                                    {/* Show ID for debugging */}
                                                 </div>
-                                            ) : item.status === "confirmed" ? (
-                                                <button
-                                                    disabled
-                                                    className="ml-2 px-3 py-1 text-sm bg-gray-300 text-gray-700 rounded cursor-default"
-                                                >
-                                                    Đã xác nhận
-                                                </button>
-                                            ) : (
-                                                <select
-                                                    value={item.status}
-                                                    onChange={(e) => updateOrderItemStatus(item._id, e.target.value)}
-                                                    className="ml-2 px-2 py-1 text-sm border rounded bg-white text-gray-700 hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                >
-                                                    <option value="preparing">Đang chuẩn bị</option>
-                                                    <option value="completed">Đã hoàn thành</option>
-                                                </select>
-                                            )}
-                                        </div>
-                                        <div className="flex justify-between items-center mt-2">
-                                            <div className="text-sm text-gray-700">x{item.quantity}</div>
-                                            <div className="font-semibold text-red-600">{formatPrice(item.price)}</div>
+                                                {item.status === '2' ? (
+                                                    <button
+                                                        onClick={() => {
+                                                            if (itemId) {
+                                                                updateOrderItemStatus(itemId, '3', selectedOrder.order_id);
+                                                            } else {
+                                                                alert("Không tìm thấy ID của món ăn này!");
+                                                            }
+                                                        }}
+                                                        className="ml-2 px-3 py-1 text-sm bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                                                    // disabled={!itemId}
+                                                    >
+                                                        Đã xác nhận
+                                                    </button>
+                                                ) : item.status === '3' ? (
+                                                    <button
+                                                        onClick={() => {
+                                                            if (itemId) {
+                                                                updateOrderItemStatus(itemId, '4', selectedOrder.order_id);
+                                                            } else {
+                                                                alert("Không tìm thấy ID của món ăn này!");
+                                                            }
+                                                        }}
+                                                        className="ml-2 px-3 py-1 text-sm bg-orange-100 text-orange-700 rounded hover:bg-orange-200"
+                                                        disabled={!itemId}
+                                                    >
+                                                        Đang chuẩn bị
+                                                    </button>
+                                                ) : item.status === '4' || item.status === 'completed' ? (
+                                                    <div className="ml-2 px-3 py-1 text-sm bg-green-100 text-green-700 rounded">
+                                                        Đã hoàn thành
+                                                    </div>
+                                                ) : (
+                                                    <div className="ml-2 px-3 py-1 text-sm bg-gray-100 text-gray-500 rounded">
+                                                        Không xác định
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex justify-between items-center mt-2">
+                                                <div className="text-sm text-gray-700">x{item.quantity}</div>
+                                                <div className="font-semibold text-red-600">{formatPrice(item.price)}</div>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
-
-
-
-                        <div className="mt-4 flex flex-wrap gap-2 justify-center">
-                            {allItemsCompleted && selectedOrder?.order_status !== '4' && (
-                                <button
-                                    onClick={() => confirmOrderCompleted(selectedOrder.order_id)}
-                                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
-                                >
-                                    Hoàn thành đơn hàng
-                                </button>
-                            )}
-                            <button className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Sửa đơn</button>
-                            <button className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Xem hóa đơn</button>
-                            <button className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Xuất PDF</button>
-                            <button className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Đánh giá</button>
+                        <div className="flex justify-end mt-6">
+                            <div className="text-lg font-bold text-gray-700">
+                                Tổng tiền ({selectedOrder.orderdetail.length} món):&nbsp;
+                                <span className="text-red-600">
+                                    {formatPrice(getTotal(selectedOrder.orderdetail))}
+                                </span>
+                            </div>
                         </div>
                     </>
                 ) : (
                     <div className="text-center text-gray-500">Chọn đơn hàng để xem chi tiết</div>
                 )}
             </div>
-
         </div>
     );
 };

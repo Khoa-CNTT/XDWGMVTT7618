@@ -19,6 +19,7 @@ const CartDetails = () => {
 
   //lấy thông tin cusomer
   const customer = JSON.parse(sessionStorage.getItem('customer'));
+  console.log('Customer:', customer); // Log để kiểm tra
 
   //load dữ liệu
   useEffect(() => {

@@ -10,6 +10,9 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
         image: null,
         imagePreview: null
     });
+    // Thêm state để theo dõi lỗi hình ảnh và trạng thái submit
+    const [imageError, setImageError] = useState('');
+    const [isSubmitted, setIsSubmitted] = useState(false);
 
     useEffect(() => {
         if (product) {
@@ -26,6 +29,9 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                     ? `${process.env.REACT_APP_API_URL}${product.image}`
                     : null,
             });
+            // Reset các state khi product thay đổi
+            setImageError('');
+            setIsSubmitted(false);
         }
     }, [product]);
 
@@ -37,36 +43,49 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                 image: file,
                 imagePreview: URL.createObjectURL(file)
             });
+            setImageError(''); // Xóa thông báo lỗi khi đã chọn hình
         }
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-    
+        setIsSubmitted(true); // Đánh dấu form đã được submit
+
         // Kiểm tra dữ liệu trước khi gửi
         if (!formData.pd_name || !formData.price || !formData.category) {
             alert("Vui lòng điền đầy đủ tên món, giá và danh mục.");
             return;
         }
-    
-        console.log('✅ Form data before sending:', formData);
-    
+        
+        // Kiểm tra hình ảnh - nếu không có hình ảnh mới và không có hình ảnh cũ
+        if (!formData.image && !formData.imagePreview) {
+            setImageError("Vui lòng chọn hình ảnh cho món ăn");
+            return;
+        }
+
         const formDataToSend = new FormData();
         formDataToSend.append('pd_name', formData.pd_name || '');
         formDataToSend.append('price', formData.price || '');
         formDataToSend.append('description', formData.description || '');
         formDataToSend.append('category', formData.category || '');
-    
+
         // Chỉ thêm ảnh nếu người dùng chọn ảnh mới
         if (formData.image) {
             formDataToSend.append('image', formData.image);
         }
-    
+
         if (product?._id) {
             onSave(product._id, formDataToSend);
         } else {
             console.error("❌ Không tìm thấy ID sản phẩm để cập nhật.");
         }
+    };
+
+    // Hàm xử lý đóng modal và reset trạng thái
+    const handleClose = () => {
+        setImageError('');
+        setIsSubmitted(false);
+        onClose();
     };
 
     if (!isOpen || !product) return null;
@@ -77,7 +96,7 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                 <div className="p-6">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-2xl font-bold text-gray-800">Chỉnh sửa món ăn</h2>
-                        <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+                        <button onClick={handleClose} className="text-gray-500 hover:text-gray-700">
                             <FaTimes className="w-6 h-6" />
                         </button>
                     </div>
@@ -88,6 +107,7 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Tên món ăn
+                                        <span className="text-red-500"> (*)</span>
                                     </label>
                                     <input
                                         type="text"
@@ -101,6 +121,7 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Giá (VNĐ)
+                                        <span className="text-red-500"> (*)</span>
                                     </label>
                                     <input
                                         type="number"
@@ -114,6 +135,7 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Danh mục
+                                        <span className="text-red-500"> (*)</span>
                                     </label>
                                     <select
                                         className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
@@ -135,26 +157,34 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
                                         Hình ảnh món ăn
+                                        <span className="text-red-500"> (*)</span>
                                     </label>
-                                    <div className="border-2 border-dashed rounded-lg p-4 text-center">
+                                    <div className={`border-2 border-dashed rounded-lg p-4 text-center ${isSubmitted && !formData.imagePreview ? 'border-red-500' : ''}`}>
                                         {formData.imagePreview ? (
                                             <div className="relative">
-                                                <img
-                                                    src={formData.imagePreview}
-                                                    alt="Preview"
-                                                    className="max-h-48 mx-auto rounded"
-                                                />
+                                                <div className="h-48 w-48 mx-auto overflow-hidden flex items-center justify-center">
+                                                    <img
+                                                        src={formData.imagePreview}
+                                                        alt="Preview"
+                                                        className="object-cover w-full h-full"
+                                                    />
+                                                </div>
                                                 <button
                                                     type="button"
-                                                    onClick={() => setFormData({ ...formData, image: null, imagePreview: null })}
-                                                    className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1"
+                                                    onClick={() => {
+                                                        setFormData({ ...formData, image: null, imagePreview: null });
+                                                        if (isSubmitted) {
+                                                            setImageError('Vui lòng chọn hình ảnh cho món ăn');
+                                                        }
+                                                    }}
+                                                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
                                                 >
                                                     <FaTimes className="w-4 h-4" />
                                                 </button>
                                             </div>
                                         ) : (
                                             <label className="cursor-pointer">
-                                                <div className="flex flex-col items-center">
+                                                <div className="flex flex-col items-center h-48 w-48 mx-auto justify-center border border-dashed border-gray-300 rounded-lg">
                                                     <FaUpload className="w-12 h-12 text-gray-400" />
                                                     <span className="mt-2 text-sm text-gray-500">Click để thay đổi ảnh</span>
                                                 </div>
@@ -167,6 +197,9 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                             </label>
                                         )}
                                     </div>
+                                    {isSubmitted && imageError && (
+                                        <p className="text-red-500 text-sm mt-1">{imageError}</p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -178,26 +211,30 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                         rows="4"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                        required
                                     />
                                 </div>
                             </div>
                         </div>
 
-                        <div className="flex justify-end space-x-4 pt-4">
-                            <button
-                                type="button"
-                                onClick={onClose}
-                                className="px-6 py-2 border rounded-lg hover:bg-gray-100"
-                            >
-                                Hủy
-                            </button>
-                            <button
-                                type="submit"
-                                className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-red-600"
-                            >
-                                Lưu thay đổi
-                            </button>
+                        <div className="flex justify-between items-center pt-4">
+                            <div className="text-sm text-gray-500">
+                                <span className="text-red-500">(*)</span> Bắt buộc
+                            </div>
+                            <div className="flex space-x-4">
+                                <button
+                                    type="button"
+                                    onClick={handleClose}
+                                    className="px-6 py-2 border rounded-lg hover:bg-gray-100"
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-red-600"
+                                >
+                                    Lưu thay đổi
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>

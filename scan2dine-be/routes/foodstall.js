@@ -6,7 +6,9 @@ const foodstallController = require("../controller/foodstallController");
 router.get("/user/:userId", foodstallController.getFoodstallByUserId);
 router.get("/search/:id", foodstallController.getFoodstallByTableNumber);
 
-router.get("/numberofproduct", foodstallController.getNumberOfProduct);
+router.post("/numberofproduct", foodstallController.getNumberOfProduct);
+// thống kê theo tháng và ngày
+router.post("/month", foodstallController.getMonthlyRevenue);
 //
 router.get("/allDoanhthu", foodstallController.getAllDoanhThu);
 // General routes
