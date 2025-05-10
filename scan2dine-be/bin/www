@@ -3,88 +3,86 @@
 /**
  * Module dependencies.
  */
-
 var app = require("../app");
-var debug = require("debug")("scan2dine-be:server");
+var debug = require("debug")("be-scan2dine:server");
 var http = require("http");
-const socketIO = require("socket.io");
+var { Server } = require("socket.io");
 
 /**
  * Get port from environment and store in Express.
  */
-
 var port = normalizePort(process.env.PORT || "5000");
 app.set("port", port);
 
 /**
  * Create HTTP server.
  */
+var server = http.createServer(app);
 
-// Chỉ khai báo server một lần
-if (!global.server) {
-  global.server = http.createServer(app);
-  const io = socketIO(global.server, {
-    cors: {
-      origin: "*", // Thay bằng domain frontend thực tế
-      methods: ["GET", "POST"],
-    },
-  });
-  app.set("io", io); // Lưu io vào app để dùng trong controller
+/**
+ * Integrate Socket.IO
+ */
+var io = new Server(server, {
+  cors: {
+    origin: "http://172.28.171.64:3005", //"REACT_APP_URL", // Thay đổi theo nhu cầu
+    methods: ["GET", "POST", "DELETE", "PUT", "PATCH"],
+    credentials: true,
+  },
+});
+app.set("io", io);
 
-  io.on("connection", (socket) => {
-    console.log("Người dùng kết nối:", socket.id);
-    socket.on("join_room", ({ room }) => {
-      socket.join(room);
-      console.log(`Người dùng tham gia phòng: ${room}`);
+// Xử lý sự kiện Socket.IO
+io.on("connection", (socket) => {
+  console.log("Người dùng đã kết nối:", socket.id);
+  socket.emit('test_connect', { message: 'Kiểm tra kết nối' });
+  // Xử lý sự kiện join room
+    socket.on('join', (room) => {
+        socket.join(room);
+        console.log(`Client ${socket.id} đã tham gia room: ${room}`);
     });
-    socket.on("disconnect", () => {
-      console.log("Người dùng ngắt kết nối:", socket.id);
-    });
+  socket.on("message", (msg) => {
+    try {
+      if (!msg) {
+        console.error("Tin nhắn không hợp lệ:", msg);
+        return;
+      }
+      console.log("Tin nhắn:", msg);
+      io.emit("message", msg);
+    } catch (error) {
+      console.error("Lỗi xử lý tin nhắn:", error);
+    }
   });
-}
 
+  socket.on("disconnect", () => {
+    console.log("Người dùng đã ngắt kết nối:", socket.id);
+  });
+});
 
 /**
  * Listen on provided port, on all network interfaces.
  */
-
-//Hiếu chỉnh chổ ni thêm '0,0,0,0'
-server.listen(port, "0.0.0.0");
+server.listen(port, () => {
+  console.log("Server is running on port: " + port);
+});
 server.on("error", onError);
 server.on("listening", onListening);
 
 /**
  * Normalize a port into a number, string, or false.
  */
-
 function normalizePort(val) {
   var port = parseInt(val, 10);
-
-  if (isNaN(port)) {
-    // named pipe
-    return val;
-  }
-
-  if (port >= 0) {
-    // port number
-    return port;
-  }
-
+  if (isNaN(port)) return val;
+  if (port >= 0) return port;
   return false;
 }
 
 /**
  * Event listener for HTTP server "error" event.
  */
-
 function onError(error) {
-  if (error.syscall !== "listen") {
-    throw error;
-  }
-
+  if (error.syscall !== "listen") throw error;
   var bind = typeof port === "string" ? "Pipe " + port : "Port " + port;
-
-  // handle specific listen errors with friendly messages
   switch (error.code) {
     case "EACCES":
       console.error(bind + " requires elevated privileges");
@@ -102,7 +100,6 @@ function onError(error) {
 /**
  * Event listener for HTTP server "listening" event.
  */
-
 function onListening() {
   var addr = server.address();
   var bind = typeof addr === "string" ? "pipe " + addr : "port " + addr.port;

@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
-import { FaEdit, FaCheck } from 'react-icons/fa';
-import api from '../server/api';
 
+import React, { useEffect, useState } from 'react'
+import { FaCheck } from 'react-icons/fa';
+import { MdClose } from "react-icons/md";
 export const A_ModalCUUser = ({
     isEditing,
     currentUser,
@@ -22,7 +22,7 @@ export const A_ModalCUUser = ({
                         {isEditing ? 'Chỉnh sửa người dùng' : 'Thêm người dùng mới'}
                     </h2>
                     <button onClick={handleCloseModal} className="text-gray-500 hover:text-gray-700">
-                        <FaEdit size={20} />
+                        <MdClose size={25} />
                     </button>
                 </div>
 

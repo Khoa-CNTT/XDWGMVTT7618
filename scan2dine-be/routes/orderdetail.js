@@ -7,6 +7,10 @@ router.post('/', orderdetailCOntroller.addOrderdetail);
 router.delete('/:id', orderdetailCOntroller.deleteOrderdetail);
 router.delete('/', orderdetailCOntroller.downQuantity);
 router.patch('/:id', orderdetailCOntroller.updateOrderdetial); // Sử dụng phương thức PUT cho updat
+
+// quyền làm
+router.patch('/update1/:id', orderdetailCOntroller.updateOrderDetail);
+
 // cập nhật trạng thái chi tiết đơn hàng
 router.patch('/newStatus/:orderdetail', orderdetailCOntroller.updateOrderdetailStatus); 
 // cập nhật trạng thái orderdetail xác nhận -> đang chuẩn bị

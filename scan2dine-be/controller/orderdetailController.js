@@ -1,6 +1,7 @@
 const { Orderdetail, Order, Product } = require('../model/model');
 const { increaseOrderQuantity, decreaseOrderQuantity } = require('../service/orderdetailService');
 const { updateOrderDetailStatus } = require('../utils/orderDetailUtils');
+const { notifyOrderDetailAdded, notifyOrderDetailDeleted, notifyOrderDetailUpdated } = require('../utils/socketUtils');
 const orderdetailCOntroller = {
     // ADD OERDER DETAIL
     addOrderdetail: async (req, res) => {
@@ -25,11 +26,17 @@ const orderdetailCOntroller = {
                     }
                 })
             }
+            const io = req.app.get('io'); // Lấy io từ app
+            notifyOrderDetailAdded(io, order, {
+                orderId: order,
+                detailId: upProduttoorderdetail.detail._id,
+                message: upProduttoorderdetail.updated ? 'Tăng số lượng sản phẩm' : 'Thêm sản phẩm mới',
+            });
             return res.status(200).json({
                 message: upProduttoorderdetail.updated ? "Tăng số lượng sản phẩm trong đơn hàng " : "Thêm sản phẩm vào đơn hàng ",
                 order: upProduttoorderdetail
             });
-        } catch (error) {   
+        } catch (error) {
             console.error("Error in DELETEREVIEW:", error);
             return res.status(500).json({ message: "Server error", error: error.message || error });
         }
@@ -48,10 +55,10 @@ const orderdetailCOntroller = {
                         select: "stall_name" // chỉ lấy tên quầy hàng
                     }
                 });
-                console.log("OrderDetail:", getOrderdetail);
+            console.log("OrderDetail:", getOrderdetail);
             if (getOrderdetail.length <= 0) return "không có order detail"
             return res.status(200).json(getOrderdetail);
-            
+
         } catch (error) {
             console.error("Error in DELETEREVIEW:", error);
             return res.status(500).json({ message: "Server error", error: error.message || error });
@@ -81,6 +88,12 @@ const orderdetailCOntroller = {
                     }
                 }
             );
+            const io = req.app.get('io');
+            notifyOrderDetailDeleted(io, deleteOrderdetail.order, {
+                orderId: deleteOrderdetail.order,
+                detailId: deleteOrderdetail._id,
+                message: 'Chi tiết đơn hàng đã bị xóa',
+            });
             res.status(200).json({ message: "Delete successfully", delete: deleteOrderdetail });
         } catch (error) {
             console.error("Error in DELETEREVIEW:", error);
@@ -134,10 +147,43 @@ const orderdetailCOntroller = {
             const updateOrderdetial = await OrderDetail.findByIdAndUpdate(req.params.id, req.body, {
                 new: true
             })
+            const io = req.app.get('io');
+            notifyOrderDetailUpdated(io, updateOrderDetial.order, {
+                orderId: updateOrderDetial.order,
+                detailId: updateOrderDetial._id,
+                message: 'Thông tin chi tiết đơn hàng đã được cập nhật',
+            });
             res.status(200).json({ message: "Update successfully", update: updateOrderdetial });
         } catch (error) {
             console.error("Error in DELETEREVIEW:", error);
             res.status(500).json({ message: "Server error", error: error.message || error });
+        }
+    },
+    // quyền làm
+    updateOrderDetail: async (req, res) => {
+        try {
+            const { id } = req.params; // lấy _id của orderdetail từ URL
+            const { quantity, status, note, total } = req.body;
+
+            const updatedOrderDetail = await Orderdetail.findByIdAndUpdate(
+                id,
+                {
+                    ...(quantity !== undefined && { quantity }),
+                    ...(status !== undefined && { status }),
+                    ...(note !== undefined && { note }),
+                    ...(total !== undefined && { total }),
+                },
+                { new: true }
+            );
+
+            if (!updatedOrderDetail) {
+                return res.status(404).json({ message: "Không tìm thấy chi tiết đơn hàng." });
+            }
+
+            res.status(200).json({ message: "Cập nhật thành công", data: updatedOrderDetail });
+        } catch (error) {
+            console.error("Lỗi cập nhật chi tiết đơn hàng:", error);
+            res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
         }
     },
     downQuantity: async (req, res) => {
@@ -149,13 +195,17 @@ const orderdetailCOntroller = {
             }
 
             const downQuantity = await decreaseOrderQuantity(order, products, quantity || 1);
-
+            const io = req.app.get('io');
             // Nếu số lượng về 0 thì xoá luôn CartDetail và xoá liên kết
             if (downQuantity.quantity === 0) {
-                await OrderDetail.findByIdAndDelete(downQuantity._id);
+                await Orderdetail.findByIdAndDelete(downQuantity._id);
                 await Order.findByIdAndUpdate(order, { $pull: { orderdetail: downQuantity._id } });
                 await Product.findByIdAndUpdate(products, { $pull: { orderdetail: downQuantity._id } });
-
+                notifyOrderDetailDeleted(io, order, {
+                    orderId: order,
+                    detailId: downQuantity._id,
+                    message: 'Sản phẩm đã bị xóa khỏi đơn hàng',
+                });
                 return res.status(200).json({
                     message: "Sản phẩm đã bị xoá khỏi giỏ hàng",
                     detail: downQuantity
@@ -176,9 +226,16 @@ const orderdetailCOntroller = {
 
     updateOrderdetailStatus: async (req, res) => {
         try {
-            const {orderdetail } = req.params;
+            const { orderdetail } = req.params;
             const { order, newStatus } = req.body;
             const updateStatus = await updateOrderDetailStatus(order, orderdetail, newStatus);
+            const io = req.app.get('io')
+            notifyOrderDetailStatusUpdated(io, order, {
+                orderId: order,
+                detailId: orderdetail,
+                newStatus,
+                message: 'Trạng thái chi tiết đơn hàng đã được cập nhật',
+            });
             return res.status(200).json({
                 message: "Cập nhật trạng thái thành công",
                 detail: updateStatus
@@ -193,22 +250,34 @@ const orderdetailCOntroller = {
         try {
             const { orderdetail } = req.params;
             const { order, newStatus = "3" } = req.body;
-    
+
             if (!order || !orderdetail) {
                 return res.status(400).json({ message: "Thiếu order hoặc orderdetail" });
             }
-    
+
             const confirmStatus = await updateOrderDetailStatus(order, orderdetail, newStatus);
-    
+
             if (!confirmStatus) {
                 return res.status(404).json({ message: "Không tìm thấy orderdetail để cập nhật" });
             }
-    
+
+<<<<<<< HEAD
+
+
+=======
+>>>>>>> c416de8bcf2474d9e7d486fec62aeb93f6027570
+            const io = req.app.get('io');
+            notifyOrderDetailStatusUpdated(io, order, {
+                orderId: order,
+                detailId: orderdetail,
+                newStatus,
+                message: 'Trạng thái chi tiết đơn hàng đã được cập nhật thành "Đang chuẩn bị"',
+            });
             return res.status(200).json({
                 message: "Cập nhật trạng thái thành công",
                 detail: confirmStatus
             });
-    
+
         } catch (error) {
             console.error("Error in confirmStatus3:", error);
             return res.status(500).json({ message: "Server error", error: error.message || error });
@@ -218,22 +287,36 @@ const orderdetailCOntroller = {
         try {
             const { orderdetail } = req.params;
             const { order, newStatus = "4" } = req.body;
-    
+
             if (!order || !orderdetail) {
                 return res.status(400).json({ message: "Thiếu order hoặc orderdetail" });
             }
-    
+
             const confirmStatus = await updateOrderDetailStatus(order, orderdetail, newStatus);
-    
+
             if (!confirmStatus) {
                 return res.status(404).json({ message: "Không tìm thấy orderdetail để cập nhật" });
             }
-    
+<<<<<<< HEAD
+=======
+
+>>>>>>> c416de8bcf2474d9e7d486fec62aeb93f6027570
+            const io = req.app.get('io');
+            notifyOrderDetailStatusUpdated(io, order, {
+                orderId: order,
+                detailId: orderdetail,
+                newStatus,
+                message: 'Trạng thái chi tiết đơn hàng đã được cập nhật thành "Hoàn thành"',
+            });
+<<<<<<< HEAD
+
+=======
+>>>>>>> c416de8bcf2474d9e7d486fec62aeb93f6027570
             return res.status(200).json({
                 message: "Cập nhật trạng thái 'Hoàn thành' thành công",
                 detail: confirmStatus
             });
-    
+
         } catch (error) {
             console.error("Error in confirmStatus3:", error);
             return res.status(500).json({ message: "Server error", error: error.message || error });

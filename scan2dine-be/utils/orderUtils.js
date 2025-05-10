@@ -1,6 +1,7 @@
 const { Orderdetail, Product, Order } = require('../model/model');
+const { notifyOrderUpdated } = require('./socketUtils');
 
-const mergeDuplicateOrderDetails = async (orderId) => {
+const mergeDuplicateOrderDetails = async (orderId,io) => {
     const order = await Order.findById(orderId).populate('orderdetail');
     if (!order) throw new Error('Order not found');
 
@@ -40,7 +41,7 @@ const mergeDuplicateOrderDetails = async (orderId) => {
         order
     };
 };
-const calculateTotalOrderPrice = async (orderId) => {
+const calculateTotalOrderPrice = async (orderId,io) => {
     try {
         // Lấy các OrderDetail liên quan đến đơn hàng
         const orderDetails = await Orderdetail.find({ order: orderId });
@@ -53,7 +54,7 @@ const calculateTotalOrderPrice = async (orderId) => {
 
         // Cập nhật vào Order nếu cần
         await Order.findByIdAndUpdate(orderId, { total_amount: total });
-
+        notifyOrderUpdated(io, orderId, { orderId, total });
         return total;
     } catch (error) {
         console.error('Error calculating total order price:', error);

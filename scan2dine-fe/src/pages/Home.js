@@ -92,6 +92,18 @@ const Home = ({ direction }) => {
 
         }
     }
+    const callPayment = async (idTable) => {
+        try {
+            await api.patch(`/s2d/table/${idTable}`, {
+                status: '5',
+            })
+
+        } catch (error) {
+
+        }
+    }
+
+
     const cancelCallStaff = async (idTable) => {
         try {
             await api.patch(`/s2d/table/${idTable}`, {
@@ -99,6 +111,17 @@ const Home = ({ direction }) => {
             })
             setShowStaffForm(false)
 
+        } catch (error) {
+
+        }
+    }
+
+    const cancelCallPayment = async (idTable) => {
+        try {
+            await api.patch(`/s2d/table/${idTable}`, {
+                status: '2',
+            })
+            setShowPaymentForm(false)
         } catch (error) {
 
         }
@@ -177,7 +200,11 @@ const Home = ({ direction }) => {
                                     src={imgBtnThanhToan}
                                     alt="Gọi thanh toán"
                                     className="w-full max-w-[250px] aspect-square rounded-lg shadow-md cursor-pointer hover:scale-105 transition-transform duration-200"
-                                    onClick={() => setShowPaymentForm(true)}
+                                    onClick={() => {
+                                        setShowPaymentForm(true);
+                                        callPayment(customer.idTable)
+                                    }
+                                    }
                                 />
                             </div>
 
@@ -219,6 +246,17 @@ const Home = ({ direction }) => {
                         message="Nhân viên đang đến bạn hãy chờ một lát ..."
                         onConfirm={() => setShowStaffForm(false)}
                         onCancel={() => cancelCallStaff(customer.idTable)}
+                    />
+                )
+
+            }
+            {
+                showPaymentForm && (
+                    <C_ConfirmCallStaff
+                        title="Đã gửi yêu cầu thanh toán"
+                        message="Nhân viên đang đến bạn hãy chờ một lát ..."
+                        onConfirm={() => setShowPaymentForm(false)}
+                        onCancel={() => cancelCallPayment(customer.idTable)}
                     />
                 )
 

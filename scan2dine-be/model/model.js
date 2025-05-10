@@ -21,7 +21,7 @@ const productSchema = new mongoose.Schema({
   orderdetail: [
     {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "OrderDetail",
+      ref: "Orderdetail",
     },
   ],
 
@@ -198,7 +198,9 @@ const orderdetailSchema = new mongoose.Schema({
     type: String,
     default:''
   },
+
 }, { collection: 'ORDERDETAIL', timestamps: true });
+
 const tableSchema = new mongoose.Schema({
   tb_number: {
     type: Number,
