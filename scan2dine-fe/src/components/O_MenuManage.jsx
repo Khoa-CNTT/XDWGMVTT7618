@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { FaPlus, FaSearch, FaEdit, FaTrash } from 'react-icons/fa';
+import { toast } from 'react-toastify';
+import debounce from 'lodash/debounce';
 import api from '../server/api';
 import O_AddProductModal from './O_AddProductModal';
 import O_EditProductModal from './O_EditProductModal';
-import { toast } from 'react-toastify';
+import { registerSocketListeners, cleanupSocketListeners } from '../services/socketListeners';
 
 const O_MenuManage = ({ stallId }) => {
     const [products, setProducts] = useState([]);
@@ -15,52 +17,91 @@ const O_MenuManage = ({ stallId }) => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    useEffect(() => {
-        fetchProducts();
-        fetchCategories();
-        fetchFoodstalls();
-    }, []);
+    // Fetch products with debounce
+    const fetchProducts = useCallback(
+        debounce(async () => {
+            try {
+                const response = await api.get('/s2d/product');
+                setProducts(response.data || []);
+            } catch (error) {
+                console.error('Error fetching products:', error);
+                setError('Không thể tải danh sách sản phẩm');
+                toast.error('Không thể tải danh sách sản phẩm');
+            } finally {
+                setLoading(false);
+            }
+        }, 500),
+        []
+    );
 
-    const fetchProducts = async () => {
-        try {
-            const response = await api.get('/s2d/product');
-            setProducts(response.data);
-        } catch (error) {
-            console.error('Error fetching products:', error);
-            toast.error('Không thể tải danh sách sản phẩm');
-        }
-    };
-
-    useEffect(() => {
-        // Save current view to localStorage
-        localStorage.setItem('ownerCurrentView', 'menu');
-
-        fetchProducts();
-        fetchCategories();
-        fetchFoodstalls();
-    }, []);
-
-    const fetchCategories = async () => {
+    // Fetch categories
+    const fetchCategories = useCallback(async () => {
         try {
             const response = await api.get('/s2d/category');
-            setCategories(response.data);
+            setCategories(response.data || []);
         } catch (error) {
             console.error('Error fetching categories:', error);
             toast.error('Không thể tải danh mục');
         }
-    };
+    }, []);
 
-    const fetchFoodstalls = async () => {
+    // Fetch foodstalls
+    const fetchFoodstalls = useCallback(async () => {
         try {
             const response = await api.get('/s2d/foodstall');
-            setFoodstalls(response.data);
+            setFoodstalls(response.data || []);
         } catch (error) {
             console.error('Error fetching foodstalls:', error);
         }
-    };
+    }, []);
 
-    const handleAddProduct = async (formData) => {
+    // Initial fetch
+    useEffect(() => {
+        localStorage.setItem('ownerCurrentView', 'menu');
+        setLoading(true);
+        Promise.all([fetchProducts(), fetchCategories(), fetchFoodstalls()]).finally(() => setLoading(false));
+    }, [fetchProducts, fetchCategories, fetchFoodstalls]);
+
+    // Socket listeners
+    useEffect(() => {
+        registerSocketListeners({
+            customer: { stallId },
+            ProductAdded: () => {
+                fetchProducts();
+                toast.info('Đã thêm sản phẩm mới, danh sách đã được cập nhật!');
+            },
+            ProductUpdated: () => {
+                fetchProducts();
+                toast.info('Đã cập nhật sản phẩm, danh sách đã được cập nhật!');
+            },
+            ProductDeleted: () => {
+                fetchProducts();
+                toast.info('Đã xóa sản phẩm, danh sách đã được cập nhật!');
+            },
+            CategoryAdded: () => {
+                fetchCategories();
+                toast.info('Đã thêm danh mục mới!');
+            },
+            CategoryUpdated: () => {
+                fetchCategories();
+                toast.info('Đã cập nhật danh mục!');
+            },
+            CategoryDeleted: () => {
+                fetchCategories();
+                toast.info('Đã xóa danh mục!');
+            },
+        });
+
+        return () => {
+            cleanupSocketListeners();
+        };
+    }, [stallId, fetchProducts, fetchCategories]);
+
+    // Handle add product
+    const handleAddProduct = useCallback(async (formData) => {
         try {
             const form = new FormData();
             form.append('pd_name', formData.pd_name);
@@ -69,17 +110,14 @@ const O_MenuManage = ({ stallId }) => {
             form.append('category', formData.category);
             form.append('stall_id', stallId);
 
-            // Make sure image is properly handled
             if (formData.image instanceof File) {
                 form.append('image', formData.image);
             }
 
+            setLoading(true);
             const response = await api.post('/s2d/product', form, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                }
+                headers: { 'Content-Type': 'multipart/form-data' },
             });
-
             if (response.status === 200) {
                 await fetchProducts();
                 setIsAddModalOpen(false);
@@ -88,18 +126,18 @@ const O_MenuManage = ({ stallId }) => {
         } catch (error) {
             console.error('Error adding product:', error);
             toast.error(error.response?.data?.message || 'Không thể thêm món ăn');
+        } finally {
+            setLoading(false);
         }
-    };
+    }, [stallId, fetchProducts]);
 
-    const handleEditProduct = async (productId, formData) => {
+    // Handle edit product
+    const handleEditProduct = useCallback(async (productId, formData) => {
         try {
-            // formData is a FormData object
+            setLoading(true);
             const response = await api.post(`/s2d/product/${productId}`, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                }
+                headers: { 'Content-Type': 'multipart/form-data' },
             });
-    
             if (response.status === 200) {
                 await fetchProducts();
                 setIsEditModalOpen(false);
@@ -109,44 +147,54 @@ const O_MenuManage = ({ stallId }) => {
         } catch (error) {
             console.error('Error updating product:', error);
             toast.error(error.response?.data?.message || 'Không thể cập nhật món ăn');
+        } finally {
+            setLoading(false);
         }
-    };
+    }, [fetchProducts]);
 
-    const handleDeleteProduct = async (productId) => {
+    // Handle delete product
+    const handleDeleteProduct = useCallback(async (productId) => {
         if (window.confirm('Bạn có chắc chắn muốn xóa món ăn này?')) {
             try {
+                setLoading(true);
                 await api.delete(`/s2d/product/${productId}`);
-                fetchProducts();
+                await fetchProducts();
                 toast.success('Xóa món ăn thành công');
             } catch (error) {
                 console.error('Error deleting product:', error);
                 toast.error('Không thể xóa món ăn');
+            } finally {
+                setLoading(false);
             }
         }
-    };
+    }, [fetchProducts]);
 
+    // Filter and sort products
+    const filteredProducts = useMemo(() => {
+        return products.filter((product) => {
+            const productStallId =
+                typeof product.stall_id === 'object' && product.stall_id !== null
+                    ? product.stall_id._id
+                    : product.stall_id;
+            const productCategoryId =
+                typeof product.category === 'object' && product.category !== null
+                    ? product.category._id
+                    : product.category;
 
-    const filteredProducts = products.filter(product => {
-        // Normalize stall_id and category to string for comparison
-        const productStallId = typeof product.stall_id === 'object' && product.stall_id !== null
-            ? product.stall_id._id
-            : product.stall_id;
+            const matchesStall = productStallId === stallId;
+            const matchesSearch = product.pd_name.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesCategory = selectedCategory === 'all' || productCategoryId === selectedCategory;
+            return matchesStall && matchesSearch && matchesCategory;
+        });
+    }, [products, stallId, searchTerm, selectedCategory]);
 
-        const productCategoryId = typeof product.category === 'object' && product.category !== null
-            ? product.category._id
-            : product.category;
-
-        const matchesStall = productStallId === stallId;
-        const matchesSearch = product.pd_name.toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = selectedCategory === 'all' || productCategoryId === selectedCategory;
-        return matchesStall && matchesSearch && matchesCategory;
-    });
-
-    const sortedProducts = [...filteredProducts].sort((a, b) => {
-        if (priceSort === 'asc') return parseFloat(a.price) - parseFloat(b.price);
-        if (priceSort === 'desc') return parseFloat(b.price) - parseFloat(a.price);
-        return 0;
-    });
+    const sortedProducts = useMemo(() => {
+        return [...filteredProducts].sort((a, b) => {
+            if (priceSort === 'asc') return parseFloat(a.price) - parseFloat(b.price);
+            if (priceSort === 'desc') return parseFloat(b.price) - parseFloat(a.price);
+            return 0;
+        });
+    }, [filteredProducts, priceSort]);
 
     return (
         <div className="flex-1 bg-white flex flex-col">
@@ -173,7 +221,7 @@ const O_MenuManage = ({ stallId }) => {
                                 onChange={(e) => setSelectedCategory(e.target.value)}
                             >
                                 <option value="all">Tất cả danh mục</option>
-                                {categories.map(category => (
+                                {categories.map((category) => (
                                     <option key={category._id} value={category._id}>
                                         {category.cate_name}
                                     </option>
@@ -192,7 +240,8 @@ const O_MenuManage = ({ stallId }) => {
                         </div>
                         <button
                             onClick={() => setIsAddModalOpen(true)}
-                            className="bg-primary text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-red-600"
+                            className="bg-primary text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-red-600 disabled:opacity-50"
+                            disabled={loading}
                         >
                             <FaPlus />
                             <span>Thêm món mới</span>
@@ -201,60 +250,98 @@ const O_MenuManage = ({ stallId }) => {
                 </div>
 
                 <div className="bg-white rounded-lg shadow overflow-hidden">
-                    <table className="min-w-full">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">STT</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ảnh món</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tên món ăn</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Giá</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mô tả</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Danh mục</th>
-                                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {sortedProducts.map((product, index) => {
-                                const category = categories.find(c => c._id === product.category);
+                    {loading ? (
+                        <div className="text-center p-6 text-gray-500 animate-pulse">Đang tải...</div>
+                    ) : error ? (
+                        <div className="text-center p-6 text-red-500">{error}</div>
+                    ) : sortedProducts.length === 0 ? (
+                        <div className="text-center p-6 text-gray-500">Không có sản phẩm nào.</div>
+                    ) : (
+                        <table className="min-w-full">
+                            <thead className="bg-gray-50">
+                                <tr>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                        STT
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                        Ảnh món
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                        Tên món ăn
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                        Giá
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                        Mô tả
+                                    </th>
+                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                                        Danh mục
+                                    </th>
+                                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase">
+                                        Thao tác
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                                {sortedProducts.map((product, index) => {
+                                    const category = categories.find((c) => c._id === product.category);
 
-                                return (
-                                    <tr key={product._id} className="hover:bg-gray-50">
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{index + 1}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <img
-                                                src={`${process.env.REACT_APP_API_URL}${product.image}`}
-                                                alt={product.pd_name}
-                                                className="h-16 w-16 object-cover rounded"
-                                            />
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{product.pd_name}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{parseInt(product.price).toLocaleString()}đ</td>
-                                        <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{product.description}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{category?.cate_name}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            <div className="flex justify-center space-x-2">
-                                                <button
-                                                    onClick={() => {
-                                                        setSelectedProduct(product); // Đảm bảo product là object, không phải null
-                                                        setIsEditModalOpen(true);
+                                    return (
+                                        <tr key={product._id} className="hover:bg-gray-50">
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {index + 1}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                <img
+                                                    src={`${process.env.REACT_APP_API_URL}/${product.image}`}
+                                                    alt={product.pd_name}
+                                                    className="h-16 w-16 object-cover rounded"
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                        e.target.parentNode.innerHTML = `<div class="h-16 w-16 flex items-center justify-center text-gray-400"><FaUtensils /></div>`;
                                                     }}
-                                                    className="text-blue-600 hover:text-blue-900 transition-colors"
-                                                >
-                                                    <FaEdit className="w-5 h-5" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleDeleteProduct(product._id)}
-                                                    className="text-red-600 hover:text-red-900 transition-colors"
-                                                >
-                                                    <FaTrash className="w-5 h-5" />
-                                                </button>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                );
-                            })}
-                        </tbody>
-                    </table>
+                                                />
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                {product.pd_name}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {parseInt(product.price).toLocaleString()}đ
+                                            </td>
+                                            <td className="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">
+                                                {product.description}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {category?.cate_name}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                <div className="flex justify-center space-x-2">
+                                                    <button
+                                                        onClick={() => {
+                                                            setSelectedProduct(product);
+                                                            setIsEditModalOpen(true);
+                                                        }}
+                                                        className="text-blue-600 hover:text-blue-900 transition-colors disabled:opacity-50"
+                                                        disabled={loading}
+                                                    >
+                                                        <FaEdit className="w-5 h-5" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleDeleteProduct(product._id)}
+                                                        className="text-red-600 hover:text-red-900 transition-colors disabled:opacity-50"
+                                                        disabled={loading}
+                                                    >
+                                                        <FaTrash className="w-5 h-5" />
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
 
                 <O_AddProductModal
@@ -262,6 +349,7 @@ const O_MenuManage = ({ stallId }) => {
                     onClose={() => setIsAddModalOpen(false)}
                     categories={categories}
                     onSave={handleAddProduct}
+                    loading={loading}
                 />
 
                 <O_EditProductModal
@@ -273,6 +361,7 @@ const O_MenuManage = ({ stallId }) => {
                     product={selectedProduct}
                     categories={categories}
                     onSave={handleEditProduct}
+                    loading={loading}
                 />
             </main>
         </div>

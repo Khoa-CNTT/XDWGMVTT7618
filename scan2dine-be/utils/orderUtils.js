@@ -54,6 +54,8 @@ const calculateTotalOrderPrice = async (orderId,io) => {
 
         // Cập nhật vào Order nếu cần
         await Order.findByIdAndUpdate(orderId, { total_amount: total });
+        // Phát sự kiện cập nhật tổng tiền
+        // const io = req.app.get('io');
         notifyOrderUpdated(io, orderId, { orderId, total });
         return total;
     } catch (error) {

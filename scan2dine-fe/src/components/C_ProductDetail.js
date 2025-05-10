@@ -1,46 +1,125 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { FaTimes } from 'react-icons/fa';
 import FlyItem from './C_FlyItem';
-// import { addToCartDetail } from '../server/cartService';
+import { toast } from 'react-toastify';
+import debounce from 'lodash/debounce';
 import api from '../server/api';
+import { registerSocketListeners, cleanupSocketListeners } from '../services/socketListeners';
+import { useNavigate } from 'react-router-dom';
 
 function ProductDetail({ product, onClose, fetchCart, setShowDetail }) {
+    const navigate = useNavigate();
     const [quantity, setQuantity] = useState(1);
     const [note, setNote] = useState('');
     const [flyingItems, setFlyingItems] = useState([]);
+    const [loading, setLoading] = useState(false);
     const buttonRef = useRef(null);
 
-    //Lấy dữ liệu của người dùng hiện tại
-    const customer = JSON.parse(sessionStorage.getItem("customer"));
+    // Lấy dữ liệu của người dùng hiện tại một cách an toàn
+    const customer = sessionStorage.getItem('customer')
+        ? JSON.parse(sessionStorage.getItem('customer'))
+        : null;
 
-    //Tăng số lượng
-    const handleIncrement = () => {
-        setQuantity(prev => prev + 1);
-    };
+    // Debounce thông báo để tránh spam
+    const debouncedToast = useCallback(
+        debounce((message, type = 'info') => {
+            toast[type](message);
+        }, 1000),
+        []
+    );
 
-    //giảm số lượng
-    const handleDecrement = () => {
-        setQuantity(prev => Math.max(1, prev - 1));
-    };
+    // Tăng số lượng
+    const handleIncrement = useCallback(() => {
+        setQuantity((prev) => prev + 1);
+    }, []);
 
-    //Thêm vào giỏ hàng vs số lượng đã chọn
-    const handleAddToCartInDetail = async () => {
+    // Giảm số lượng
+    const handleDecrement = useCallback(() => {
+        setQuantity((prev) => Math.max(1, prev - 1));
+    }, []);
+
+    // Thêm vào giỏ hàng với số lượng và ghi chú
+    const handleAddToCartInDetail = useCallback(async () => {
+        if (!customer || !customer.cart) {
+            debouncedToast('Vui lòng đăng nhập để thêm vào giỏ hàng!', 'error');
+            navigate('/login');
+            return;
+        }
+
+        setLoading(true);
         try {
             const response = await api.post('/s2d/cartdetail', {
                 cart: customer.cart,
                 products: product._id,
-                quantity: quantity
+                quantity: quantity,
+                note: note || undefined, // Gửi note nếu có, nếu không để undefined
             });
             fetchCart();
-            setShowDetail(false)
+            setShowDetail(false);
 
-            console.log('Thêm vào giỏ hàng thành công:', response.data);
-            // Optional: Hiển thị thông báo thành công cho người dùng
+            // Thêm hiệu ứng fly item (giả định lấy tọa độ từ buttonRef)
+            const buttonRect = buttonRef.current.getBoundingClientRect();
+            const startPosition = {
+                x: buttonRect.left + buttonRect.width / 2,
+                y: buttonRect.top + buttonRect.height / 2,
+            };
+            const endPosition = { x: window.innerWidth * 0.2, y: window.innerHeight * 0.2 }; // Giả định vị trí giỏ hàng
+            setFlyingItems((prev) => [
+                ...prev,
+                { id: Date.now(), imageUrl: `${process.env.REACT_APP_API_URL}/${product.image}`, startPosition, endPosition },
+            ]);
+
+            debouncedToast('Thêm vào giỏ hàng thành công!', 'success');
         } catch (error) {
             console.error('Lỗi khi thêm vào giỏ hàng:', error);
-            // Optional: Hiển thị thông báo lỗi cho người dùng
+            debouncedToast('Thêm vào giỏ hàng thất bại. Vui lòng thử lại!', 'error');
+        } finally {
+            setLoading(false);
         }
-    };
+    }, [customer, product._id, quantity, note, fetchCart, setShowDetail, debouncedToast, navigate]);
+
+    // Xóa item bay khi hoàn thành hiệu ứng
+    useEffect(() => {
+        if (flyingItems.length > 0) {
+            const timer = setTimeout(() => {
+                setFlyingItems((prev) => prev.filter((item) => item.id !== flyingItems[0].id));
+            }, 1000); // Thời gian hiệu ứng (1 giây)
+            return () => clearTimeout(timer);
+        }
+    }, [flyingItems]);
+
+    // Đăng ký socket listeners
+    useEffect(() => {
+        if (!customer || !customer.cart) {
+            return;
+        }
+
+        registerSocketListeners({
+            customer: { cart: customer.cart },
+            CartDetailAdded: (data) => {
+                if (data.cartId === customer.cart) {
+                    fetchCart();
+                    debouncedToast('Đã thêm món mới vào giỏ hàng!', 'success');
+                }
+            },
+            CartDetailUpdated: (data) => {
+                if (data.cartId === customer.cart) {
+                    fetchCart();
+                    debouncedToast('Chi tiết giỏ hàng đã được cập nhật!', 'info');
+                }
+            },
+            CartDetailDeleted: (data) => {
+                if (data.cartId === customer.cart) {
+                    fetchCart();
+                    debouncedToast('Đã xóa món khỏi giỏ hàng!', 'info');
+                }
+            },
+        });
+
+        return () => {
+            cleanupSocketListeners();
+        };
+    }, [customer, fetchCart, debouncedToast]);
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
@@ -82,6 +161,7 @@ function ProductDetail({ product, onClose, fetchCart, setShowDetail }) {
                         <button
                             onClick={handleDecrement}
                             className="w-10 h-10 flex items-center justify-center border-2 border-primary text-primary rounded-full hover:bg-primary hover:text-white transition-colors text-xl"
+                            disabled={loading}
                         >
                             -
                         </button>
@@ -89,6 +169,7 @@ function ProductDetail({ product, onClose, fetchCart, setShowDetail }) {
                         <button
                             onClick={handleIncrement}
                             className="w-10 h-10 flex items-center justify-center bg-primary text-white rounded-full hover:bg-primary/90 transition-colors text-xl"
+                            disabled={loading}
                         >
                             +
                         </button>
@@ -96,12 +177,16 @@ function ProductDetail({ product, onClose, fetchCart, setShowDetail }) {
                     <button
                         ref={buttonRef}
                         onClick={handleAddToCartInDetail}
-                        className="bg-primary text-white px-8 py-2.5 rounded-full hover:bg-primary/90 transition-colors">
-                        Thêm giỏ hàng
+                        className={`bg-primary text-white px-8 py-2.5 rounded-full hover:bg-primary/90 transition-colors ${
+                            loading ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                        disabled={loading}
+                    >
+                        {loading ? 'Đang xử lý...' : 'Thêm giỏ hàng'}
                     </button>
                 </div>
             </div>
-            {flyingItems.map(item => (
+            {flyingItems.map((item) => (
                 <FlyItem
                     key={item.id}
                     id={item.id}

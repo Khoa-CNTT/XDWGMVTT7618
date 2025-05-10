@@ -1,66 +1,5 @@
-// import socket from './socket';
-// // Hàm đăng ký các lắng nghe socket
-
-// const registerSocketListeners = ({
-//     customer,
-//     // cập nhật bàn
-//     TableUpdated,
-//     // cập nhật giỏ hàng
-//     CartUpdated,
-//     //cập nhật đơn hàng tạo mới 
-//     OrderCreated,
-//     // cập nhạta lại đơn hàng 
-//     OrderUpdated,
-
-// }) => {
-//     console.log('Đăng ký socket listeners cho customer:', customer?.cart);
-//     // Lắng nghe kết nối socket
-//     socket.on('connect_error', (error) => {
-//         console.error('Lỗi kết nối socket:', error.message);
-//     });
-//     socket.on('connect', () => {
-//         console.log('Đã kết nối tới server socket:', socket.id, new Date().toISOString());
-//     });
-
-//     // lắng nghe cập nhật bàn 
-//     socket.on("table_updated", (data) =>{
-//         if(data.tableId === customer.idTable){
-//             console.log('Bàn đã được cập nhật:', data);
-//             TableUpdated(data);
-//         };
-//     });
-//     // lắng nghe cập nhật giỏ hàng 
-//     socket.on("cart_updated", (data) =>{
-//         if(data.cartId === customer.cart){
-//             console.log('Giỏ hàng đã cập nhật:', data);
-//             CartUpdated(data);
-//         };
-//     })
-//     // lắng nghe tạo đơn hàng mới
-//     socket.on('order_created', (orderData)=>{
-//         console.log('Đơn hàng đã được tạo:', orderData);
-//         OrderCreated(orderData);
-//     })
-//     // lắng nghe cập nhật đơn hàng 
-//     socket.on('order_updated', (orderData) => {
-//         console.log('Đơn hàng đã được cập nhật:', orderData);
-//         OrderUpdated(orderData);
-//     })
-// }; 
-
-// // Hàm dọn dẹp tất cả các lắng nghe socket
-// const cleanupSocketListeners = () =>{
-//     socket.off('connect');
-//     socket.off('table_updated');
-//     socket.off('cart_updated');
-//     socket.off('order_created');
-//     socket.off('order_updated');
-// };
-
-
-// export { registerSocketListeners, cleanupSocketListeners };
-
 import socket from './socket';
+import debounce from 'lodash/debounce';
 
 const registerSocketListeners = ({
     customer,
@@ -68,38 +7,107 @@ const registerSocketListeners = ({
     CartUpdated,
     OrderCreated,
     OrderUpdated,
+    OrderDetailAdded,
+    OrderDetailUpdated,
+    OrderDetailDeleted,
+    OrderDetailQuantityDecreased,
+    OrderConfirmed,
+    OrderAdded,
+    OrderDeleted,
+    CartAdded,
+    CartDeleted,
+    CartCreated,
+    CartDetailAdded,
+    CartDetailUpdated,
+    CartDetailDeleted,
+    CartDetailQuantityDecreased,
+    CartDetailsDeleted,
 }) => {
-    console.log('Đăng ký socket listeners cho customer:', customer?.cart);
+    console.log('Đăng ký socket listeners cho customer:', customer);
 
-    // Kiểm tra trạng thái kết nối hiện tại
-    if (socket.connected) {
-        console.log('Đã kết nối trước đó:', socket.id, new Date().toISOString());
-        // Tham gia các room ngay lập tức nếu đã kết nối
+    // Debounce các callback để tránh xử lý quá nhiều sự kiện cùng lúc
+    const debouncedTableUpdated = debounce((data) => TableUpdated && TableUpdated(data), 300);
+    const debouncedCartUpdated = debounce((data) => CartUpdated && CartUpdated(data), 300);
+    const debouncedOrderCreated = debounce((data) => OrderCreated && OrderCreated(data), 300);
+    const debouncedOrderUpdated = debounce((data) => OrderUpdated && OrderUpdated(data), 300);
+    const debouncedOrderConfirmed = debounce((data) => OrderConfirmed && OrderConfirmed(data), 300);
+    const debouncedOrderAdded = debounce((data) => OrderAdded && OrderAdded(data), 300);
+    const debouncedOrderDeleted = debounce((data) => OrderDeleted && OrderDeleted(data), 300);
+    const debouncedCartAdded = debounce((data) => CartAdded && CartAdded(data), 300);
+    const debouncedCartDeleted = debounce((data) => CartDeleted && CartDeleted(data), 300);
+    const debouncedCartCreated = debounce((data) => CartCreated && CartCreated(data), 300);
+    const debouncedCartDetailAdded = debounce((data) => CartDetailAdded && CartDetailAdded(data), 300);
+    const debouncedCartDetailUpdated = debounce((data) => CartDetailUpdated && CartDetailUpdated(data), 300);
+    const debouncedCartDetailDeleted = debounce((data) => CartDetailDeleted && CartDetailDeleted(data), 300);
+    const debouncedCartDetailQuantityDecreased = debounce(
+        (data) => CartDetailQuantityDecreased && CartDetailQuantityDecreased(data),
+        300
+    );
+    const debouncedCartDetailsDeleted = debounce(
+        (data) => CartDetailsDeleted && CartDetailsDeleted(data),
+        300
+    );
+
+    // Hàm xử lý cho orderdetail_changed
+    const handleOrderDetailChanged = (data) => {
+        if (!data || typeof data !== 'object' || !data.orderId) {
+            console.warn('Dữ liệu orderdetail_changed không hợp lệ:', data);
+            return;
+        }
+        if (data.orderId !== customer?.orderId) return;
+
+        console.log('Chi tiết đơn hàng đã thay đổi:', data);
+        switch (data.action) {
+            case 'added':
+                if (OrderDetailAdded) OrderDetailAdded(data);
+                break;
+            case 'updated':
+                if (OrderDetailUpdated) OrderDetailUpdated(data);
+                break;
+            case 'deleted':
+                if (OrderDetailDeleted) OrderDetailDeleted(data);
+                break;
+            case 'quantity_decreased':
+                if (OrderDetailQuantityDecreased) OrderDetailQuantityDecreased(data);
+                break;
+            default:
+                console.log('Hành động không xác định:', data.action);
+        }
+    };
+
+    const debouncedOrderDetailChanged = debounce(handleOrderDetailChanged, 300);
+
+    // Kiểm tra kết nối hiện tại và tham gia rooms
+    const joinRooms = () => {
         if (customer?.cart) {
             socket.emit('join', `cart_${customer.cart}`);
             console.log('Đã tham gia room cart:', `cart_${customer.cart}`);
+        } else {
+            console.warn('Không tìm thấy customer.cart, không tham gia room cart');
         }
         if (customer?.idTable) {
             socket.emit('join', `table_${customer.idTable}`);
             console.log('Đã tham gia room table:', `table_${customer.idTable}`);
+        } else {
+            console.warn('Không tìm thấy customer.idTable, không tham gia room table');
         }
+        if (customer?.orderId) {
+            socket.emit('join', `order_${customer.orderId}`);
+            console.log('Đã tham gia room order:', `order_${customer.orderId}`);
+        } else {
+            console.warn('Không tìm thấy customer.orderId, không tham gia room order');
+        }
+    };
+
+    if (socket.connected) {
+        console.log('Đã kết nối trước đó:', socket.id, new Date().toISOString());
+        joinRooms();
     }
 
     // Đăng ký sự kiện connect
-    socket.on('test_connect', (data) => {
-    console.log('Nhận được test_connect:', data);
-});
     socket.on('connect', () => {
         console.log('Đã kết nối tới server socket:', socket.id, new Date().toISOString());
-        // Tham gia các room khi kết nối
-        if (customer?.cart) {
-            socket.emit('join', `cart_${customer.cart}`);
-            console.log('Đã tham gia room cart:', `cart_${customer.cart}`);
-        }
-        if (customer?.idTable) {
-            socket.emit('join', `table_${customer.idTable}`);
-            console.log('Đã tham gia room table:', `table_${customer.idTable}`);
-        }
+        joinRooms();
     });
 
     socket.on('connect_error', (error) => {
@@ -108,24 +116,176 @@ const registerSocketListeners = ({
 
     // Lắng nghe các sự kiện
     socket.on('table_updated', (data) => {
-        if (data.tableId === customer.idTable) {
+        if (!data || typeof data !== 'object' || !data.tableId) {
+            console.warn('Dữ liệu table_updated không hợp lệ:', data);
+            return;
+        }
+        if (data.tableId === customer?.idTable) {
             console.log('Bàn đã được cập nhật:', data);
-            TableUpdated(data);
+            debouncedTableUpdated(data);
         }
     });
+
     socket.on('cart_updated', (data) => {
-        if (data.cartId === customer.cart) {
+        if (!data || typeof data !== 'object' || !data.cartId) {
+            console.warn('Dữ liệu cart_updated không hợp lệ:', data);
+            return;
+        }
+        if (data.cartId === customer?.cart) {
             console.log('Giỏ hàng đã cập nhật:', data);
-            CartUpdated(data);
+            debouncedCartUpdated(data);
         }
     });
-    socket.on('order_created', (orderData) => {
-        console.log('Đơn hàng đã được tạo:', orderData);
-        OrderCreated(orderData);
+
+    socket.on('order_created', (data) => {
+        console.log('Đơn hàng đã được tạo:', data);
+        debouncedOrderCreated(data);
     });
-    socket.on('order_updated', (orderData) => {
-        console.log('Đơn hàng đã được cập nhật:', orderData);
-        OrderUpdated(orderData);
+
+    socket.on('order_updated', (data) => {
+        if (!data || typeof data !== 'object' || !data.orderId) {
+            console.warn('Dữ liệu order_updated không hợp lệ:', data);
+            return;
+        }
+        if (data.orderId === customer?.orderId) {
+            console.log('Đơn hàng đã được cập nhật:', data);
+            debouncedOrderUpdated(data);
+        }
+    });
+
+    socket.on('orderdetail_changed', (data) => {
+        debouncedOrderDetailChanged(data);
+    });
+
+    socket.on('order_confirmed', (data) => {
+        console.log('Dữ liệu nhận được từ sự kiện order_confirmed:', data);
+        if (typeof data === 'object' && data !== null) {
+            if (
+                (data.orderId && data.orderId === customer?.orderId) ||
+                (data.tableId && data.tableId === customer?.idTable)
+            ) {
+                console.log('Đơn hàng đã được xác nhận:', data);
+                debouncedOrderConfirmed(data);
+            }
+        } else {
+            console.error('Dữ liệu không phải là đối tượng hợp lệ:', data);
+        }
+    });
+
+    socket.on('order_added', (data) => {
+        if (typeof data === 'object' && data !== null) {
+            if (
+                (data.orderId && data.orderId === customer?.orderId) ||
+                (data.tableId && data.tableId === customer?.idTable)
+            ) {
+                console.log('Đơn hàng đã được thêm:', data);
+                debouncedOrderAdded(data);
+            }
+        } else {
+            console.warn('Dữ liệu order_added không hợp lệ:', data);
+        }
+    });
+
+    socket.on('order_deleted', (data) => {
+        if (typeof data === 'object' && data !== null) {
+            if (
+                (data.orderId && data.orderId === customer?.orderId) ||
+                (data.tableId && data.tableId === customer?.idTable)
+            ) {
+                console.log('Đơn hàng đã bị xóa:', data);
+                debouncedOrderDeleted(data);
+            }
+        } else {
+            console.warn('Dữ liệu order_deleted không hợp lệ:', data);
+        }
+    });
+
+    socket.on('cart_added', (data) => {
+        if (!data || typeof data !== 'object' || !data.cartId) {
+            console.warn('Dữ liệu cart_added không hợp lệ:', data);
+            return;
+        }
+        if (data.cartId === customer?.cart) {
+            console.log('Giỏ hàng đã được thêm:', data);
+            debouncedCartAdded(data);
+        }
+    });
+
+    socket.on('cart_deleted', (data) => {
+        if (!data || typeof data !== 'object' || !data.cartId) {
+            console.warn('Dữ liệu cart_deleted không hợp lệ:', data);
+            return;
+        }
+        if (data.cartId === customer?.cart) {
+            console.log('Giỏ hàng đã bị xóa:', data);
+            debouncedCartDeleted(data);
+        }
+    });
+
+    socket.on('cart_created', (data) => {
+        if (!data || typeof data !== 'object' || !data.cartId) {
+            console.warn('Dữ liệu cart_created không hợp lệ:', data);
+            return;
+        }
+        if (data.cartId === customer?.cart) {
+            console.log('Giỏ hàng đã được tạo:', data);
+            debouncedCartCreated(data);
+        }
+    });
+
+    socket.on('cartdetail_added', (data) => {
+        if (!data || typeof data !== 'object' || !data.cartId) {
+            console.warn('Dữ liệu cartdetail_added không hợp lệ:', data);
+            return;
+        }
+        if (data.cartId === customer?.cart) {
+            console.log('Chi tiết giỏ hàng đã được thêm:', data);
+            debouncedCartDetailAdded(data);
+        }
+    });
+
+    socket.on('cartdetail_updated', (data) => {
+        if (!data || typeof data !== 'object' || !data.cartId) {
+            console.warn('Dữ liệu cartdetail_updated không hợp lệ:', data);
+            return;
+        }
+        if (data.cartId === customer?.cart) {
+            console.log('Chi tiết giỏ hàng đã được cập nhật:', data);
+            debouncedCartDetailUpdated(data);
+        }
+    });
+
+    socket.on('cartdetail_deleted', (data) => {
+        if (!data || typeof data !== 'object' || !data.cartId) {
+            console.warn('Dữ liệu cartdetail_deleted không hợp lệ:', data);
+            return;
+        }
+        if (data.cartId === customer?.cart) {
+            console.log('Chi tiết giỏ hàng đã bị xóa:', data);
+            debouncedCartDetailDeleted(data);
+        }
+    });
+
+    socket.on('cartdetail_quantity_decreased', (data) => {
+        if (!data || typeof data !== 'object' || !data.cartId) {
+            console.warn('Dữ liệu cartdetail_quantity_decreased không hợp lệ:', data);
+            return;
+        }
+        if (data.cartId === customer?.cart) {
+            console.log('Số lượng chi tiết giỏ hàng đã giảm:', data);
+            debouncedCartDetailQuantityDecreased(data);
+        }
+    });
+
+    socket.on('cartdetails_deleted', (data) => {
+        if (!data || typeof data !== 'object' || !data.cartId) {
+            console.warn('Dữ liệu cartdetails_deleted không hợp lệ:', data);
+            return;
+        }
+        if (data.cartId === customer?.cart) {
+            console.log('Nhiều chi tiết giỏ hàng đã bị xóa:', data);
+            debouncedCartDetailsDeleted(data);
+        }
     });
 };
 
@@ -136,6 +296,18 @@ const cleanupSocketListeners = () => {
     socket.off('cart_updated');
     socket.off('order_created');
     socket.off('order_updated');
+    socket.off('orderdetail_changed');
+    socket.off('order_confirmed');
+    socket.off('order_added');
+    socket.off('order_deleted');
+    socket.off('cart_added');
+    socket.off('cart_deleted');
+    socket.off('cart_created');
+    socket.off('cartdetail_added');
+    socket.off('cartdetail_updated');
+    socket.off('cartdetail_deleted');
+    socket.off('cartdetail_quantity_decreased');
+    socket.off('cartdetails_deleted');
 };
 
 export { registerSocketListeners, cleanupSocketListeners };
