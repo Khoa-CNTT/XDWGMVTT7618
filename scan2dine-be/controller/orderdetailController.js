@@ -160,7 +160,7 @@ const orderdetailCOntroller = {
         }
     },
     // quyền làm
-    updateOrderDetail : async (req, res) => {
+    updateOrderDetail: async (req, res) => {
         try {
             const { id } = req.params; // lấy _id của orderdetail từ URL
             const { quantity, status, note, total } = req.body;
@@ -261,8 +261,11 @@ const orderdetailCOntroller = {
                 return res.status(404).json({ message: "Không tìm thấy orderdetail để cập nhật" });
             }
 
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> c416de8bcf2474d9e7d486fec62aeb93f6027570
             const io = req.app.get('io');
             notifyOrderDetailStatusUpdated(io, order, {
                 orderId: order,
@@ -294,6 +297,10 @@ const orderdetailCOntroller = {
             if (!confirmStatus) {
                 return res.status(404).json({ message: "Không tìm thấy orderdetail để cập nhật" });
             }
+<<<<<<< HEAD
+=======
+
+>>>>>>> c416de8bcf2474d9e7d486fec62aeb93f6027570
             const io = req.app.get('io');
             notifyOrderDetailStatusUpdated(io, order, {
                 orderId: order,
@@ -301,7 +308,10 @@ const orderdetailCOntroller = {
                 newStatus,
                 message: 'Trạng thái chi tiết đơn hàng đã được cập nhật thành "Hoàn thành"',
             });
+<<<<<<< HEAD
 
+=======
+>>>>>>> c416de8bcf2474d9e7d486fec62aeb93f6027570
             return res.status(200).json({
                 message: "Cập nhật trạng thái 'Hoàn thành' thành công",
                 detail: confirmStatus
