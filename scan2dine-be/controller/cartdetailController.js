@@ -1,6 +1,11 @@
 const { Cart, Product, CartDetail } = require('../model/model');
 const { increaseCartQuantity, decreaseCartQuantity } = require('../service/cartdetailService');
-const { notifyCartDetailAdded, notifyCartDetailUpdated, notifyCartDetailDeleted, notifyCartDetailQuantityDecreased } = require('../utils/socketUtils');
+const {
+  notifyCartDetailAdded,
+  notifyCartDetailUpdated,
+  notifyCartDetailDeleted,
+  notifyCartDetailQuantityDecreased
+} = require('../utils/socketUtils');
 
 const cartdetailController = {
   addCartdetail: async (req, res) => {
@@ -13,40 +18,27 @@ const cartdetailController = {
 
       const upProduttoCartdetail = await increaseCartQuantity(cart, products, quantity || 1);
 
-      // Cập nhật Cart nếu có
-      if (cart) {
-        const cartID = await Cart.findById(cart);
-        if (!cartID) {
-          return res.status(404).json({ message: 'Cart không tìm thấy.' });
-        }
+      const cartDoc = await Cart.findById(cart);
+      if (!cartDoc) return res.status(404).json({ message: 'Cart không tìm thấy.' });
 
-        await cartID.updateOne({
-          $addToSet: { cartdetail: upProduttoCartdetail.detail._id }
-        });
+      await cartDoc.updateOne({
+        $addToSet: { cartdetail: upProduttoCartdetail.detail._id }
+      });
 
-        // console.log("Cart updated:", cartID);
-      }
+      const productDoc = await Product.findById(products);
+      if (!productDoc) return res.status(404).json({ message: 'Product không tìm thấy.' });
 
-      // Cập nhật Product nếu có
-      if (products) {
-        const product = await Product.findById(products);
-        if (!product) {
-          return res.status(404).json({ message: 'Product không tìm thấy.' });
-        }
+      await productDoc.updateOne({
+        $addToSet: { cartdetail: upProduttoCartdetail.detail._id }
+      });
 
-        await product.updateOne({
-          $addToSet: { cartdetail: upProduttoCartdetail.detail._id }
-        });
+      const io = req.app.get('io');
+      notifyCartDetailAdded(io, cart, {
+        cartId: cart,
+        detail: upProduttoCartdetail.detail,
+        message: upProduttoCartdetail.updated ? "Tăng số lượng sản phẩm" : "Thêm sản phẩm mới",
+      });
 
-        console.log("Product updated:", product);
-      };
-      const io = req.app.get('io'); // Lấy io từ app
-            notifyCartDetailAdded(io, cart, {
-                cartId: cart,
-                detail: upProduttoCartdetail.detail,
-                message: upProduttoCartdetail.updated ? "Tăng số lượng sản phẩm" : "Thêm sản phẩm mới",
-            });
-      // const amountItem = await calculateCartdetail(cart);
       res.status(200).json({
         message: upProduttoCartdetail.updated ? "Tăng số lượng sản phẩm trong giỏ hàng" : "Thêm sản phẩm vào giỏ hàng",
         detail: upProduttoCartdetail
@@ -63,12 +55,13 @@ const cartdetailController = {
       const cartDetails = await CartDetail.find()
         .populate({
           path: 'products',
-          select: 'pd_name price image stall_id' // ✅ Thêm stall_id
+          select: 'pd_name price image stall_id'
         })
         .populate('cart');
+
       res.status(200).json(cartDetails);
     } catch (error) {
-      res.status(500).json(error);
+      res.status(500).json({ message: "Server error", error: error.message });
     }
   },
 
@@ -83,16 +76,22 @@ const cartdetailController = {
         $pull: { cartdetail: cartDetail._id }
       });
 
+      await Cart.findByIdAndUpdate(cartDetail.cart, {
+        $pull: { cartdetail: cartDetail._id }
+      });
+
       await cartDetail.deleteOne();
+
       const io = req.app.get('io');
-            notifyCartDetailDeleted(io, deleteCartdetail.cart, {
-                cartId: deleteCartdetail.cart,
-                detailId: deleteCartdetail._id,
-                message: "Sản phẩm đã bị xóa khỏi giỏ hàng",
-            });
+      notifyCartDetailDeleted(io, cartDetail.cart, {
+        cartId: cartDetail.cart,
+        detailId: cartDetail._id,
+        message: "Sản phẩm đã bị xóa khỏi giỏ hàng",
+      });
+
       res.status(200).json({ message: 'Cart detail deleted successfully' });
     } catch (error) {
-      res.status(500).json(error);
+      res.status(500).json({ message: "Server error", error: error.message });
     }
   },
 
@@ -103,22 +102,24 @@ const cartdetailController = {
 
       const updatedCartDetail = await CartDetail.findByIdAndUpdate(
         cartDetailId,
-        { quantity: quantity },
+        { quantity },
         { new: true }
       ).populate({
         path: 'products',
-        select: 'pd_name price image stall_id' // ✅ Thêm stall_id
+        select: 'pd_name price image stall_id'
       });
 
       if (!updatedCartDetail) {
         return res.status(404).json({ message: 'Cart detail not found' });
       }
+
       const io = req.app.get('io');
-            notifyCartDetailUpdated(io, updateCartdetail.cart, {
-                cartId: updateCartdetail.cart,
-                detailId: updateCartdetail._id,
-                message: "Thông tin chi tiết giỏ hàng đã được cập nhật",
-            })
+      notifyCartDetailUpdated(io, updatedCartDetail.cart, {
+        cartId: updatedCartDetail.cart,
+        detailId: updatedCartDetail._id,
+        message: "Thông tin chi tiết giỏ hàng đã được cập nhật",
+      });
+
       res.status(200).json(updatedCartDetail);
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -133,26 +134,36 @@ const cartdetailController = {
         return res.status(400).json({ message: "Thiếu cartID hoặc productsId" });
       }
 
-      const downQuantity = await decreaseCartQuantity(cart, products, quantity || 1);
+      const downQuantityResult = await decreaseCartQuantity(cart, products, quantity || 1);
 
-      if (downQuantity.quantity === 0) {
-        await CartDetail.findByIdAndDelete(downQuantity._id);
-        await Cart.findByIdAndUpdate(cart, { $pull: { cartdetail: downQuantity._id } });
-        await Product.findByIdAndUpdate(products, { $pull: { cartdetail: downQuantity._id } });
+      const io = req.app.get('io');
+
+      if (downQuantityResult.quantity === 0) {
+        await CartDetail.findByIdAndDelete(downQuantityResult._id);
+        await Cart.findByIdAndUpdate(cart, { $pull: { cartdetail: downQuantityResult._id } });
+        await Product.findByIdAndUpdate(products, { $pull: { cartdetail: downQuantityResult._id } });
+
+        notifyCartDetailDeleted(io, cart, {
+          cartId: cart,
+          detailId: downQuantityResult._id,
+          message: "Sản phẩm đã bị xóa khỏi giỏ hàng",
+        });
 
         return res.status(200).json({
           message: "Sản phẩm đã bị xoá khỏi giỏ hàng",
-          detail: downQuantity
+          detail: downQuantityResult
         });
       }
-      notifyCartDetailQuantityDecreased(io, cart ,{
-                cartId: cart,
-                detailId: downQuantity,
-                message: "Số lượng sản phẩm đã giảm",
-            })
+
+      notifyCartDetailQuantityDecreased(io, cart, {
+        cartId: cart,
+        detailId: downQuantityResult._id,
+        message: "Số lượng sản phẩm đã giảm",
+      });
+
       res.status(200).json({
         message: "Giảm số lượng sản phẩm trong giỏ hàng",
-        detail: downQuantity
+        detail: downQuantityResult
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -171,7 +182,7 @@ const cartdetailController = {
       const updatedDetails = await CartDetail.find({ cart: cartId })
         .populate({
           path: 'products',
-          select: 'pd_name price image stall_id' // ✅ Thêm stall_id
+          select: 'pd_name price image stall_id'
         })
         .populate('cart');
 
