@@ -160,7 +160,7 @@ const orderdetailCOntroller = {
         }
     },
     // quyền làm
-    updateOrderDetail : async (req, res) => {
+    updateOrderDetail: async (req, res) => {
         try {
             const { id } = req.params; // lấy _id của orderdetail từ URL
             const { quantity, status, note, total } = req.body;

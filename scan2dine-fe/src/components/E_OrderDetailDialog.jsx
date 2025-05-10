@@ -3,6 +3,7 @@ import { FaUtensils, FaClock, FaCheckCircle, FaPrint, FaCheck, FaTimes, FaSpinne
 import { toast } from 'react-toastify';
 import api from '../server/api';
 import { E_ItemOrderDetail } from './E_ItemOrderDetail';
+import PrintBillComponent from './PrintBillComponent';
 
 const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     const [loading, setLoading] = useState(true);
@@ -55,7 +56,7 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     const handleUpdateQuantity = async (itemId, newQuantity) => {
         try {
             // Gọi API để cập nhật số lượng
-            await api.patch(`/s2d/orderdetail/${itemId}`, { quantity: newQuantity });
+            await api.patch(`/s2d/orderdetail/update1/${itemId}`, { quantity: newQuantity });
 
             // Cập nhật state orderItems
             setOrderItems((prevItems) =>
@@ -127,96 +128,115 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     };
 
     // In hóa đơn
+    // const handlePrintBill = async () => {
+    //     try {
+    //         const res = await api.post(`/s2d/vietqr/generate-vietqr`, {
+    //             orderId: tableInfo.orderId,
+    //         });
+    //         console.log('QR response:', res);
+
+    //         setInfoPayment(res);
+
+    //         const printWindow = window.open('', '_blank', 'width=800,height=600');
+    //         if (printWindow) {
+    //             printWindow.document.write(`
+    //       <html lang="vi">
+    //         <head>
+    //           <meta charset="UTF-8">
+    //           <title>Hóa Đơn Thanh Toán</title>
+    //           <style>
+    //             body { font-family: Arial, sans-serif; margin: 20px; }
+    //             h1 { text-align: center; margin-bottom: 10px; }
+    //             .info, .total { margin-bottom: 20px; }
+    //             table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    //             table, th, td { border: 1px solid #000; }
+    //             th, td { padding: 8px; text-align: center; }
+    //             .total p { text-align: right; margin: 5px 0; }
+    //             .footer { text-align: center; margin-top: 30px; font-style: italic; }
+    //             .qr-code { text-align: center; margin-top: 20px; }
+    //           </style>
+    //         </head>
+    //         <body>
+    //           <h1>HÓA ĐƠN THANH TOÁN</h1>
+    //           <div class="info">
+    //             <p><strong>Nhà hàng:</strong> Khu chợ đêm SCAN2DINE</p>
+    //             <p><strong>Địa chỉ:</strong> Cù Chính Lan</p>
+    //             <p><strong>SĐT:</strong> 0909 123 456</p>
+    //             <hr>
+    //             <p><strong>Mã hóa đơn:</strong> ${tableInfo?.orderId.toUpperCase()}</p>
+    //             <p><strong>Bàn số:</strong> ${tableInfo?.tableNumber || ''}</p>
+    //             <p><strong>Ngày giờ:</strong> ${formatDate(new Date().toISOString())}</p>
+    //             <p><strong>Khách hàng:</strong> ${tableInfo?.customer.name || 'Khách lẻ'}</p>
+    //             <p><strong>Số điện thoại:</strong> ${tableInfo?.customer.phone || '---'}</p>
+    //           </div>
+    //           <table>
+    //             <thead>
+    //               <tr>
+    //                 <th>Món ăn</th>
+    //                 <th>Số lượng</th>
+    //                 <th>Đơn giá</th>
+    //                 <th>Thành tiền</th>
+    //               </tr>
+    //             </thead>
+    //             <tbody>
+    //               ${orderItems
+    //                     .map(
+    //                         (item) => `
+    //                 <tr>
+    //                   <td>${item.productName}</td>
+    //                   <td>${item.quantity}</td>
+    //                   <td>${formatCurrency(item.price)}</td>
+    //                   <td>${formatCurrency(item.price * item.quantity)}</td>
+    //                 </tr>
+    //               `
+    //                     )
+    //                     .join('')}
+    //             </tbody>
+    //           </table>
+    //           <div class="total">
+    //             <p><strong>Tạm tính:</strong> ${formatCurrency(total)}</p>
+    //             <p><strong>Thuế (0%):</strong> ${formatCurrency(total * 0.0)}</p>
+    //             <p><strong>Tổng cộng:</strong> ${formatCurrency(total * 1.0)}</p>
+    //           </div>
+    //           <div class="qr-code">
+    //             <p>Quét mã để thanh toán hóa đơn:</p>
+    //             <img src="${res.data.qr_url}" alt="QR Code" style="width: 240px; height: 300px;" />
+    //           </div>
+    //           <div class="footer">
+    //             <p>Cảm ơn Quý khách! Hẹn gặp lại!</p>
+    //           </div>
+    //           <script>
+    //             window.onload = function() {
+    //               window.print();
+    //               setTimeout(() => window.close(), 500);
+    //             };
+    //           </script>
+    //         </body>
+    //       </html>
+    //     `);
+    //             printWindow.document.close();
+    //         } else {
+    //             toast.error('Không thể mở cửa sổ in hóa đơn.');
+    //         }
+    //     } catch (error) {
+    //         console.error('Lỗi in hóa đơn:', error);
+    //         toast.error('Không thể tạo QR thanh toán.');
+    //     }
+    // };
     const handlePrintBill = async () => {
         try {
             const res = await api.post(`/s2d/vietqr/generate-vietqr`, {
                 orderId: tableInfo.orderId,
             });
-            console.log('QR response:', res);
 
             setInfoPayment(res);
 
-            const printWindow = window.open('', '_blank', 'width=800,height=600');
-            if (printWindow) {
-                printWindow.document.write(`
-          <html lang="vi">
-            <head>
-              <meta charset="UTF-8">
-              <title>Hóa Đơn Thanh Toán</title>
-              <style>
-                body { font-family: Arial, sans-serif; margin: 20px; }
-                h1 { text-align: center; margin-bottom: 10px; }
-                .info, .total { margin-bottom: 20px; }
-                table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-                table, th, td { border: 1px solid #000; }
-                th, td { padding: 8px; text-align: center; }
-                .total p { text-align: right; margin: 5px 0; }
-                .footer { text-align: center; margin-top: 30px; font-style: italic; }
-                .qr-code { text-align: center; margin-top: 20px; }
-              </style>
-            </head>
-            <body>
-              <h1>HÓA ĐƠN THANH TOÁN</h1>
-              <div class="info">
-                <p><strong>Nhà hàng:</strong> Khu chợ đêm SCAN2DINE</p>
-                <p><strong>Địa chỉ:</strong> Cù Chính Lan</p>
-                <p><strong>SĐT:</strong> 0909 123 456</p>
-                <hr>
-                <p><strong>Mã hóa đơn:</strong> ${tableInfo?.orderId.toUpperCase()}</p>
-                <p><strong>Bàn số:</strong> ${tableInfo?.tableNumber || ''}</p>
-                <p><strong>Ngày giờ:</strong> ${formatDate(new Date().toISOString())}</p>
-                <p><strong>Khách hàng:</strong> ${tableInfo?.customer.name || 'Khách lẻ'}</p>
-                <p><strong>Số điện thoại:</strong> ${tableInfo?.customer.phone || '---'}</p>
-              </div>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Món ăn</th>
-                    <th>Số lượng</th>
-                    <th>Đơn giá</th>
-                    <th>Thành tiền</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${orderItems
-                        .map(
-                            (item) => `
-                    <tr>
-                      <td>${item.productName}</td>
-                      <td>${item.quantity}</td>
-                      <td>${formatCurrency(item.price)}</td>
-                      <td>${formatCurrency(item.price * item.quantity)}</td>
-                    </tr>
-                  `
-                        )
-                        .join('')}
-                </tbody>
-              </table>
-              <div class="total">
-                <p><strong>Tạm tính:</strong> ${formatCurrency(total)}</p>
-                <p><strong>Thuế (0%):</strong> ${formatCurrency(total * 0.0)}</p>
-                <p><strong>Tổng cộng:</strong> ${formatCurrency(total * 1.0)}</p>
-              </div>
-              <div class="qr-code">
-                <p>Quét mã để thanh toán hóa đơn:</p>
-                <img src="${res.data.qr_url}" alt="QR Code" style="width: 240px; height: 300px;" />
-              </div>
-              <div class="footer">
-                <p>Cảm ơn Quý khách! Hẹn gặp lại!</p>
-              </div>
-              <script>
-                window.onload = function() {
-                  window.print();
-                  setTimeout(() => window.close(), 500);
-                };
-              </script>
-            </body>
-          </html>
-        `);
-                printWindow.document.close();
-            } else {
-                toast.error('Không thể mở cửa sổ in hóa đơn.');
-            }
+            PrintBillComponent({
+                tableInfo,
+                orderItems,
+                total,
+                qrUrl: res.data.qr_url,
+            });
         } catch (error) {
             console.error('Lỗi in hóa đơn:', error);
             toast.error('Không thể tạo QR thanh toán.');

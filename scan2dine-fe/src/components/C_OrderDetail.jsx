@@ -4,10 +4,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import api from '../server/api';
 import { Footer } from './Footer'
 import { C_OrderDetailItem } from './C_OrderDetailItem';
+import { C_ConfirmCallStaff } from '../components/C_ConfirmCallStaff';
+
 
 const OrderDetail = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
+    const [showPaymentForm, setShowPaymentForm] = useState(false);
+
 
     const [orderDetails, setOrderDetails] = useState({
         orderNumber: '',
@@ -96,11 +100,29 @@ const OrderDetail = () => {
         }
     };
 
+    const cancelCallPayment = async (idTable) => {
+        try {
+            await api.patch(`/s2d/table/${idTable}`, {
+                status: '2',
+            })
+            setShowPaymentForm(false)
+        } catch (error) {
 
+        }
+    }
+
+    const callPayment = async (idTable) => {
+        try {
+            await api.patch(`/s2d/table/${idTable}`, {
+                status: '5',
+            })
+
+        } catch (error) {
+
+        }
+    }
 
     const handleRequestMore = () => navigate('/menu');
-    const handlePayment = () => console.log('Processing payment...');
-
     // Custom status
     const renderStatusBadge = (status) => {
         let bgColor = 'bg-gray-200 text-gray-700';
@@ -176,13 +198,30 @@ const OrderDetail = () => {
                 </div>
                 <div className="flex gap-4">
                     <button onClick={handleRequestMore} className="flex-1 bg-red-100 text-primary py-3 rounded-full font-medium">Yêu cầu thêm món</button>
-                    <button onClick={handlePayment} className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-full font-medium">Yêu cầu thanh toán</button>
+                    <button onClick={() => {
+                        setShowPaymentForm(true);
+                        callPayment(orderData.order.table._id)
+                    }}
+                        className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-full font-medium">Yêu cầu thanh toán</button>
                 </div>
             </div>
 
             {/* Footer */}
             <Footer></Footer>
+
+            {
+                showPaymentForm && (
+                    <C_ConfirmCallStaff
+                        title="Đã gửi yêu cầu thanh toán"
+                        message="Nhân viên đang đến bạn hãy chờ một lát ..."
+                        onConfirm={() => setShowPaymentForm(false)}
+                        onCancel={() => cancelCallPayment(orderData.order.table._id)}
+                    />
+                )
+
+            }
         </div>
+
     );
 };
 
