@@ -13,6 +13,10 @@ router.get("/month", foodstallController.getMonthlyRevenue);
 
 //
 router.get("/allDoanhthu", foodstallController.getAllDoanhThu);
+// 
+router.get("/thongke", foodstallController.getStatistics);
+//
+router.get("/bestSeller", foodstallController.getDashboardStats);
 
 // General routes
 router.get("/", foodstallController.getAllFoodstall);
