@@ -617,186 +617,188 @@ const foodstallController = {
     }
   },
   getStatistics: async (req, res) => {
-  try {
-    // Lấy ngày hiện tại
-    const now = new Date();
-    const firstDay = new Date(now.getFullYear(), now.getMonth(), 1); // Ngày đầu tháng
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Ngày cuối tháng
+    try {
+      // Lấy ngày hiện tại
+      const now = new Date();
+      const currentMonth = `Tháng ${now.getMonth() + 1}`;
+      const firstDay = new Date(now.getFullYear(), now.getMonth(), 1); // Ngày đầu tháng
+      const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Ngày cuối tháng
 
-    // Tổng số đơn & tổng doanh thu tháng này
-    const orders = await Order.find({
-      od_date: { $gte: firstDay, $lte: lastDay }
-    }).select("_id total_amount");
+      // Tổng số đơn & tổng doanh thu tháng này
+      const orders = await Order.find({
+        od_date: { $gte: firstDay, $lte: lastDay }
+      }).select("_id total_amount");
 
-    const totalOrders = orders.length;
-    const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
+      const totalOrders = orders.length;
+      const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
 
-    // Doanh thu theo ngày
-    const dailyRevenue = await Order.aggregate([
-      { $match: { od_date: { $gte: firstDay, $lte: lastDay } } },
-      {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$od_date" } },
-          revenue: { $sum: "$total_amount" },
-          orders: { $sum: 1 }
-        }
-      },
-      { $sort: { _id: 1 } }
-    ]);
+      // Doanh thu theo ngày
+      const dailyRevenue = await Order.aggregate([
+        { $match: { od_date: { $gte: firstDay, $lte: lastDay } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$od_date" } },
+            revenue: { $sum: "$total_amount" },
+            orders: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]);
 
-    // Doanh thu theo quầy
-    const stallRevenue = await Orderdetail.aggregate([
-      {
-        $lookup: {
-          from: "product",
-          localField: "products",
-          foreignField: "_id",
-          as: "product"
-        }
-      },
-      { $unwind: "$product" },
-      {
-        $lookup: {
-          from: "foodstall",
-          localField: "product.stall_id",
-          foreignField: "_id",
-          as: "stall"
-        }
-      },
-      { $unwind: "$stall" },
-      {
-        $match: {
-          createdAt: { $gte: firstDay, $lte: lastDay }
-        }
-      },
-      {
-        $group: {
-          _id: "$stall._id",
-          stall_name: { $first: "$stall.stall_name" },
-          totalRevenue: { $sum: "$total" }
-        }
-      },
-      { $sort: { totalRevenue: -1 } }
-    ]);
+      // Doanh thu theo quầy
+      const stallRevenue = await Orderdetail.aggregate([
+        {
+          $lookup: {
+            from: "product",
+            localField: "products",
+            foreignField: "_id",
+            as: "product"
+          }
+        },
+        { $unwind: "$product" },
+        {
+          $lookup: {
+            from: "foodstall",
+            localField: "product.stall_id",
+            foreignField: "_id",
+            as: "stall"
+          }
+        },
+        { $unwind: "$stall" },
+        {
+          $match: {
+            createdAt: { $gte: firstDay, $lte: lastDay }
+          }
+        },
+        {
+          $group: {
+            _id: "$stall._id",
+            stall_name: { $first: "$stall.stall_name" },
+            totalRevenue: { $sum: "$total" }
+          }
+        },
+        { $sort: { totalRevenue: -1 } }
+      ]);
 
-    // Top 5 sản phẩm bán chạy
-    const bestProducts = await Orderdetail.aggregate([
-      {
-        $match: {
-          createdAt: { $gte: firstDay, $lte: lastDay }
-        }
-      },
-      {
-        $group: {
-          _id: "$products",
-          quantitySold: { $sum: "$quantity" },
-          total: { $sum: "$total" }
-        }
-      },
-      {
-        $lookup: {
-          from: "product",
-          localField: "_id",
-          foreignField: "_id",
-          as: "product"
-        }
-      },
-      { $unwind: "$product" },
-      {
-        $project: {
-          _id: 0,
-          productId: "$product._id",
-          name: "$product.pd_name",
-          quantitySold: 1,
-          total: 1
-        }
-      },
-      { $sort: { quantitySold: -1 } },
-      { $limit: 5 }
-    ]);
+      // Top 5 sản phẩm bán chạy
+      const bestProducts = await Orderdetail.aggregate([
+        {
+          $match: {
+            createdAt: { $gte: firstDay, $lte: lastDay }
+          }
+        },
+        {
+          $group: {
+            _id: "$products",
+            quantitySold: { $sum: "$quantity" },
+            total: { $sum: "$total" }
+          }
+        },
+        {
+          $lookup: {
+            from: "product",
+            localField: "_id",
+            foreignField: "_id",
+            as: "product"
+          }
+        },
+        { $unwind: "$product" },
+        {
+          $project: {
+            _id: 0,
+            productId: "$product._id",
+            name: "$product.pd_name",
+            quantitySold: 1,
+            total: 1
+          }
+        },
+        { $sort: { quantitySold: -1 } },
+        { $limit: 5 }
+      ]);
 
-    // Sản phẩm bán chạy nhất
-    const bestSeller = bestProducts[0] || null;
+      // Sản phẩm bán chạy nhất
+      const bestSeller = bestProducts[0] || null;
 
-    // Trả về kết quả thống kê
-    res.status(200).json({
-      totalOrders,
-      totalRevenue,
-      dailyRevenue,
-      stallRevenue,
-      bestSeller,
-      top5Products: bestProducts
-    });
-  } catch (err) {
-    console.error("Thống kê lỗi:", err);
-    res.status(500).json({ error: "Có lỗi xảy ra khi thống kê." });
-  }
-},
-  getDashboardStats : async (req, res) => {
-  try {
-    // Lấy ngày hiện tại
-    const currentDate = new Date();
-    
-    // Tính ngày đầu tháng
-    const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-    
-    // Tính ngày cuối tháng
-    const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-    
-    // Kiểm tra lại các giá trị của firstDay và lastDay
-    console.log("Ngày đầu tháng:", firstDay);
-    console.log("Ngày cuối tháng:", lastDay);
+      // Trả về kết quả thống kê
+      res.status(200).json({
+        currentMonth,
+        totalOrders,
+        totalRevenue,
+        dailyRevenue,
+        stallRevenue,
+        bestSeller,
+        top5Products: bestProducts
+      });
+    } catch (err) {
+      console.error("Thống kê lỗi:", err);
+      res.status(500).json({ error: "Có lỗi xảy ra khi thống kê." });
+    }
+  },
+  getDashboardStats: async (req, res) => {
+    try {
+      // Lấy ngày hiện tại
+      const currentDate = new Date();
 
-    // Các truy vấn MongoDB
-    const bestProducts = await Orderdetail.aggregate([
-      {
-        $lookup: {
-          from: "ORDER",
-          localField: "order",
-          foreignField: "_id",
-          as: "order"
-        }
-      },
-      { $unwind: "$order" },
-      {
-        $match: {
-          "order.od_date": { $gte: firstDay, $lte: lastDay }
-        }
-      },
-      {
-        $group: {
-          _id: "$products",
-          quantitySold: { $sum: "$quantity" },
-          total: { $sum: "$total" }
-        }
-      },
-      {
-        $lookup: {
-          from: "PRODUCT",
-          localField: "_id",
-          foreignField: "_id",
-          as: "product"
-        }
-      },
-      { $unwind: "$product" },
-      {
-        $project: {
-          _id: 0,
-          productId: "$product._id",
-          name: "$product.pd_name",
-          quantitySold: 1,
-          total: 1
-        }
-      },
-      { $sort: { quantitySold: -1 } },
-      { $limit: 5 }
-    ]);
+      // Tính ngày đầu tháng
+      const firstDay = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
 
-    return res.status(200).json({ bestProducts });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Có lỗi khi thống kê." });
-  }
-},
+      // Tính ngày cuối tháng
+      const lastDay = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+
+      // Kiểm tra lại các giá trị của firstDay và lastDay
+      console.log("Ngày đầu tháng:", firstDay);
+      console.log("Ngày cuối tháng:", lastDay);
+
+      // Các truy vấn MongoDB
+      const bestProducts = await Orderdetail.aggregate([
+        {
+          $lookup: {
+            from: "ORDER",
+            localField: "order",
+            foreignField: "_id",
+            as: "order"
+          }
+        },
+        { $unwind: "$order" },
+        {
+          $match: {
+            "order.od_date": { $gte: firstDay, $lte: lastDay }
+          }
+        },
+        {
+          $group: {
+            _id: "$products",
+            quantitySold: { $sum: "$quantity" },
+            total: { $sum: "$total" }
+          }
+        },
+        {
+          $lookup: {
+            from: "PRODUCT",
+            localField: "_id",
+            foreignField: "_id",
+            as: "product"
+          }
+        },
+        { $unwind: "$product" },
+        {
+          $project: {
+            _id: 0,
+            productId: "$product._id",
+            name: "$product.pd_name",
+            quantitySold: 1,
+            total: 1
+          }
+        },
+        { $sort: { quantitySold: -1 } },
+        { $limit: 5 }
+      ]);
+
+      return res.status(200).json({ bestProducts });
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: "Có lỗi khi thống kê." });
+    }
+  },
 }
 module.exports = foodstallController;
