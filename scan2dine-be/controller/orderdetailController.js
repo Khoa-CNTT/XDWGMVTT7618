@@ -29,7 +29,7 @@ const orderdetailCOntroller = {
                 message: upProduttoorderdetail.updated ? "Tăng số lượng sản phẩm trong đơn hàng " : "Thêm sản phẩm vào đơn hàng ",
                 order: upProduttoorderdetail
             });
-        } catch (error) {   
+        } catch (error) {
             console.error("Error in DELETEREVIEW:", error);
             return res.status(500).json({ message: "Server error", error: error.message || error });
         }
@@ -48,10 +48,10 @@ const orderdetailCOntroller = {
                         select: "stall_name" // chỉ lấy tên quầy hàng
                     }
                 });
-                console.log("OrderDetail:", getOrderdetail);
+            console.log("OrderDetail:", getOrderdetail);
             if (getOrderdetail.length <= 0) return "không có order detail"
             return res.status(200).json(getOrderdetail);
-            
+
         } catch (error) {
             console.error("Error in DELETEREVIEW:", error);
             return res.status(500).json({ message: "Server error", error: error.message || error });
@@ -140,6 +140,33 @@ const orderdetailCOntroller = {
             res.status(500).json({ message: "Server error", error: error.message || error });
         }
     },
+    // quyền làm
+    updateOrderDetail : async (req, res) => {
+        try {
+            const { id } = req.params; // lấy _id của orderdetail từ URL
+            const { quantity, status, note, total } = req.body;
+
+            const updatedOrderDetail = await Orderdetail.findByIdAndUpdate(
+                id,
+                {
+                    ...(quantity !== undefined && { quantity }),
+                    ...(status !== undefined && { status }),
+                    ...(note !== undefined && { note }),
+                    ...(total !== undefined && { total }),
+                },
+                { new: true }
+            );
+
+            if (!updatedOrderDetail) {
+                return res.status(404).json({ message: "Không tìm thấy chi tiết đơn hàng." });
+            }
+
+            res.status(200).json({ message: "Cập nhật thành công", data: updatedOrderDetail });
+        } catch (error) {
+            console.error("Lỗi cập nhật chi tiết đơn hàng:", error);
+            res.status(500).json({ message: "Lỗi máy chủ nội bộ" });
+        }
+    },
     downQuantity: async (req, res) => {
         try {
             const { order, products, quantity } = req.body;
@@ -176,7 +203,7 @@ const orderdetailCOntroller = {
 
     updateOrderdetailStatus: async (req, res) => {
         try {
-            const {orderdetail } = req.params;
+            const { orderdetail } = req.params;
             const { order, newStatus } = req.body;
             const updateStatus = await updateOrderDetailStatus(order, orderdetail, newStatus);
             return res.status(200).json({
@@ -193,22 +220,22 @@ const orderdetailCOntroller = {
         try {
             const { orderdetail } = req.params;
             const { order, newStatus = "3" } = req.body;
-    
+
             if (!order || !orderdetail) {
                 return res.status(400).json({ message: "Thiếu order hoặc orderdetail" });
             }
-    
+
             const confirmStatus = await updateOrderDetailStatus(order, orderdetail, newStatus);
-    
+
             if (!confirmStatus) {
                 return res.status(404).json({ message: "Không tìm thấy orderdetail để cập nhật" });
             }
-    
+
             return res.status(200).json({
                 message: "Cập nhật trạng thái thành công",
                 detail: confirmStatus
             });
-    
+
         } catch (error) {
             console.error("Error in confirmStatus3:", error);
             return res.status(500).json({ message: "Server error", error: error.message || error });
@@ -218,22 +245,22 @@ const orderdetailCOntroller = {
         try {
             const { orderdetail } = req.params;
             const { order, newStatus = "4" } = req.body;
-    
+
             if (!order || !orderdetail) {
                 return res.status(400).json({ message: "Thiếu order hoặc orderdetail" });
             }
-    
+
             const confirmStatus = await updateOrderDetailStatus(order, orderdetail, newStatus);
-    
+
             if (!confirmStatus) {
                 return res.status(404).json({ message: "Không tìm thấy orderdetail để cập nhật" });
             }
-    
+
             return res.status(200).json({
                 message: "Cập nhật trạng thái 'Hoàn thành' thành công",
                 detail: confirmStatus
             });
-    
+
         } catch (error) {
             console.error("Error in confirmStatus3:", error);
             return res.status(500).json({ message: "Server error", error: error.message || error });

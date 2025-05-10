@@ -198,7 +198,8 @@ const orderdetailSchema = new mongoose.Schema({
     type: String,
     default:''
   },
-}, { collection: 'ORDERDETAIL' });
+}, { collection: 'ORDERDETAIL' 
+});
 const tableSchema = new mongoose.Schema({
   tb_number: {
     type: Number,

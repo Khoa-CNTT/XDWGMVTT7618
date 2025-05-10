@@ -429,6 +429,90 @@ const foodstallController = {
     }
   }
   ,
+  getMonthlyRevenue: async (req, res) => {
+  try {
+    const { stall_id } = req.body;
+    if (!stall_id) {
+      return res.status(400).json({ error: "Thiếu stall_id" });
+    }
+
+    const objectId = new mongoose.Types.ObjectId(stall_id);
+
+    // Tính mốc thời gian đầu và cuối tháng hiện tại
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    const endOfMonth = new Date(startOfMonth);
+    endOfMonth.setMonth(endOfMonth.getMonth() + 1);
+
+    // Thống kê doanh thu từng ngày và tổng doanh thu
+    const revenueData = await Orderdetail.aggregate([
+      {
+        $lookup: {
+          from: "PRODUCT",
+          localField: "products",
+          foreignField: "_id",
+          as: "productInfo"
+        }
+      },
+      { $unwind: "$productInfo" },
+      {
+        $match: {
+          "productInfo.stall_id": objectId
+        }
+      },
+      {
+        $lookup: {
+          from: "ORDER",
+          localField: "order",
+          foreignField: "_id",
+          as: "orderInfo"
+        }
+      },
+      { $unwind: "$orderInfo" },
+      {
+        $match: {
+          "orderInfo.od_date": {
+            $gte: startOfMonth,
+            $lt: endOfMonth
+          }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: "%Y-%m-%d", date: "$orderInfo.od_date" }
+          },
+          daily_revenue: {
+            $sum: { $multiply: ["$quantity", "$productInfo.price"] }
+          },
+          total_monthly_revenue: {
+            $sum: { $multiply: ["$quantity", "$productInfo.price"] } // Tính luôn để cộng dồn về sau
+          }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Tổng doanh thu cả tháng (từ daily_revenue cộng lại)
+    const total_month_revenue = revenueData.reduce((sum, day) => sum + day.daily_revenue, 0);
+
+    res.json({
+      stall_id,
+      month: `${startOfMonth.getMonth() + 1}/${startOfMonth.getFullYear()}`,
+      daily_revenue: revenueData.map(item => ({
+        date: item._id,
+        revenue: item.daily_revenue
+      })),
+      total_revenue: total_month_revenue
+    });
+
+  } catch (err) {
+    console.error("Lỗi thống kê doanh thu theo tháng:", err);
+    res.status(500).json({ error: "Lỗi server" });
+  }
+},
   getAllDoanhThu: async (req, res) => {
     try {
       // Lấy thống kê: món bán, số đơn và doanh thu theo stall

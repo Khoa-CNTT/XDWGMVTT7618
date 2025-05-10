@@ -5,10 +5,15 @@ const foodstallController = require("../controller/foodstallController");
 // Specific routes with parameters should come first
 router.get("/user/:userId", foodstallController.getFoodstallByUserId);
 router.get("/search/:id", foodstallController.getFoodstallByTableNumber);
-
+// thông kê theo tuần
 router.get("/numberofproduct", foodstallController.getNumberOfProduct);
+
+// thống kê theo tháng và ngày
+router.get("/month", foodstallController.getMonthlyRevenue);
+
 //
 router.get("/allDoanhthu", foodstallController.getAllDoanhThu);
+
 // General routes
 router.get("/", foodstallController.getAllFoodstall);
 
