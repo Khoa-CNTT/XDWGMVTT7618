@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaUtensils, FaClock, FaCheckCircle, FaPrint, FaCheck, FaTimes, FaSpinner, FaUser, FaPhone, } from 'react-icons/fa';
+import { FaUtensils, FaClock, FaCheckCircle, FaPrint, FaCheck, FaTimes, FaSpinner, FaUser, FaPhone } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../server/api';
 import { E_ItemOrderDetail } from './E_ItemOrderDetail';
@@ -11,7 +11,13 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     const [orderItems, setOrderItems] = useState([]);
     const [total, setTotal] = useState(0);
     const [infoPayment, setInfoPayment] = useState([]);
-    //load dữ liệu thông tin đơn hàng
+    const [expandedItemId, setExpandedItemId] = useState(null);
+
+    const handleToggleExpand = (itemId) => {
+        setExpandedItemId(expandedItemId === itemId ? null : itemId);
+    };
+
+    // Load dữ liệu thông tin đơn hàng
     useEffect(() => {
         if (isOpen && tableId) {
             setLoading(true);
@@ -19,227 +25,223 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                 fetchInfoOrder().finally(() => setLoading(false));
             }, 500);
         }
-
     }, [isOpen, tableId]);
-
-    //load dữ liệu thông tin tổng đơn hàng
+    // Tính tổng tiền khi orderItems thay đổi
     useEffect(() => {
-        // Calculate total whenever orderItems change
         if (orderItems.length > 0) {
             const calculatedTotal = orderItems.reduce((sum, item) => {
-                return sum + (item.price * item.quantity);
+                return sum + item.price * item.quantity;
             }, 0);
             setTotal(calculatedTotal);
+        } else {
+            setTotal(0);
         }
     }, [orderItems]);
 
-    //lấy dữ liệu order
+    // Lấy dữ liệu order
     const fetchInfoOrder = async () => {
         try {
             const res = await api.get(`/s2d/table/current/${tableId}`);
             const order = res.data.orders[0];
-            console.log(order);
-
             setTableInfo(order);
             setOrderItems(order.products);
-
-            setError(null); // clear error nếu fetch thành công
+            setError(null);
         } catch (error) {
-            console.error('Lỗi fetchOrderItems', error);
-            setError("Bàn trống.");
+            setError('Bàn trống.');
         }
     };
 
+    // Cập nhật số lượng sản phẩm
+    const handleUpdateQuantity = async (itemId, newQuantity) => {
+        try {
+            // Gọi API để cập nhật số lượng
+            await api.patch(`/s2d/orderdetail/${itemId}`, { quantity: newQuantity });
 
-    //chỉnh formatDate
+            // Cập nhật state orderItems
+            setOrderItems((prevItems) =>
+                prevItems.map((item) =>
+                    item.id === itemId ? { ...item, quantity: newQuantity } : item
+                )
+            );
+            toast.success('Cập nhật số lượng thành công!');
+        } catch (error) {
+            console.error('Lỗi cập nhật số lượng:', error);
+            throw new Error('Cập nhật số lượng thất bại');
+        }
+    };
+
+    // Xóa sản phẩm
+    const handleDeleteItem = async (itemId) => {
+        try {
+            // Gọi API để xóa sản phẩm
+            await api.delete(`/s2d/orderdetail/${itemId}`);
+
+            // Cập nhật state orderItems
+            setOrderItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
+            toast.success('Đã xóa sản phẩm!');
+            fetchInfoOrder(); // Cập nhật danh sách bàn
+        } catch (error) {
+            console.error('Lỗi xóa sản phẩm:', error);
+            throw new Error('Xóa sản phẩm thất bại');
+        }
+    };
+
+    // Hoàn thành đơn hàng
+    const handleCompleteOrder = async () => {
+        try {
+            await api.patch(`/s2d/table/${tableId}`, { status: '1' });
+            await api.patch(`/s2d/order/${tableInfo.orderId}`, { od_status: '3' });
+            fetchInfoOrder();
+            fetchTables();
+            toast.success('Đơn hàng hoàn thành!');
+        } catch (error) {
+            console.error('Lỗi hoàn thành đơn hàng:', error);
+            toast.error('Hoàn thành đơn hàng thất bại!');
+        }
+    };
+
+    // Xác nhận món
+    const handleConfirm = async () => {
+        try {
+            await api.patch(`/s2d/order/confirm-all/${tableInfo.orderId}`);
+            fetchInfoOrder();
+            fetchTables();
+            toast.success('Xác nhận món thành công!');
+        } catch (error) {
+            console.error('Lỗi xác nhận:', error);
+            toast.error('Xác nhận món thất bại!');
+        }
+    };
+
+    // Hủy đơn hàng
+    const handleCancel = async () => {
+        try {
+            await api.delete(`/s2d/order/removestatus/${tableInfo.orderId}`);
+            fetchInfoOrder();
+            fetchTables();
+            toast.success('Đã hủy đơn hàng!');
+        } catch (error) {
+            console.error('Lỗi hủy đơn hàng:', error);
+            toast.error('Hủy đơn hàng thất bại!');
+        }
+    };
+
+    // In hóa đơn
+    const handlePrintBill = async () => {
+        try {
+            const res = await api.post(`/s2d/vietqr/generate-vietqr`, {
+                orderId: tableInfo.orderId,
+            });
+            console.log('QR response:', res);
+
+            setInfoPayment(res);
+
+            const printWindow = window.open('', '_blank', 'width=800,height=600');
+            if (printWindow) {
+                printWindow.document.write(`
+          <html lang="vi">
+            <head>
+              <meta charset="UTF-8">
+              <title>Hóa Đơn Thanh Toán</title>
+              <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                h1 { text-align: center; margin-bottom: 10px; }
+                .info, .total { margin-bottom: 20px; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+                table, th, td { border: 1px solid #000; }
+                th, td { padding: 8px; text-align: center; }
+                .total p { text-align: right; margin: 5px 0; }
+                .footer { text-align: center; margin-top: 30px; font-style: italic; }
+                .qr-code { text-align: center; margin-top: 20px; }
+              </style>
+            </head>
+            <body>
+              <h1>HÓA ĐƠN THANH TOÁN</h1>
+              <div class="info">
+                <p><strong>Nhà hàng:</strong> Khu chợ đêm SCAN2DINE</p>
+                <p><strong>Địa chỉ:</strong> Cù Chính Lan</p>
+                <p><strong>SĐT:</strong> 0909 123 456</p>
+                <hr>
+                <p><strong>Mã hóa đơn:</strong> ${tableInfo?.orderId.toUpperCase()}</p>
+                <p><strong>Bàn số:</strong> ${tableInfo?.tableNumber || ''}</p>
+                <p><strong>Ngày giờ:</strong> ${formatDate(new Date().toISOString())}</p>
+                <p><strong>Khách hàng:</strong> ${tableInfo?.customer.name || 'Khách lẻ'}</p>
+                <p><strong>Số điện thoại:</strong> ${tableInfo?.customer.phone || '---'}</p>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Món ăn</th>
+                    <th>Số lượng</th>
+                    <th>Đơn giá</th>
+                    <th>Thành tiền</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${orderItems
+                        .map(
+                            (item) => `
+                    <tr>
+                      <td>${item.productName}</td>
+                      <td>${item.quantity}</td>
+                      <td>${formatCurrency(item.price)}</td>
+                      <td>${formatCurrency(item.price * item.quantity)}</td>
+                    </tr>
+                  `
+                        )
+                        .join('')}
+                </tbody>
+              </table>
+              <div class="total">
+                <p><strong>Tạm tính:</strong> ${formatCurrency(total)}</p>
+                <p><strong>Thuế (0%):</strong> ${formatCurrency(total * 0.0)}</p>
+                <p><strong>Tổng cộng:</strong> ${formatCurrency(total * 1.0)}</p>
+              </div>
+              <div class="qr-code">
+                <p>Quét mã để thanh toán hóa đơn:</p>
+                <img src="${res.data.qr_url}" alt="QR Code" style="width: 240px; height: 300px;" />
+              </div>
+              <div class="footer">
+                <p>Cảm ơn Quý khách! Hẹn gặp lại!</p>
+              </div>
+              <script>
+                window.onload = function() {
+                  window.print();
+                  setTimeout(() => window.close(), 500);
+                };
+              </script>
+            </body>
+          </html>
+        `);
+                printWindow.document.close();
+            } else {
+                toast.error('Không thể mở cửa sổ in hóa đơn.');
+            }
+        } catch (error) {
+            console.error('Lỗi in hóa đơn:', error);
+            toast.error('Không thể tạo QR thanh toán.');
+        }
+    };
+
+    // Format ngày giờ
     const formatDate = (dateString) => {
         if (!dateString) return '';
-
         return new Date(dateString).toLocaleString('vi-VN', {
             weekday: 'long',
             year: 'numeric',
             month: 'long',
             day: 'numeric',
             hour: '2-digit',
-            minute: '2-digit'
+            minute: '2-digit',
         });
     };
 
-    //hoàn thành đơn hàng
-    const handleCompleteOrder = async () => {
-        try {
-            // Cập nhật trạng thái bàn
-            await api.patch(`/s2d/table/${tableId}`, {
-                status: '1',
-            });
-
-            // Cập nhật trạng thái đơn hàng
-            await api.patch(`/s2d/order/${tableInfo.orderId}`, {
-                "od_status": "3",
-            });
-            fetchInfoOrder()
-            fetchTables()
-            // Nếu cần, thêm thông báo thành công
-            console.log("Xác nhận thành công!");
-        } catch (error) {
-            console.error("Lỗi xác nhận:", error);
-        }
-    };
-
-    //xác nhận món
-    const handleConfirm = async () => {
-        try {
-            // Cập nhật trạng thái bàn,order và orderdetail
-            await api.patch(`/s2d/order/confirm-all/${tableInfo.orderId}`);
-            fetchInfoOrder()
-            fetchTables()
-            // Nếu cần, thêm thông báo thành công
-            console.log("Xác nhận thành công!");
-        } catch (error) {
-            console.error("Lỗi xác nhận:", error);
-        }
-    };
-
-    //Hủy đơn
-    const handleCancel = async () => {
-        try {
-            await api.delete(`/s2d/order/removestatus/${tableInfo.orderId}`);
-            fetchInfoOrder()
-            fetchTables()
-        } catch (error) {
-
-        }
-    }
-
-    //in hóa đơn
-    const handlePrintBill = async () => {
-        const res = await api.post(`/s2d/vietqr/generate-vietqr`, {
-            orderId: tableInfo.orderId
-        })
-        console.log(res);
-
-        setInfoPayment(res);
-
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
-        if (printWindow) {
-            printWindow.document.write(`
-                    <html lang="vi">
-                        <head>
-                            <meta charset="UTF-8">
-                                <title>Hóa Đơn Thanh Toán</title>
-                                <style>
-                                    body {
-                                        font - family: Arial, sans-serif;
-                                    margin: 20px;
-        }
-                                    h1 {
-                                        text - align: center;
-                                    margin-bottom: 10px;
-        }
-                                    .info, .total {
-                                        margin - bottom: 20px;
-        }
-                                    table {
-                                        width: 100%;
-                                    border-collapse: collapse;
-                                    margin-bottom: 15px;
-        }
-                                    table, th, td {
-                                        border: 1px solid #000;
-        }
-                                    th, td {
-                                        padding: 8px;
-                                    text-align: center;
-        }
-                                    .total p {
-                                        text - align: right;
-                                    margin: 5px 0;
-        }
-                                    .footer {
-                                        text - align: center;
-                                    margin-top: 30px;
-                                    font-style: italic;
-        }
-                                    .qr-code {
-                                        text - align: center;
-                                    margin-top: 20px;
-        }
-                                </style>
-                        </head>
-                        <body>
-                            <h1>HÓA ĐƠN THANH TOÁN</h1>
-
-                            <div class="info">
-                                <p><strong>Nhà hàng:</strong> Khu chợ đêm SCAN2DINE</p>
-                                <p><strong>Địa chỉ:</strong> Cù Chính Lan</p>
-                                <p><strong>SĐT:</strong> 0909 123 456</p>
-                                <hr>
-                                    <p><strong>Mã hóa đơn:</strong> ${tableInfo?.orderId.toUpperCase()}</p>
-                                    <p><strong>Bàn số:</strong> ${tableInfo?.tableNumber || ''}</p>
-                                    <p><strong>Ngày giờ:</strong> ${formatDate(new Date().toISOString())}</p>
-                                    <p><strong>Khách hàng:</strong> ${tableInfo?.customer.name || 'Khách lẻ'}</p>
-                                    <p><strong>Số điện thoại:</strong> ${tableInfo?.customer.phone || '---'}</p>
-
-                            </div>
-
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th>Món ăn</th>
-                                        <th>Số lượng</th>
-                                        <th>Đơn giá</th>
-                                        <th>Thành tiền</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    ${orderItems.map(item => `
-                <tr>
-                    <td>${item.productName}</td>
-                    <td>${item.quantity}</td>
-                    <td>${formatCurrency(item.price)}</td>
-                    <td>${formatCurrency(item.price * item.quantity)}</td>
-                </tr>
-            `).join('')}
-                                </tbody>
-                            </table>
-
-                            <div class="total">
-                                <p><strong>Tạm tính:</strong> ${formatCurrency(total)}</p>
-                                <p><strong>Thuế (0%):</strong> ${formatCurrency(total * 0.00)}</p>
-                                <p><strong>Tổng cộng:</strong> ${formatCurrency(total * 1.00)}</p>
-                            </div>
-
-                            <div class="qr-code" style="text-align: center;">
-    <p>Quét mã để thanh toán hóa đơn:</p>
-    <img src="${res.data.qr_url}" alt="QR Code" style="width: 240px; height: 300px;" />
-</div>
-
-
-                            <div class="footer" style="text-align: center;">
-                                <p>Cảm ơn Quý khách! Hẹn gặp lại!</p>
-                            </div>
-
-                            <script>
-                                window.onload = function() {
-                                    window.print();
-            setTimeout(() => window.close(), 500);
-        };
-                            </script>
-                        </body>
-                    </html>
-
-    `);
-            printWindow.document.close();
-        } else {
-            toast.error('Không thể mở cửa sổ in hóa đơn.');
-        }
-    };
-
+    // Format tiền tệ
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     };
 
-    //chuyển đổi tình trạng đơn hàng
+    // Chuyển đổi trạng thái đơn hàng
     const getStatusLabel = (status) => {
         switch (status) {
             case '1':
@@ -257,9 +259,6 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
         }
     };
 
-
-
-
     if (!isOpen) return null;
 
     return (
@@ -271,7 +270,7 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                         {loading
                             ? 'Đang tải thông tin...'
                             : tableInfo?.tableNumber != null
-                                ? `Chi tiết bàn số ${tableInfo.tableNumber} `
+                                ? `Chi tiết bàn số ${tableInfo.tableNumber}`
                                 : 'Chi tiết bàn'}
                     </h2>
                     <button
@@ -288,94 +287,90 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                         <div className="flex justify-center items-center h-64">
                             <FaSpinner className="animate-spin text-primary" size={32} />
                         </div>
-                    )
+                    ) : (
+                        <>
+                            {/* Table Info */}
+                            <div className="p-4 border-b bg-gray-50">
+                                <div className="space-y-2">
+                                    {tableInfo?.customer && (
+                                        <div className="flex items-center text-gray-700">
+                                            <FaUser className="mr-2 text-gray-500" size={14} />
+                                            <span className="font-medium">
+                                                {tableInfo.customer.name || 'Khách vãng lai'}
+                                            </span>
+                                        </div>
+                                    )}
+                                    {tableInfo?.customer?.phone && (
+                                        <div className="flex items-center text-gray-700">
+                                            <FaPhone className="mr-2 text-gray-500" size={14} />
+                                            <span>{tableInfo.customer.phone}</span>
+                                        </div>
+                                    )}
+                                    {tableInfo?.createdAt && (
+                                        <div className="flex items-center text-gray-700">
+                                            <FaClock className="mr-2 text-gray-500" size={14} />
+                                            <span>{formatDate(tableInfo.createdAt)}</span>
+                                        </div>
+                                    )}
+                                    {tableInfo?.tableStatus && (
+                                        <div className="mt-2">
+                                            <span
+                                                className={`px-3 py-1 rounded-full text-xs font-medium inline-block ${getStatusLabel(tableInfo.tableStatus).class}`}
+                                            >
+                                                {getStatusLabel(tableInfo.tableStatus).label}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
 
-                        : (
-                            <>
-                                {/* Table Info */}
-                                <div className="p-4 border-b bg-gray-50">
-                                    <div className="space-y-2">
-                                        {tableInfo?.customer && (
-                                            <div className="flex items-center text-gray-700">
-                                                <FaUser className="mr-2 text-gray-500" size={14} />
-                                                <span className="font-medium">
-                                                    {tableInfo.customer.name || 'Khách vãng lai'}
-                                                </span>
-                                            </div>
-                                        )}
-
-                                        {tableInfo?.customer?.phone && (
-                                            <div className="flex items-center text-gray-700">
-                                                <FaPhone className="mr-2 text-gray-500" size={14} />
-                                                <span>{tableInfo.customer.phone}</span>
-                                            </div>
-                                        )}
-
-                                        {tableInfo?.createdAt && (
-                                            <div className="flex items-center text-gray-700">
-                                                <FaClock className="mr-2 text-gray-500" size={14} />
-                                                <span>{formatDate(tableInfo.createdAt)}</span>
-                                            </div>
-                                        )}
-
-                                        {tableInfo?.tableStatus && (
-                                            <div className="mt-2">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium inline-block ${getStatusLabel(tableInfo.tableStatus).class}`}>
-                                                    {getStatusLabel(tableInfo.tableStatus).label}
-                                                </span>
-                                            </div>
-                                        )}
+                            {/* Order Items */}
+                            <div className="p-4">
+                                <h3 className="font-medium text-gray-800 mb-3">Danh sách món</h3>
+                                {orderItems.length === 0 ? (
+                                    <div className="text-center p-4 text-gray-500">
+                                        Chưa có món ăn nào được đặt
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {orderItems.map((item, index) => (
+                                            <E_ItemOrderDetail
+                                                key={item.id || index}
+                                                item={{ ...item, id: item.id || `item-${index}` }}
+                                                index={index}
+                                                expandedItemId={expandedItemId}
+                                                onToggleExpand={handleToggleExpand}
+                                                onUpdateQuantity={handleUpdateQuantity}
+                                                onDeleteItem={handleDeleteItem}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
 
-
-                                {/* Order Items */}
-                                <div className="p-4">
-                                    <h3 className="font-medium text-gray-800 mb-3">Danh sách món</h3>
-
-                                    {orderItems.length === 0 ? (
-                                        <div className="text-center p-4 text-gray-500">
-                                            Chưa có món ăn nào được đặt
+                                {/* Order Summary */}
+                                {orderItems.length > 0 && (
+                                    <div className="mt-4 pt-3 border-t border-gray-200">
+                                        <div className="flex justify-between py-1">
+                                            <span className="text-gray-600">Tạm tính</span>
+                                            <span className="font-medium">{formatCurrency(total)}</span>
                                         </div>
-                                    ) : (
-                                        <div className="space-y-3">
-                                            {orderItems.map((item, index) => (
-                                                <E_ItemOrderDetail
-                                                    key={item.id}
-                                                    item={item}
-                                                    index={index}
-                                                    // expandedItemId={expandedItemId}
-                                                    // onToggleExpand={handleToggleExpand}
-                                                    // onUpdateQuantity={handleUpdateQuantity}
-                                                    // onDeleteItem={handleDeleteItem}
-                                                />))}
+                                        <div className="flex justify-between py-1">
+                                            <span className="text-gray-600">VAT (0%)</span>
+                                            <span className="font-medium">{formatCurrency(total * 0.0)}</span>
                                         </div>
-                                    )}
-
-                                    {/* Order Summary */}
-                                    {orderItems.length > 0 && (
-                                        <div className="mt-4 pt-3 border-t border-gray-200">
-                                            <div className="flex justify-between py-1">
-                                                <span className="text-gray-600">Tạm tính</span>
-                                                <span className="font-medium">{formatCurrency(total)}</span>
-                                            </div>
-                                            <div className="flex justify-between py-1">
-                                                <span className="text-gray-600">VAT (0%)</span>
-                                                <span className="font-medium">{formatCurrency(total * 0.00)}</span>
-                                            </div>
-                                            <div className="flex justify-between py-2 text-lg font-bold mt-1">
-                                                <span>Tổng cộng</span>
-                                                <span className="text-primary">{formatCurrency(total * 1.00)}</span>
-                                            </div>
+                                        <div className="flex justify-between py-2 text-lg font-bold mt-1">
+                                            <span>Tổng cộng</span>
+                                            <span className="text-primary">{formatCurrency(total * 1.0)}</span>
                                         </div>
-                                    )}
-                                </div>
-                            </>
-                        )}
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    )}
                 </div>
 
                 {/* Dialog Actions */}
-                {!loading && !error && (
+                {!loading && !error && tableInfo && (
                     <div className="p-4 border-t bg-gray-50 rounded-b-lg">
                         <div className="grid grid-cols-2 gap-3">
                             {tableInfo.tableStatus !== '2' && (
@@ -391,12 +386,11 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                                         onClick={handleCancel}
                                         className="px-3 py-2 rounded-md flex items-center justify-center text-sm transition-colors bg-red-500 text-white hover:bg-red-600"
                                     >
-                                        <FaCheck className="mr-1" size={12} />
+                                        <FaTimes className="mr-1" size={12} />
                                         Hủy
                                     </button>
                                 </>
                             )}
-
                             {tableInfo.tableStatus === '2' && (
                                 <>
                                     <button
@@ -417,7 +411,6 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                             )}
                         </div>
                     </div>
-
                 )}
             </div>
         </div>

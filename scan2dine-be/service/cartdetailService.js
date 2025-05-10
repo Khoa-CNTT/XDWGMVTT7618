@@ -38,17 +38,40 @@ const decreaseCartQuantity = async (cart, products, quantity = 1) => {
     return cartDetailItem;
 };
 
-// const giamqunatity = async (cartID, productID, quantity=1 )=>{
-//     const cartdetailItem = await CartDetail.findOne({cart: cartID, products: productID, quantity: quantity});
 
-//     if(!cartID || !productID ){
+const calculateCartdetail = async (cartDetailID) => {
+    try {
+        const cartDetail = await CartDetail.findById(cartDetailID).populate('products', 'price');
 
-//     }
-// }
-const createCart = async (customer = null  )=>{
-    
-}   
+        if (!cartDetail || !cartDetail.products) {
+            throw new Error('Không tìm thấy CartDetail hoặc sản phẩm');
+        }
+
+        const price = parseFloat(cartDetail.products.price || 0);
+        const quantity = cartDetail.quantity || 0;
+        const total = price * quantity;
+
+        return {
+            product: cartDetail.products._id,
+            quantity,
+            unitPrice: price,
+            totalPrice: total
+        };
+    } catch (error) {
+        console.error('Lỗi khi tính tiền sản phẩm:', error.message);
+        throw error;
+    };
+
+};
+// (Tùy chọn) Hàm hỗ trợ phát Socket.IO từ service (nếu cần)
+const emitCartDetailUpdate = async (io, cartID, event, data) => {
+    if (io && cartID) {
+        io.to(`cart_${cartID}`).emit(event, data);
+    }
+}; 
 module.exports = {
     increaseCartQuantity,
-    decreaseCartQuantity
+    decreaseCartQuantity,
+    calculateCartdetail,
+    emitCartDetailUpdate
 };
