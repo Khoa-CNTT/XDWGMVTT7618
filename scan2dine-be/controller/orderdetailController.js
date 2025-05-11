@@ -1,7 +1,7 @@
 const { Orderdetail, Order, Product } = require('../model/model');
 const { increaseOrderQuantity, decreaseOrderQuantity } = require('../service/orderdetailService');
 const { updateOrderDetailStatus } = require('../utils/orderDetailUtils');
-const { notifyOrderDetailAdded, notifyOrderDetailDeleted, notifyOrderDetailUpdated } = require('../utils/socketUtils');
+const { notifyOrderDetailAdded, notifyOrderDetailDeleted, notifyOrderDetailUpdated, notifyOrderDetailChanged } = require('../utils/socketUtils');
 const orderdetailCOntroller = {
     // ADD OERDER DETAIL
     addOrderdetail: async (req, res) => {
@@ -262,7 +262,7 @@ const orderdetailCOntroller = {
             }
 
             const io = req.app.get('io');
-            notifyOrderDetailStatusUpdated(io, order, {
+            notifyOrderDetailChanged(io, order, "updated", {
                 orderId: order,
                 detailId: orderdetail,
                 newStatus,
@@ -293,7 +293,7 @@ const orderdetailCOntroller = {
                 return res.status(404).json({ message: "Không tìm thấy orderdetail để cập nhật" });
             }
             const io = req.app.get('io');
-            notifyOrderDetailStatusUpdated(io, order, {
+            notifyOrderDetailChanged(io, order,"updated", {
                 orderId: order,
                 detailId: orderdetail,
                 newStatus,
