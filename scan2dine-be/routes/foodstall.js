@@ -11,6 +11,11 @@ router.post("/numberofproduct", foodstallController.getNumberOfProduct);
 // thống kê theo tháng và ngày
 router.post("/month", foodstallController.getMonthlyRevenue);
 
+router.get("/DayWeakMonth", foodstallController.getOrderStats);
+
+// 
+router.get("/inputMonthYear", foodstallController.getInputMonthYear);
+
 //
 router.get("/allDoanhthu", foodstallController.getAllDoanhThu);
 // 
