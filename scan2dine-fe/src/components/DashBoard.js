@@ -1,4 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import api from '../server/api';
+import React, { PureComponent } from 'react';
+import {
+    LineChart,
+    Line,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    Brush,
+    AreaChart,
+    Area,
+    ResponsiveContainer,
+} from 'recharts';
+
 import {
     FaChartLine,
     FaUsers,
@@ -13,12 +29,31 @@ import {
 } from 'react-icons/fa';
 
 export default function Dashboard() {
+
+    const [data, setData] = useState({});
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+    const fetchData = async () => {
+        const res = await api.get('/s2d/foodstall/thongke');
+        console.log('data', res.data);
+        setData(res.data)
+
+    }
+
+    // 
+    const formatCurrency = (value) => {
+        return new Intl.NumberFormat('vi-VN', {
+            style: 'currency',
+            currency: 'VND',
+        }).format(value);
+    };
     // Dữ liệu thống kê mẫu
     const stats = [
         { id: 1, title: "Khách hàng", value: "1,257", icon: FaUsers, change: "+5%", color: "bg-blue-500" },
-        { id: 2, title: "Doanh thu", value: "$32,580", icon: FaDollarSign, change: "+12%", color: "bg-green-500" },
-        { id: 3, title: "Đơn hàng", value: "867", icon: FaShoppingCart, change: "-2%", color: "bg-purple-500" },
-        { id: 4, title: "Lượt truy cập", value: "24,798", icon: FaChartLine, change: "+8%", color: "bg-red-500" },
+        { id: 2, title: "Doanh thu", value: formatCurrency(data?.totalRevenue || 0), icon: FaDollarSign, change: "+12%", color: "bg-green-500" },
+        { id: 3, title: "Đơn hàng", value: (data.totalOrders), icon: FaShoppingCart, change: "-2%", color: "bg-purple-500" },
     ];
 
     // Dữ liệu biểu đồ mẫu
@@ -45,6 +80,18 @@ export default function Dashboard() {
         { id: 4, action: "Báo cáo mới", details: "Báo cáo tháng 4 đã sẵn sàng", time: "3 giờ trước" },
         { id: 5, action: "Phản hồi", details: "Khách hàng Jane Doe đã gửi phản hồi", time: "5 giờ trước" },
     ];
+
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="bg-white p-2 border border-gray-300 rounded shadow text-sm">
+                    <p className="font-semibold">Ngày: {label}</p>
+                    <p className="text-blue-600">Tổng tiền: {payload[0].value.toLocaleString('vi-VN')} VND</p>
+                </div>
+            );
+        }
+        return null;
+    };
 
     return (
         <div className="p-6 bg-gray-100">
@@ -80,12 +127,12 @@ export default function Dashboard() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <div className="bg-white rounded-lg shadow p-6">
                     <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-semibold">Doanh thu theo tháng</h2>
+                        <h2 className="text-lg font-semibold">Doanh thu {data.currentMonth}</h2>
                         <div className="text-gray-500">
                             <FaChartBar size={18} />
                         </div>
                     </div>
-                    <div className="h-64 flex items-end justify-between px-4">
+                    {/* <div className="h-64 flex items-end justify-between px-4">
                         {chartData.map((data, index) => (
                             <div key={index} className="flex flex-col items-center">
                                 <div className="flex flex-col items-center space-y-1">
@@ -97,7 +144,33 @@ export default function Dashboard() {
                                 <div className="text-xs text-gray-500 mt-2">{data.month}</div>
                             </div>
                         ))}
-                    </div>
+                    </div> */}
+                    <ResponsiveContainer width="100%" height={300}>
+                        <LineChart
+                            width={500}
+                            height={400}
+                            data={data.dailyRevenue}
+                            syncId=""
+                            margin={{
+                                top: 10,
+                                right: 30,
+                                left: 0,
+                                bottom: 0,
+                            }}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="_id"
+                                tickFormatter={(value) => {
+                                    const date = new Date(value);
+                                    const day = String(date.getDate()).padStart(2, '0');
+                                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                                    return `${day}/${month}`;
+                                }} />
+                            <YAxis />
+                            <Tooltip content={<CustomTooltip />} />
+                            <Line type="monotone" dataKey="revenue" stroke="#8884d8" fill="#8884d8" />
+                        </LineChart>
+                    </ResponsiveContainer>
                 </div>
 
                 <div className="bg-white rounded-lg shadow p-6">

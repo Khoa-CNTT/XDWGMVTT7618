@@ -626,6 +626,8 @@ const foodstallController = {
     try {
       // Lấy ngày hiện tại
       const now = new Date();
+
+      const currentMonth = `Tháng ${now.getMonth() + 1}`;
       const firstDay = new Date(now.getFullYear(), now.getMonth(), 1); // Ngày đầu tháng
       const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0); // Ngày cuối tháng
 
@@ -726,6 +728,9 @@ const foodstallController = {
 
       // Trả về kết quả thống kê
       res.status(200).json({
+
+        currentMonth,
+
         totalOrders,
         totalRevenue,
         dailyRevenue,
@@ -804,6 +809,7 @@ const foodstallController = {
       return res.status(500).json({ message: "Có lỗi khi thống kê." });
     }
   },
+
   getOrderStats: async (req, res) => {
     try {
       // Lấy ngày hiện tại
@@ -990,6 +996,6 @@ const foodstallController = {
       return res.status(500).json({ message: "Có lỗi khi thống kê." });
     }
   }
-  
+
 }
 module.exports = foodstallController;

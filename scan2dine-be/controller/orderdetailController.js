@@ -261,8 +261,6 @@ const orderdetailCOntroller = {
                 return res.status(404).json({ message: "Không tìm thấy orderdetail để cập nhật" });
             }
 
-
-
             const io = req.app.get('io');
             notifyOrderDetailStatusUpdated(io, order, {
                 orderId: order,
