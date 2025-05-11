@@ -3,33 +3,59 @@ const mongoose = require("mongoose");  // Khai báo mongoose duy nhất
 const { Product, Category, Foodstall } = require('../model/model');
 const fs = require('fs');
 const path = require('path');
+
 const productController = {
-    //ADD PRODUCT và IMAGE
+    // ADD PRODUCT và IMAGE
+    // ADD PRODUCT và IMAGE
     addProduct: async (req, res) => {
         try {
+            // In ra request body và file để kiểm tra
+            console.log("Request body:", req.body);
+            console.log("Request file:", req.file);
+
+            // Kiểm tra nếu các giá trị bắt buộc không được cung cấp
+            const { pd_name, price, description, category, stall_id } = req.body;
+            if (!pd_name || !price || !category || !stall_id) {
+                return res.status(400).json({ message: 'Missing required fields: pd_name, price, category, or stall_id.' });
+            }
+
+            // Tạo đối tượng mới từ body
             let newProductData = { ...req.body };
 
+            // Nếu có ảnh thì xử lý thêm
             if (req.file) {
-                const imagePath = req.file.path.replace(/\\/g, '/'); // windows path fix
-                newProductData.image = imagePath.replace('public/', '/'); // clean path
+                const imagePath = req.file.path.replace(/\\/g, '/'); // Fix đường dẫn cho Windows
+                newProductData.image = imagePath.replace('public/', '/'); // Clean path
+            } else {
+                return res.status(400).json({ message: 'Image is required!' });
             }
 
             const newProduct = new Product(newProductData);
             const saveProduct = await newProduct.save();
 
-            if (req.body.category) {
-                const categoryID = await Category.findById(req.body.category);
+            // Cập nhật danh mục (category) nếu có
+            if (category) {
+                const categoryID = await Category.findById(category);
+                if (!categoryID) {
+                    return res.status(404).json({ message: 'Category not found.' });
+                }
                 await categoryID.updateOne({ $push: { products: saveProduct._id } });
             }
 
-            if (req.body.stall_id) {
-                const stall = await Foodstall.findById(req.body.stall_id);
+            // Cập nhật gian hàng (stall) nếu có
+            if (stall_id) {
+                const stall = await Foodstall.findById(stall_id);
+                if (!stall) {
+                    return res.status(404).json({ message: 'Stall not found.' });
+                }
                 await stall.updateOne({ $push: { products: saveProduct._id } });
             }
 
+            // Trả về sản phẩm vừa tạo
             res.status(200).json(saveProduct);
         } catch (error) {
-            res.status(500).json(error);
+            console.error(error);  // In lỗi ra console để dễ dàng debug
+            res.status(500).json({ message: 'Error creating product.', error: error.message });
         }
     },
 

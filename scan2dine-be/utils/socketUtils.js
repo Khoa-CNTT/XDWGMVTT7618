@@ -1,188 +1,126 @@
-const notifyOrderCreated = (io, orderId, data) => {
+// Hàm tổng quát để gửi thông báo qua Socket.IO
+const notifyEvent = (io, rooms, event, data, extraFields = {}) => {
     const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { orderId, ...validData };
-    console.log('Emitting order_created with data:', enrichedData);
-    io.to(`order_${orderId}`).emit('order_created', enrichedData);
+    const enrichedData = { ...extraFields, ...validData };
+    console.log(`Emitting ${event} with data:`, enrichedData);
+    
+    if (rooms) {
+        if (Array.isArray(rooms)) {
+            rooms.forEach(room => io.to(room).emit(event, enrichedData));
+        } else {
+            io.to(rooms).emit(event, enrichedData);
+        }
+    } else {
+        io.emit(event, enrichedData);
+    }
+};
+
+// Các hàm thông báo sử dụng notifyEvent
+const notifyOrderCreated = (io, orderId, data) => {
+    notifyEvent(io, `order_${orderId}`, 'order_created', data, { orderId });
 };
 
 const notifyOrderUpdated = (io, orderId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { orderId, ...validData };
-    console.log('Emitting order_updated with data:', enrichedData);
-    io.to(`order_${orderId}`).emit('order_updated', enrichedData);
+    notifyEvent(io, `order_${orderId}`, 'order_updated', data, { orderId });
 };
 
 const notifyTableUpdated = (io, tableId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { tableId, ...validData };
-    console.log('Emitting table_updated with data:', enrichedData);
-    io.to(`table_${tableId}`).emit('table_updated', enrichedData);
+    notifyEvent(io, `table_${tableId}`, 'table_updated', data, { tableId });
 };
 
 const notifyCartUpdated = (io, cartId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { cartId, ...validData };
-    console.log('Emitting cart_updated with data:', enrichedData);
-    io.to(`cart_${cartId}`).emit('cart_updated', enrichedData);
+    notifyEvent(io, `cart_${cartId}`, 'cart_updated', data, { cartId });
 };
 
 const notifyCartDetailAdded = (io, cartId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { cartId, ...validData };
-    console.log('Emitting cartdetail_added with data:', enrichedData);
-    io.to(`cart_${cartId}`).emit('cartdetail_added', enrichedData);
+    notifyEvent(io, `cart_${cartId}`, 'cartdetail_added', data, { cartId });
 };
 
 const notifyCartAdded = (io, cartId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { cartId, ...validData };
-    console.log('Emitting cart_added with data:', enrichedData);
-    io.to(`cart_${cartId}`).emit('cart_added', enrichedData);
+    notifyEvent(io, `cart_${cartId}`, 'cart_added', data, { cartId });
 };
 
 const notifyCartDetailUpdated = (io, cartId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { cartId, ...validData };
-    console.log('Emitting cartdetail_updated with data:', enrichedData);
-    io.to(`cart_${cartId}`).emit('cartdetail_updated', enrichedData);
+    notifyEvent(io, `cart_${cartId}`, 'cartdetail_updated', data, { cartId });
 };
 
 const notifyCartDeleted = (io, cartId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { cartId, ...validData };
-    console.log('Emitting cart_deleted with data:', enrichedData);
-    io.to(`cart_${cartId}`).emit('cart_deleted', enrichedData);
+    notifyEvent(io, `cart_${cartId}`, 'cart_deleted', data, { cartId });
 };
 
 const notifyCartDetailDeleted = (io, cartId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { cartId, ...validData };
-    console.log('Emitting cartdetail_deleted with data:', enrichedData);
-    io.to(`cart_${cartId}`).emit('cartdetail_deleted', enrichedData);
+    notifyEvent(io, `cart_${cartId}`, 'cartdetail_deleted', data, { cartId });
 };
 
 const notifyCartDetailQuantityDecreased = (io, cartId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { cartId, ...validData };
-    console.log('Emitting cartdetail_quantity_decreased with data:', enrichedData);
-    io.to(`cart_${cartId}`).emit('cartdetail_quantity_decreased', enrichedData);
+    notifyEvent(io, `cart_${cartId}`, 'cartdetail_quantity_decreased', data, { cartId });
 };
 
 const notifyCategoryAdded = (io, categoryId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { categoryId, ...validData };
-    console.log('Emitting category_added with data:', enrichedData);
-    io.emit('category_added', enrichedData);
+    notifyEvent(io, null, 'category_added', data, { categoryId });
 };
 
 const notifyCategoryUpdated = (io, categoryId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { categoryId, ...validData };
-    console.log('Emitting category_updated with data:', enrichedData);
-    io.emit('category_updated', enrichedData);
+    notifyEvent(io, null, 'category_updated', data, { categoryId });
 };
 
 const notifyCategoryDeleted = (io, categoryId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { categoryId, ...validData };
-    console.log('Emitting category_deleted with data:', enrichedData);
-    io.emit('category_deleted', enrichedData);
+    notifyEvent(io, null, 'category_deleted', data, { categoryId });
 };
 
 const notifyCustomerAdded = (io, customerId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { customerId, ...validData };
-    console.log('Emitting customer_added with data:', enrichedData);
-    io.emit('customer_added', enrichedData);
+    notifyEvent(io, null, 'customer_added', data, { customerId });
 };
 
 const notifyCustomerUpdated = (io, customerId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { customerId, ...validData };
-    console.log('Emitting customer_updated with data:', enrichedData);
-    io.emit('customer_updated', enrichedData);
+    notifyEvent(io, null, 'customer_updated', data, { customerId });
 };
 
 const notifyCustomerDeleted = (io, customerId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { customerId, ...validData };
-    console.log('Emitting customer_deleted with data:', enrichedData);
-    io.emit('customer_deleted', enrichedData);
+    notifyEvent(io, null, 'customer_deleted', data, { customerId });
 };
 
 const notifyCartCreated = (io, cartId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { cartId, ...validData };
-    console.log('Emitting cart_created with data:', enrichedData);
-    io.to(`cart_${cartId}`).emit('cart_created', enrichedData);
+    notifyEvent(io, `cart_${cartId}`, 'cart_created', data, { cartId });
 };
 
 const notifyStallAdded = (io, stallId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { stallId, ...validData };
-    console.log('Emitting stall_added with data:', enrichedData);
-    io.emit('stall_added', enrichedData);
+    notifyEvent(io, null, 'stall_added', data, { stallId });
 };
 
 const notifyStallUpdated = (io, stallId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { stallId, ...validData };
-    console.log('Emitting stall_updated with data:', enrichedData);
-    io.emit('stall_updated', enrichedData);
+    notifyEvent(io, null, 'stall_updated', data, { stallId });
 };
 
 const notifyStallDeleted = (io, stallId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { stallId, ...validData };
-    console.log('Emitting stall_deleted with data:', enrichedData);
-    io.emit('stall_deleted', enrichedData);
+    notifyEvent(io, null, 'stall_deleted', data, { stallId });
 };
 
 const notifyOrderAdded = (io, orderId, tableId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { orderId, tableId, ...validData };
-    console.log('Emitting order_added with data:', enrichedData);
-    io.to(`order_${orderId}`).emit('order_added', enrichedData);
-    io.to(`table_${tableId}`).emit('order_added', enrichedData);
+    notifyEvent(io, [`order_${orderId}`, `table_${tableId}`], 'order_added', data, { orderId, tableId });
 };
 
 const notifyOrderDeleted = (io, orderId, tableId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { orderId, tableId, ...validData };
-    console.log('Emitting order_deleted with data:', enrichedData);
-    io.to(`order_${orderId}`).emit('order_deleted', enrichedData);
-    io.to(`table_${tableId}`).emit('order_deleted', enrichedData);
+    notifyEvent(io, [`order_${orderId}`, `table_${tableId}`], 'order_deleted', data, { orderId, tableId });
 };
 
 const notifyOrderConfirmed = (io, orderId, tableId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { orderId, tableId, ...validData };
-    console.log('Emitting order_confirmed with data:', enrichedData);
-    io.to(`order_${orderId}`).emit('order_confirmed', enrichedData);
-    io.to(`table_${tableId}`).emit('order_confirmed', enrichedData);
+    notifyEvent(io, [`order_${orderId}`, `table_${tableId}`], 'order_confirmed', data, { orderId, tableId });
 };
 
 const notifyOrderDetailChanged = (io, orderId, action, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { orderId, action, ...validData };
-    console.log('Emitting orderdetail_changed with data:', enrichedData);
-    io.to(`order_${orderId}`).emit('orderdetail_changed', enrichedData);
+    notifyEvent(io, `order_${orderId}`, 'orderdetail_changed', data, { orderId, action });
 };
 
 const notifyOrderTotalUpdated = (io, orderId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { orderId, ...validData };
-    console.log('Emitting order_total_updated with data:', enrichedData);
-    io.to(`order_${orderId}`).emit('order_total_updated', enrichedData);
+    notifyEvent(io, `order_${orderId}`, 'order_total_updated', data, { orderId });
 };
 
 const notifyCartDetailsDeleted = (io, cartId, data) => {
-    const validData = data && typeof data === 'object' && data !== null ? data : {};
-    const enrichedData = { cartId, ...validData };
-    console.log('Emitting cartdetails_deleted with data:', enrichedData);
-    io.to(`cart_${cartId}`).emit('cartdetails_deleted', enrichedData);
+    notifyEvent(io, `cart_${cartId}`, 'cartdetails_deleted', data, { cartId });
 };
 
+// Xuất các hàm
 module.exports = {
     notifyOrderCreated,
     notifyOrderUpdated,

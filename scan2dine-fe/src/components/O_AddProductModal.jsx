@@ -29,32 +29,24 @@ const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
     };
 
     const handleSubmit = (e) => {
-        e.preventDefault();
-        setIsSubmitted(true); // Đánh dấu form đã được submit
+    e.preventDefault();
+    const form = new FormData();
+    form.append('pd_name', formData.pd_name);
+    form.append('price', formData.price);
+    form.append('description', formData.description);
+    form.append('category', formData.category);
+    if (formData.image) {
+      form.append('image', formData.image);
+    }
 
-        // Kiểm tra xem đã chọn hình ảnh chưa
-        if (!formData.image) {
-            setImageError('Vui lòng chọn hình ảnh cho món ăn');
-            return; // Dừng việc submit nếu chưa có hình ảnh
-        }
+    console.log('FormData in O_AddProductModal:');
+    for (let pair of form.entries()) {
+      console.log(`${pair[0]}: ${pair[1]}`);
+    }
 
-        const form = new FormData();
-        form.append('pd_name', formData.pd_name);
-        form.append('price', formData.price);
-        form.append('description', formData.description);
-        form.append('category', formData.category);
-
-        if (formData.image) {
-            form.append('image', formData.image);
-        }
-        onSave(form); // Đã sửa thành form thay vì formData
-
-        // Reset form và trạng thái
-        setFormData(initialFormState);
-        setPreviewImage(null);
-        setImageError('');
-        setIsSubmitted(false);
-    };
+    onSave(form);
+    setFormData({ pd_name: '', price: '', description: '', category: '', image: null });
+  };
 
     // Reset trạng thái khi modal đóng
     const handleClose = () => {
