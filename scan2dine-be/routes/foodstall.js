@@ -14,7 +14,7 @@ router.post("/month", foodstallController.getMonthlyRevenue);
 router.get("/DayWeakMonth", foodstallController.getOrderStats);
 
 // 
-router.get("/inputMonthYear", foodstallController.getInputMonthYear);
+router.post("/inputMonthYear", foodstallController.getInputMonthYear);
 
 //
 router.get("/allDoanhthu", foodstallController.getAllDoanhThu);

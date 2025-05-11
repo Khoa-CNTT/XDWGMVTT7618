@@ -21,3 +21,21 @@ export const fetchMonthlyRevenue = async (stall_id) => {
     throw error;
   }
 };
+export const fetchOrderStats = async () => {
+  try {
+    const response = await api.get('/s2d/foodstall/DayWeakMonth');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching order stats:', error);
+    throw error;
+  }
+};
+export const fetchInputMonthYear = async (month, year) => {
+  try {
+    const response = await api.post('/s2d/foodstall/inputMonthYear', { month, year });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching input month/year stats:', error);
+    throw error;
+  }
+};

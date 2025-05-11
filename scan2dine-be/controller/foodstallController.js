@@ -812,35 +812,29 @@ const foodstallController = {
 
   getOrderStats: async (req, res) => {
     try {
-      // Lấy ngày hiện tại
       const currentDate = new Date();
-
-      // Tính ngày đầu tháng
+  
+      // ===== MỐC THỜI GIAN =====
       const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      // Tính ngày cuối tháng
       const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-
-      // Tính ngày đầu tuần (Thứ 2 bắt đầu)
-      const firstDayOfWeek = new Date(currentDate);
-      const dayOfWeek = currentDate.getDay();
-      const diffToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek); // Nếu là Chủ Nhật, tính lùi về thứ 2 trước đó
-      firstDayOfWeek.setDate(currentDate.getDate() + diffToMonday);
-      firstDayOfWeek.setHours(0, 0, 0, 0);
-
-      // Tính ngày cuối tuần (Thứ 7)
-      const lastDayOfWeek = new Date(firstDayOfWeek);
-      lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6); // Set to Saturday (last day of the week)
-      lastDayOfWeek.setHours(23, 59, 59, 999);
-
-      // Tính ngày đầu ngày hôm nay (00:00:00)
+      lastDayOfMonth.setHours(23, 59, 59, 999);
+  
       const firstDayOfToday = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
       firstDayOfToday.setHours(0, 0, 0, 0);
-
-      // Tính ngày cuối ngày hôm nay (23:59:59)
       const lastDayOfToday = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
       lastDayOfToday.setHours(23, 59, 59, 999);
-
-      // Thống kê sản phẩm bán chạy nhất trong tháng
+  
+      const firstDayOfWeek = new Date(currentDate);
+      const dayOfWeek = currentDate.getDay();
+      const diffToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+      firstDayOfWeek.setDate(currentDate.getDate() + diffToMonday);
+      firstDayOfWeek.setHours(0, 0, 0, 0);
+  
+      const lastDayOfWeek = new Date(firstDayOfWeek);
+      lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
+      lastDayOfWeek.setHours(23, 59, 59, 999);
+  
+      // ===== THỐNG KÊ SP BÁN CHẠY TRONG THÁNG =====
       const bestProducts = await Orderdetail.aggregate([
         {
           $lookup: {
@@ -884,41 +878,123 @@ const foodstallController = {
         { $sort: { quantitySold: -1 } },
         { $limit: 5 }
       ]);
-
-      // Thống kê doanh thu và đơn hàng theo ngày, tuần, tháng
+  
+      // ===== HÀM DÙNG CHUNG =====
       const getStats = async (startDate, endDate) => {
         const orders = await Order.find({
           od_date: { $gte: startDate, $lte: endDate },
           od_status: { $in: ['2', '3'] }
         });
-
+  
         const totalOrders = orders.length;
         const totalRevenue = orders.reduce((sum, o) => sum + (o.total_amount || 0), 0);
-
+  
         return { totalOrders, totalRevenue };
       };
-
-      // Thống kê theo ngày
+  
       const dayStats = await getStats(firstDayOfToday, lastDayOfToday);
-
-      // Thống kê theo tuần
       const weekStats = await getStats(firstDayOfWeek, lastDayOfWeek);
-
-      // Thống kê theo tháng
       const monthStats = await getStats(firstDayOfMonth, lastDayOfMonth);
-      console.log(`Tuần này: từ ${firstDayOfWeek.toLocaleString()} đến ${lastDayOfWeek.toLocaleString()}`);
-
+  
+      // ===== DOANH THU THEO NGÀY TRONG THÁNG =====
+      const dailyRevenueInMonth = await Order.aggregate([
+        {
+          $match: {
+            od_date: { $gte: firstDayOfMonth, $lte: lastDayOfMonth },
+            od_status: { $in: ['2', '3'] }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: { format: "%Y-%m-%d", date: "$od_date" }
+            },
+            totalRevenue: { $sum: "$total_amount" },
+            totalOrders: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]);
+  
+      // ===== DOANH THU THEO THÁNG TRONG NĂM =====
+      const monthlyRevenueInYear = await Order.aggregate([
+        {
+          $match: {
+            od_date: {
+              $gte: new Date(currentDate.getFullYear(), 0, 1),
+              $lte: new Date(currentDate.getFullYear(), 11, 31, 23, 59, 59, 999)
+            },
+            od_status: { $in: ['2', '3'] }
+          }
+        },
+        {
+          $group: {
+            _id: { $month: "$od_date" },
+            totalRevenue: { $sum: "$total_amount" },
+            totalOrders: { $sum: 1 }
+          }
+        },
+        {
+          $project: {
+            month: "$_id",
+            totalRevenue: 1,
+            totalOrders: 1,
+            _id: 0
+          }
+        },
+        { $sort: { month: 1 } }
+      ]);
+  
+      // ===== DOANH THU THEO TUẦN TRONG NĂM =====
+      const weeklyRevenueInYear = await Order.aggregate([
+        {
+          $match: {
+            od_date: {
+              $gte: new Date(currentDate.getFullYear(), 0, 1),
+              $lte: new Date(currentDate.getFullYear(), 11, 31, 23, 59, 59, 999)
+            },
+            od_status: { $in: ['2', '3'] }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$od_date" },
+              week: { $isoWeek: "$od_date" }
+            },
+            totalRevenue: { $sum: "$total_amount" },
+            totalOrders: { $sum: 1 }
+          }
+        },
+        {
+          $project: {
+            year: "$_id.year",
+            week: "$_id.week",
+            totalRevenue: 1,
+            totalOrders: 1,
+            _id: 0
+          }
+        },
+        { $sort: { year: 1, week: 1 } }
+      ]);
+  
+      // ===== TRẢ VỀ KẾT QUẢ =====
       return res.status(200).json({
         bestProducts,
         dayStats,
         weekStats,
-        monthStats
+        monthStats,
+        dailyRevenueInMonth,
+        monthlyRevenueInYear,
+        weeklyRevenueInYear
       });
+  
     } catch (err) {
       console.error(err);
       return res.status(500).json({ message: "Có lỗi khi thống kê." });
     }
   },
+  
 
   getInputMonthYear: async (req, res) => {
     try {
