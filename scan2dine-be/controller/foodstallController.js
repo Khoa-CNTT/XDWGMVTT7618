@@ -995,7 +995,74 @@ const foodstallController = {
       console.error(err);
       return res.status(500).json({ message: "Có lỗi khi thống kê." });
     }
-  }
+  },
+// thống kê cho hiếu
+getStatisticByDateRange : async (req, res) => {
+  try {
+    const { fromDate, toDate } = req.body;
 
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ message: "Vui lòng nhập đầy đủ fromDate và toDate." });
+    }
+
+    // Chuyển từ string sang Date
+    const start = new Date(fromDate); // ví dụ: "2025-05-01"
+    const end = new Date(toDate);
+    end.setHours(23, 59, 59, 999); // Bao gồm cả cuối ngày
+
+    const orders = await Order.find({
+      od_date: { $gte: start, $lte: end },
+      orderdetail: { $exists: true, $not: { $size: 0 } }
+    });
+
+    const totalOrders = orders.length;
+
+    const totalRevenue = orders.reduce((sum, order) => {
+      return sum + (order.total_amount || 0);
+    }, 0);
+
+    return res.status(200).json({
+      from: fromDate,
+      to: toDate,
+      totalOrders,
+      totalRevenue
+    });
+
+  } catch (error) {
+    console.error("Lỗi thống kê theo khoảng ngày:", error);
+    return res.status(500).json({ message: "Đã xảy ra lỗi khi thống kê." });
+  }
+},
+getCustomerStatistics: async (req, res) => {
+  try {
+    // Lấy ngày hiện tại
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1); // Ngày đầu tháng
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); // Ngày cuối tháng
+
+    // Thống kê số lượng khách hàng trong tháng này
+    const orders = await Order.find({
+      od_date: { $gte: firstDayOfMonth, $lte: lastDayOfMonth }
+    }).select("customer");
+
+    // Lọc ra customer_id duy nhất, tránh trường hợp customer bị undefined
+    const customerIds = new Set();
+    orders.forEach(o => {
+      if (o.customer) {
+        customerIds.add(o.customer.toString()); // Chỉ thêm vào Set nếu customer có giá trị
+      }
+    });
+
+    const totalCustomers = customerIds.size;
+
+    // Trả về kết quả
+    res.status(200).json({
+      totalCustomers
+    });
+  } catch (err) {
+    console.error("Lỗi thống kê khách hàng:", err);
+    res.status(500).json({ error: "Có lỗi xảy ra khi thống kê khách hàng." });
+  }
+}
 }
 module.exports = foodstallController;
