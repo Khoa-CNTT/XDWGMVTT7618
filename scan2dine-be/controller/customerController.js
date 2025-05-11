@@ -194,7 +194,7 @@ const customerController = {
         },
         {
           $lookup: {
-            from: 'customers', // Sửa 'CUSTOMER' thành 'customers' (tên collection thường là chữ thường)
+            from: 'CUSTOMER', // Sửa 'CUSTOMER' thành 'customers' (tên collection thường là chữ thường)
             localField: '_id',
             foreignField: '_id',
             as: 'customerInfo'
