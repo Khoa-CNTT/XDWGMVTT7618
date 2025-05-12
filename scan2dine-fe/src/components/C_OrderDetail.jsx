@@ -7,6 +7,9 @@ import api from '../server/api';
 import { Footer } from './Footer';
 import { C_OrderDetailItem } from './C_OrderDetailItem';
 import { registerSocketListeners, cleanupSocketListeners } from '../services/socketListeners';
+import { C_ConfirmCallStaff } from './C_ConfirmCallStaff';
+// hoặc nếu default export:
+// import C_ConfirmCallStaff from './C_ConfirmCallStaff';
 
 const OrderDetail = () => {
     const navigate = useNavigate();
@@ -23,6 +26,10 @@ const OrderDetail = () => {
         totalAmount: 0,
         totalItems: 0,
     });
+const [showPaymentForm, setShowPaymentForm] = useState(false);
+const cancelCallPayment = () => {
+    setShowPaymentForm(false);
+};
 
     const location = useLocation();
     const orderData = location.state?.orderData;
