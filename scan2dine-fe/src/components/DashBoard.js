@@ -38,8 +38,10 @@ export default function Dashboard() {
         fetchData();
     }, []);
     const fetchData = async () => {
-        const res = await api.get('/s2d/foodstall/thongke');
-        const res2 = await api.get('/s2d/foodstall/thongkeCustomer');
+        const [res, res2] = await Promise.all([
+            api.get('/s2d/foodstall/thongke'),
+            api.get('/s2d/foodstall/thongkeCustomer'),
+        ]);
         console.log('data', res2.data);
         setData(res.data)
         setData2(res2.data)
