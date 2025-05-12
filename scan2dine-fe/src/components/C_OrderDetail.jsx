@@ -86,6 +86,8 @@ const OrderDetail = () => {
                 totalAmount,
                 totalItems,
             });
+            sessionStorage.setItem('orderStartTime', orderRes.od_date ? new Date(orderRes.od_date).toLocaleString() : '');
+
         } catch (error) {
             console.error('Lỗi khi lấy chi tiết đơn hàng:', error);
             setError('Không thể tải chi tiết đơn hàng. Vui lòng thử lại sau.');
@@ -404,7 +406,20 @@ const OrderDetail = () => {
                 </>
             )}
 
+
+            {showPaymentForm && (
+                <C_ConfirmCallStaff
+                    title="Đã gửi yêu cầu thanh toán"
+                    message="Nhân viên đang đến bạn hãy chờ một lát ..."
+                    onConfirm={() => setShowPaymentForm(false)}
+                    onCancel={() => cancelCallPayment(orderData.order.table._id)}
+                />
+            )
+
+            }
+
             <Footer />
+
         </div>
     );
 };

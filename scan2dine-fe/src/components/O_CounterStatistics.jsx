@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { FaFileExcel, FaFilePdf } from 'react-icons/fa';
-import { fetchStallRevenue, fetchMonthlyRevenue } from '../server/revenueService';
+import * as XLSX from 'xlsx';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { fetchStallRevenue, fetchMonthlyRevenue, fetchOrderStats } from '../server/revenueService';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   BarElement,
+  PointElement,    // Thêm dòng này
+  LineElement,     // Thêm dòng này
   Title,
   Tooltip,
   Legend
@@ -16,6 +21,8 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
+  PointElement,    // Thêm dòng này
+  LineElement,     // Thêm dòng này
   Title,
   Tooltip,
   Legend
@@ -27,6 +34,13 @@ const O_CounterStatistics = ({ stallId }) => {
   const [monthlyData, setMonthlyData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dailyRevenueData, setDailyRevenueData] = useState([]);
+  const [monthlyRevenueData, setMonthlyRevenueData] = useState([]);
+  const [yesterdayRevenue, setYesterdayRevenue] = useState(0);
+  const [topProductToday, setTopProductToday] = useState(null);
+  const [topProductWeek, setTopProductWeek] = useState(null);
+  const [topProductMonth, setTopProductMonth] = useState(null);
+
   const [filteredData, setFilteredData] = useState({
     total_orders: 0,
     total_revenue: 0,
@@ -74,320 +88,146 @@ const O_CounterStatistics = ({ stallId }) => {
     }
   }, [stallId]);
 
-  // Filter data based on selected time range
-  const filterDataByTimeRange = (range, revenueData, monthlyData) => {
-    if (!revenueData || !monthlyData) return;
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const todayStr = today.toISOString().split('T')[0];
+  const filterDataByTimeRange = async (range) => {
+    try {
+      setLoading(true);
+      setError(null);
 
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() - today.getDay()); // Start from Sunday
+      // Fetch stats from backend
+      const stats = await fetchOrderStats(stallId);
 
-    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+      let totalOrders = 0;
+      let totalRevenue = 0;
+      let dailyRevenue = [];
+      let monthlyRevenue = [];
+      let yesterdayRevenueValue = 0;
 
-    // Get daily revenue data from monthly data
-    // Check if daily_revenue exists and is an array
-    const dailyRevenue = Array.isArray(monthlyData.daily_revenue)
-      ? monthlyData.daily_revenue
-      : [];
+      if (stats) {
+        if (range === 'today' && stats.dayStats) {
+          totalOrders = stats.dayStats.totalOrders || 0;
+          totalRevenue = stats.dayStats.totalRevenue || 0;
+          const today = new Date();
+          const todayStr = today.toISOString().slice(0, 10);
+          dailyRevenue = [{
+            date: 'Hôm nay',
+            revenue: totalRevenue,
+            orders: totalOrders
+          }];
 
-    console.log('Daily revenue data:', dailyRevenue);
-
-    let filteredRevenue = [];
-    let totalOrders = 0;
-    let totalRevenue = 0;
-
-    // Kiểm tra xem có dữ liệu về đơn hàng đã hoàn thành không
-    const completedOrders = revenueData.completed_orders || [];
-
-    // Đếm số lượng đơn hàng duy nhất (dựa trên mã đơn)
-    const uniqueOrderIds = new Set();
-    completedOrders.forEach(order => {
-      if (order.order_id) {
-        uniqueOrderIds.add(order.order_id);
-      }
-    });
-
-    // Tính tổng doanh thu từ các đơn hàng đã hoàn thành
-    let calculatedRevenue = 0;
-    completedOrders.forEach(order => {
-      calculatedRevenue += order.total_amount || 0;
-    });
-
-    // Tạo map để nhóm đơn hàng theo ngày
-    const ordersByDate = new Map();
-
-    // Hàm helper để thêm đơn hàng vào map theo ngày
-    const addOrderToDateMap = (date, revenue, orders) => {
-      const dateStr = date.toISOString().split('T')[0];
-      if (!ordersByDate.has(dateStr)) {
-        ordersByDate.set(dateStr, { revenue: 0, orders: 0 });
-      }
-      const dateData = ordersByDate.get(dateStr);
-      dateData.revenue += revenue || 0;
-      dateData.orders += orders || 0;
-    };
-
-    switch (range) {
-      case 'today':
-        const todayStr = new Date().toISOString().slice(0, 10);
-
-        // Đếm số đơn hàng hoàn thành trong ngày hôm nay
-        const todayCompletedOrders = completedOrders.filter(order => {
-          if (!order.completed_date) return false;
-          const orderDate = new Date(order.completed_date);
-          return orderDate.toISOString().slice(0, 10) === todayStr;
-        });
-
-        totalOrders = todayCompletedOrders.length;
-
-        const todayRevenueObj = dailyRevenue.find(item => item.date === todayStr);
-        totalRevenue = todayRevenueObj ? todayRevenueObj.revenue : 0;
-
-        filteredRevenue = [{
-          date: todayStr,
-          revenue: totalRevenue,
-          orders: totalOrders
-        }];
-        break;
-
-      case 'week':
-        // Kiểm tra xem có dữ liệu weekly_revenue từ API không
-        if (monthlyData.weekly_revenue && monthlyData.weekly_revenue.length > 0) {
-          console.log('Using API weekly revenue data:', monthlyData.weekly_revenue);
-
-          // Tính tổng doanh thu từ dữ liệu API
-          totalRevenue = 0;
-          const weeklyData = [];
-
-          // Xử lý dữ liệu tuần từ API
-          monthlyData.weekly_revenue.forEach(item => {
-            if (item && item.date && item.revenue) {
-              totalRevenue += item.revenue;
-              weeklyData.push({
-                date: item.date,
-                revenue: item.revenue,
-                orders: item.orders || 1
-              });
-            }
-          });
-
-          // Sắp xếp dữ liệu theo ngày
-          weeklyData.sort((a, b) => a.date.localeCompare(b.date));
-
-          // Đếm tổng số đơn hàng trong tuần
-          totalOrders = 6; // Sử dụng số đơn hàng từ giao diện
-
-          // Sử dụng dữ liệu đã xử lý cho biểu đồ
-          filteredRevenue = weeklyData;
-
-          console.log('Processed weekly data:', {
-            totalOrders,
-            totalRevenue,
-            filteredRevenue
-          });
-        } else {
-          // Lọc đơn hàng hoàn thành trong tuần này
-          const weekCompletedOrders = completedOrders.filter(order => {
-            if (!order.completed_date) return false;
-            const orderDate = new Date(order.completed_date);
-            return orderDate >= startOfWeek && orderDate <= today;
-          });
-
-          // Đếm số đơn hàng duy nhất trong tuần
-          const weekUniqueOrderIds = new Set();
-          weekCompletedOrders.forEach(order => {
-            if (order.order_id) {
-              weekUniqueOrderIds.add(order.order_id);
-            }
-          });
-
-          // Nhóm đơn hàng theo ngày
-          weekCompletedOrders.forEach(order => {
-            if (order.completed_date) {
-              const orderDate = new Date(order.completed_date);
-              addOrderToDateMap(orderDate, order.total_amount, 1);
-            }
-          });
-
-          // Nếu không có dữ liệu từ đơn hàng, sử dụng dữ liệu từ API nếu có
-          if (ordersByDate.size === 0) {
-            // Nếu có dữ liệu từ API
-            if (dailyRevenue.length > 0) {
-              // Lọc dữ liệu từ API cho tuần này
-              dailyRevenue.forEach(item => {
-                try {
-                  const itemDate = new Date(item.date);
-                  if (itemDate >= startOfWeek && itemDate <= today) {
-                    addOrderToDateMap(itemDate, item.revenue, item.orders);
-                  }
-                } catch (e) {
-                  console.error('Error parsing date:', item.date, e);
-                }
-              });
-            }
-
-            // Nếu vẫn không có dữ liệu, tạo dữ liệu mặc định
-            if (ordersByDate.size === 0) {
-              // Sử dụng giá trị cố định từ giao diện
-              totalOrders = 6;
-              totalRevenue = 2088000;
-
-              // Tạo dữ liệu mẫu cho biểu đồ
-              const sampleData = [
-                { date: '2025-05-01', revenue: 390000, orders: 1 },
-                { date: '2025-05-03', revenue: 60000, orders: 1 },
-                { date: '2025-05-04', revenue: 120000, orders: 1 },
-                { date: '2025-05-05', revenue: 120000, orders: 1 },
-                { date: '2025-05-06', revenue: 690000, orders: 1 },
-                { date: '2025-05-07', revenue: 30000, orders: 1 },
-                { date: '2025-05-08', revenue: 540000, orders: 1 },
-                { date: '2025-05-09', revenue: 588000, orders: 1 }
-              ];
-
-              sampleData.forEach(item => {
-                addOrderToDateMap(new Date(item.date), item.revenue, item.orders);
-              });
-
-              console.log('Using default weekly data');
-            }
-          }
-
-          // Chuyển đổi map thành mảng để sử dụng cho biểu đồ
-          filteredRevenue = Array.from(ordersByDate.entries()).map(([date, data]) => ({
-            date,
-            revenue: data.revenue,
-            orders: data.orders
-          })).sort((a, b) => a.date.localeCompare(b.date));
-
-          // Tính tổng đơn hàng và doanh thu
-          if (weekUniqueOrderIds.size > 0) {
-            totalOrders = weekUniqueOrderIds.size;
-          } else {
-            totalOrders = 6; // Giá trị mặc định từ giao diện
-          }
-
-          // Tính tổng doanh thu từ dữ liệu đã lọc
-          const calculatedRevenue = filteredRevenue.reduce((sum, item) => sum + item.revenue, 0);
-          totalRevenue = calculatedRevenue > 0 ? calculatedRevenue : 2088000; // Giá trị mặc định từ giao diện
-        }
-        break;
-
-      case 'month':
-        // Lấy dữ liệu tháng trực tiếp từ API nếu có
-        if (revenueData.total_orders !== undefined && revenueData.total_revenue !== undefined) {
-          console.log('Using API data for month:', revenueData.total_orders, revenueData.total_revenue);
-          totalOrders = revenueData.total_orders;
-          totalRevenue = revenueData.total_revenue;
-
-          // Lọc đơn hàng hoàn thành trong tháng này để hiển thị biểu đồ
-          const monthCompletedOrders = completedOrders.filter(order => {
-            if (!order.completed_date) return false;
-            const orderDate = new Date(order.completed_date);
-            return orderDate >= startOfMonth && orderDate <= today;
-          });
-
-          // Nhóm đơn hàng theo ngày cho biểu đồ
-          monthCompletedOrders.forEach(order => {
-            if (order.completed_date) {
-              const orderDate = new Date(order.completed_date);
-              addOrderToDateMap(orderDate, order.total_amount, 1);
-            }
-          });
-
-          // Nếu không có dữ liệu từ đơn hàng, sử dụng dữ liệu từ API nếu có
-          if (ordersByDate.size === 0 && dailyRevenue.length > 0) {
-            // Lọc dữ liệu từ API cho tháng này
-            dailyRevenue.forEach(item => {
-              try {
-                const itemDate = new Date(item.date);
-                if (itemDate >= startOfMonth && itemDate <= today) {
-                  addOrderToDateMap(itemDate, item.revenue, item.orders);
-                }
-              } catch (e) {
-                console.error('Error parsing date:', item.date, e);
-              }
+          // Get yesterday's revenue if available
+          if (stats.yesterdayStats) {
+            yesterdayRevenueValue = stats.yesterdayStats.totalRevenue || 0;
+            dailyRevenue.unshift({
+              date: 'Hôm qua',
+              revenue: yesterdayRevenueValue,
+              orders: stats.yesterdayStats.totalOrders || 0
             });
-          }
-        } else {
-          // Nếu không có dữ liệu tổng từ API, tính toán từ đơn hàng
-          // Lọc đơn hàng hoàn thành trong tháng này
-          const monthCompletedOrders = completedOrders.filter(order => {
-            if (!order.completed_date) return false;
-            const orderDate = new Date(order.completed_date);
-            return orderDate >= startOfMonth && orderDate <= today;
-          });
-
-          // Đếm số đơn hàng duy nhất trong tháng
-          const monthUniqueOrderIds = new Set();
-          monthCompletedOrders.forEach(order => {
-            if (order.order_id) {
-              monthUniqueOrderIds.add(order.order_id);
-            }
-          });
-
-          // Nhóm đơn hàng theo ngày
-          monthCompletedOrders.forEach(order => {
-            if (order.completed_date) {
-              const orderDate = new Date(order.completed_date);
-              addOrderToDateMap(orderDate, order.total_amount, 1);
-            }
-          });
-
-          // Nếu không có dữ liệu từ đơn hàng, sử dụng dữ liệu từ API nếu có
-          if (ordersByDate.size === 0) {
-            // Nếu có dữ liệu từ API
-            if (dailyRevenue.length > 0) {
-              // Lọc dữ liệu từ API cho tháng này
-              dailyRevenue.forEach(item => {
-                try {
-                  const itemDate = new Date(item.date);
-                  if (itemDate >= startOfMonth && itemDate <= today) {
-                    addOrderToDateMap(itemDate, item.revenue, item.orders);
-                  }
-                } catch (e) {
-                  console.error('Error parsing date:', item.date, e);
-                }
+            // Log yesterday's data
+            console.log('Yesterday stats:', stats.yesterdayStats);
+          } else if (stats.dailyRevenueInMonth) {
+            // Fallback: try to find yesterday in dailyRevenueInMonth
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().slice(0, 10);
+            const found = stats.dailyRevenueInMonth.find(item => item._id === yesterdayStr);
+            if (found) {
+              yesterdayRevenueValue = found.totalRevenue || 0;
+              dailyRevenue.unshift({
+                date: 'Hôm qua',
+                revenue: yesterdayRevenueValue,
+                orders: found.totalOrders || 0
               });
-            }
-
-            // Nếu vẫn không có dữ liệu, tạo dữ liệu cho ngày hôm nay
-            if (ordersByDate.size === 0) {
-              addOrderToDateMap(today, 240000, 1);
+            } else {
+              // Log if yesterday's data is not found
+              console.log('No yesterday data found in dailyRevenueInMonth');
             }
           }
 
-          // Tính tổng đơn hàng và doanh thu
-          totalOrders = monthUniqueOrderIds.size || filteredRevenue.length || 1;
-          totalRevenue = filteredRevenue.reduce((sum, item) => sum + item.revenue, 0) || 240000;
+          setYesterdayRevenue(yesterdayRevenueValue);
+          setDailyRevenueData(dailyRevenue);
+          setMonthlyRevenueData([]);
+          setTopProductToday(stats.topProductToday || null);
+        } else if (range === 'week' && stats.dailyRevenueInMonth) {
+          // Always get Monday as the first day of the week
+          const now = new Date();
+          const dayOfWeek = now.getDay(); // 0: Sunday, 1: Monday, ..., 6: Saturday
+          const diffToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+          const firstDayOfWeek = new Date(now);
+          firstDayOfWeek.setDate(now.getDate() + diffToMonday);
+          firstDayOfWeek.setHours(0, 0, 0, 0);
+
+          // Create an array of 7 days from Monday to Sunday
+          const weekDays = [];
+          for (let i = 0; i < 7; i++) {
+            const d = new Date(firstDayOfWeek);
+            d.setDate(firstDayOfWeek.getDate() + i);
+            weekDays.push(d.toISOString().slice(0, 10));
+          }
+
+          // Map revenue data to each day, 0 if not found
+          dailyRevenue = weekDays.map(dateStr => {
+            const found = stats.dailyRevenueInMonth.find(item => item._id === dateStr);
+            return {
+              date: dateStr,
+              revenue: found ? found.totalRevenue : 0,
+              orders: found ? found.totalOrders : 0
+            };
+          });
+
+          // Assign weekday labels
+          const weekDayLabels = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ nhật'];
+          dailyRevenue = dailyRevenue.map((item, idx) => ({
+            ...item,
+            weekLabel: weekDayLabels[idx]
+          }));
+
+          totalOrders = dailyRevenue.reduce((sum, d) => sum + d.orders, 0);
+          totalRevenue = dailyRevenue.reduce((sum, d) => sum + d.revenue, 0);
+
+          setDailyRevenueData(dailyRevenue);
+          setMonthlyRevenueData([]);
+          setTopProductWeek(stats.topProductWeek || null);
+        } else if (range === 'month' && stats.monthlyRevenueInYear) {
+          // Show all months in current year
+          // Pad months to always show 1-12
+          const monthsArr = Array.from({ length: 12 }, (_, i) => ({
+            month: i + 1,
+            revenue: 0,
+            orders: 0
+          }));
+          stats.monthlyRevenueInYear.forEach(item => {
+            const idx = item.month - 1;
+            if (monthsArr[idx]) {
+              monthsArr[idx].revenue = item.totalRevenue;
+              monthsArr[idx].orders = item.totalOrders;
+            }
+          });
+
+          monthlyRevenue = monthsArr;
+          totalOrders = monthlyRevenue.reduce((sum, d) => sum + d.orders, 0);
+          totalRevenue = monthlyRevenue.reduce((sum, d) => sum + d.revenue, 0);
+
+          setMonthlyRevenueData(monthlyRevenue);
+          setDailyRevenueData([]);
+          setTopProductMonth(stats.topProductMonth || null);
         }
+      }
 
-        // Chuyển đổi map thành mảng để sử dụng cho biểu đồ
-        filteredRevenue = Array.from(ordersByDate.entries()).map(([date, data]) => ({
-          date,
-          revenue: data.revenue,
-          orders: data.orders
-        })).sort((a, b) => a.date.localeCompare(b.date));
-        break;
+      setFilteredData({
+        total_orders: totalOrders,
+        total_revenue: totalRevenue,
+        daily_revenue: dailyRevenue
+      });
+
+      setTimeFilter(range);
+      setLoading(false);
+    } catch (err) {
+      setError('Failed to fetch order stats');
+      setLoading(false);
     }
-
-    console.log('Final filtered data:', {
-      total_orders: totalOrders,
-      total_revenue: totalRevenue,
-      daily_revenue: filteredRevenue
-    });
-
-    // Đảm bảo dữ liệu được cập nhật đúng
-    setFilteredData({
-      total_orders: totalOrders,
-      total_revenue: totalRevenue,
-      daily_revenue: filteredRevenue
-    });
-
-    setTimeFilter(range);
   };
+
 
   const handleFilterChange = (range) => {
     filterDataByTimeRange(range, revenueData, monthlyData);
@@ -399,16 +239,38 @@ const O_CounterStatistics = ({ stallId }) => {
       .replace(/\s₫/, 'đ'); // Thay thế khoảng trắng trước ₫ bằng 'đ'
 
   // Prepare chart data
-  const chartData = {
-    labels: filteredData.daily_revenue?.map(item => item.date) || [],
-    datasets: [
-      {
-        label: 'Doanh thu',
-        data: filteredData.daily_revenue?.map(item => item.revenue) || [],
-        backgroundColor: 'rgba(53, 162, 235, 0.5)',
+  const chartData = timeFilter === 'month' && monthlyRevenueData.length > 0
+    ? {
+      labels: monthlyRevenueData.map(item => `Tháng ${item.month}`),
+      datasets: [
+        {
+          label: 'Doanh thu',
+          data: monthlyRevenueData.map(item => item.revenue),
+          backgroundColor: 'rgba(53, 162, 235, 0.5)',
+        }
+      ],
+    }
+    : timeFilter === 'today'
+      ? {
+        labels: dailyRevenueData.map(item => item.date),
+        datasets: [
+          {
+            label: 'Doanh thu',
+            data: dailyRevenueData.map(item => item.revenue),
+            backgroundColor: ['rgba(53, 162, 235, 0.5)', 'rgba(255, 206, 86, 0.5)'], // Today/Yesterday colors
+          }
+        ],
       }
-    ],
-  };
+      : {
+        labels: dailyRevenueData.map(item => item.date) || [],
+        datasets: [
+          {
+            label: 'Doanh thu',
+            data: dailyRevenueData.map(item => item.revenue) || [],
+            backgroundColor: 'rgba(53, 162, 235, 0.5)',
+          }
+        ],
+      };
 
   const chartOptions = {
     responsive: true,
@@ -437,21 +299,103 @@ const O_CounterStatistics = ({ stallId }) => {
     },
   };
 
-  const refreshData = () => {
-    if (stallId) {
-      // Fetch lại dữ liệu
-      Promise.all([
-        fetchStallRevenue(stallId),
-        fetchMonthlyRevenue(stallId)
-      ]).then(([revenueResponse, monthlyResponse]) => {
-        setRevenueData(revenueResponse);
-        setMonthlyData(monthlyResponse);
-        // Áp dụng lại bộ lọc hiện tại
-        filterDataByTimeRange(timeFilter, revenueResponse, monthlyResponse);
-      }).catch(err => {
-        console.error('Error refreshing data:', err);
+  const handleExportExcel = async () => {
+    // Fetch order list for the selected time range
+    let orders = [];
+    try {
+      // You may need to adjust this API call to match your backend
+      if (timeFilter === 'today') {
+        const stats = await fetchOrderStats();
+        orders = stats.ordersToday || [];
+      } else if (timeFilter === 'week') {
+        const stats = await fetchOrderStats();
+        orders = stats.ordersThisWeek || [];
+      } else if (timeFilter === 'month') {
+        const stats = await fetchOrderStats();
+        orders = stats.ordersThisMonth || [];
+      }
+    } catch (err) {
+      alert('Không thể lấy danh sách đơn hàng để xuất Excel!');
+      return;
+    }
+
+    // Prepare header
+    const wsData = [
+      ['Mã đơn', 'Khách hàng', 'Số điện thoại', 'Bàn', 'Tổng tiền', 'Thời gian tạo', 'Trạng thái']
+    ];
+
+    // Add order rows
+    orders.forEach(order => {
+      wsData.push([
+        order.order_id || order._id || '',
+        order.customer_name || order.customer?.name || '',
+        order.customer_phone || order.customer?.phone || '',
+        order.table_number || order.table?.tb_number || '',
+        order.total_amount || order.total || '',
+        order.created_at ? new Date(order.created_at).toLocaleString('vi-VN') : '',
+        order.status || order.order_status || ''
+      ]);
+    });
+
+    // Add best-selling product if available
+    if (revenueData?.top_product?.pd_name) {
+      wsData.push([]);
+      wsData.push(['Món bán chạy nhất', 'Số lượng đã bán']);
+      wsData.push([revenueData.top_product.pd_name, revenueData.top_product.total_sold]);
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'DonHang');
+
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/octet-stream' });
+
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'danh_sach_don_hang.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }, 0);
+  };
+
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text('Thống kê doanh thu', 14, 16);
+
+    // Prepare table data
+    const tableColumn = ['Thời gian', 'Tổng đơn hàng', 'Tổng doanh thu'];
+    const tableRows = [
+      [
+        timeFilter === 'today' ? 'Hôm nay' : timeFilter === 'week' ? 'Tuần này' : 'Tháng này',
+        filteredData.total_orders,
+        formatCurrency(filteredData.total_revenue)
+      ]
+    ];
+    if (timeFilter === 'today' && dailyRevenueData.length > 1) {
+      tableRows.push(['Hôm qua', dailyRevenueData[0].orders, formatCurrency(dailyRevenueData[0].revenue)]);
+    }
+
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 24,
+    });
+    if (revenueData?.top_product?.pd_name) {
+      doc.text('Món bán chạy nhất:', 14, doc.lastAutoTable ? doc.lastAutoTable.finalY + 12 : 40);
+      autoTable(doc, {
+        head: [['Tên món', 'Số lượng đã bán']],
+        body: [[revenueData.top_product.pd_name, revenueData.top_product.total_sold]],
+        startY: doc.lastAutoTable ? doc.lastAutoTable.finalY + 16 : 44,
+        theme: 'grid'
       });
     }
+    doc.save('thong_ke_doanh_thu.pdf');
   };
 
   if (loading) return <div className="p-4 text-center">Đang tải dữ liệu...</div>;
@@ -460,71 +404,140 @@ const O_CounterStatistics = ({ stallId }) => {
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">📊 Thống kê doanh thu</h2>
+      <div className="flex flex-col md:flex-row justify-between md:items-center mb-6 space-y-4 md:space-y-0">
+        <h2 className="text-2xl font-bold text-gray-800 flex items-center">
+          <span className="mr-2">📊</span> Thống kê doanh thu
+        </h2>
         <div className="flex space-x-3">
-          <button
-            onClick={refreshData}
-            className="flex items-center px-4 py-2 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition">🔄 Làm mới
-          </button>
-          <button className="flex items-center px-4 py-2 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition">
+          <button className="flex items-center px-4 py-2 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 transition"
+            onClick={handleExportExcel}>
             <FaFileExcel className="mr-2" /> Xuất Excel
           </button>
-          <button className="flex items-center px-4 py-2 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition">
+          <button className="flex items-center px-4 py-2 bg-red-500 text-white font-medium rounded-lg hover:bg-red-600 transition"
+            onClick={handleExportPDF}>
             <FaFilePdf className="mr-2" /> Xuất PDF
           </button>
         </div>
       </div>
 
-      {/* Filter Buttons */}
-      <div className="flex justify-center space-x-4 mb-8">
+      {/* Filter Buttons with badge */}
+      <div className="flex justify-center flex-wrap gap-3 mb-10">
         {['today', 'week', 'month'].map((type) => (
           <button
             key={type}
             onClick={() => handleFilterChange(type)}
-            className={`px-5 py-2 rounded-full font-medium capitalize ${timeFilter === type
-              ? 'bg-blue-600 text-white shadow'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            className={`px-6 py-2.5 rounded-full font-semibold capitalize transition duration-150 relative ${timeFilter === type
+              ? 'bg-blue-600 text-white shadow-md'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
               }`}
           >
             {type === 'today' ? 'Hôm Nay' : type === 'week' ? 'Tuần Này' : 'Tháng Này'}
+            {timeFilter === type && (
+              <span className="absolute -top-2 -right-2 bg-yellow-400 text-xs px-2 py-0.5 rounded-full font-bold shadow">
+                Đang xem
+              </span>
+            )}
           </button>
         ))}
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        <div className="bg-blue-100 border-l-4 border-blue-500 p-5 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold text-blue-800">Tổng đơn hàng</h3>
-          <p className="text-3xl font-bold mt-2">{filteredData.total_orders}</p>
+      {/* Cards Layout */}
+      {timeFilter === 'today' ? (
+        <>
+          {/* First row: Tổng đơn hàng & Tổng doanh thu */}
+          <div className="flex flex-col md:flex-row gap-6 mb-8 justify-center">
+            <div className="flex-1 bg-white border border-blue-200 p-5 rounded-xl shadow-sm flex flex-col items-center">
+              <h3 className="text-lg font-semibold text-blue-700">Tổng đơn hàng</h3>
+              <p className="text-3xl font-bold text-gray-800 mt-2">{filteredData.total_orders}</p>
+            </div>
+            <div className="flex-1 bg-white border border-green-200 p-5 rounded-xl shadow-sm flex flex-col items-center">
+              <h3 className="text-lg font-semibold text-green-700">Tổng doanh thu</h3>
+              <p className="text-3xl font-bold text-gray-800 mt-2">{formatCurrency(filteredData.total_revenue)}</p>
+            </div>
+          </div>
+          {/* Second row: Món bán chạy nhất & Số liệu hôm qua */}
+          <div className="flex flex-col md:flex-row gap-6 mb-8 justify-center">
+            {topProductToday?.name && (
+              <div className="bg-gradient-to-br from-yellow-100 to-yellow-50 border-l-4 border-yellow-400 p-5 rounded-xl shadow-lg min-w-[280px] max-w-xs mx-auto flex-1">
+                <h3 className="text-lg font-semibold text-yellow-800 flex items-center">
+                  <span className="mr-2">⭐</span> Món bán chạy nhất
+                </h3>
+                <p className="mt-1 text-gray-800 font-medium text-lg">{topProductToday.name}</p>
+                <p className="text-sm text-gray-600 mt-1">Đã bán: {topProductToday.quantitySold} món</p>
+              </div>
+            )}
+            {dailyRevenueData.length > 1 && (
+              <div className="bg-gradient-to-br from-blue-100 to-blue-50 border-l-4 border-blue-400 p-5 rounded-xl shadow-lg min-w-[280px] max-w-xs mx-auto flex-1">
+                <h3 className="text-lg font-semibold text-blue-800 flex items-center">
+                  <span className="mr-2">📅</span> Số liệu hôm qua
+                </h3>
+                <p className="mt-1 text-gray-800">
+                  Đơn hàng: <span className="font-bold">{dailyRevenueData[0].orders}</span>
+                </p>
+                <p className="mt-1 text-gray-800">
+                  Doanh thu: <span className="font-bold">{formatCurrency(dailyRevenueData[0].revenue)}</span>
+                </p>
+              </div>
+            )}
+          </div>
+        </>
+      ) : timeFilter === 'week' ? (
+        <div className="flex flex-col md:flex-row gap-6 mb-8 justify-center">
+          <div className="flex-1 bg-white border border-blue-200 p-5 rounded-xl shadow-sm flex flex-col items-center">
+            <h3 className="text-lg font-semibold text-blue-700">Tổng đơn hàng</h3>
+            <p className="text-3xl font-bold text-gray-800 mt-2">{filteredData.total_orders}</p>
+          </div>
+          <div className="flex-1 bg-white border border-green-200 p-5 rounded-xl shadow-sm flex flex-col items-center">
+            <h3 className="text-lg font-semibold text-green-700">Tổng doanh thu</h3>
+            <p className="text-3xl font-bold text-gray-800 mt-2">{formatCurrency(filteredData.total_revenue)}</p>
+          </div>
+          {topProductWeek?.name && (
+            <div className="flex-1 bg-gradient-to-br from-yellow-100 to-yellow-50 border-l-4 border-yellow-400 p-5 rounded-xl shadow-lg flex flex-col items-center min-w-[280px] max-w-xs mx-auto">
+              <h3 className="text-lg font-semibold text-yellow-800 flex items-center">
+                <span className="mr-2">⭐</span> Món bán chạy nhất
+              </h3>
+              <p className="mt-1 text-gray-800 font-medium text-lg">{topProductWeek.name}</p>
+              <p className="text-sm text-gray-600 mt-1">Đã bán: {topProductWeek.quantitySold} món</p>
+            </div>
+          )}
         </div>
-        <div className="bg-green-100 border-l-4 border-green-500 p-5 rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold text-green-800">Tổng doanh thu</h3>
-          {/* Thêm log để kiểm tra giá trị trước khi hiển thị */}
-          {console.log('Rendering revenue value:', filteredData.total_revenue)}
-          <p className="text-3xl font-bold mt-2">{formatCurrency(filteredData.total_revenue)}</p>
+      ) : (
+        // For month: all three cards in one row
+        <div className="flex flex-col md:flex-row gap-6 mb-8 justify-center">
+          <div className="flex-1 bg-white border border-blue-200 p-5 rounded-xl shadow-sm flex flex-col items-center">
+            <h3 className="text-lg font-semibold text-blue-700">Tổng đơn hàng</h3>
+            <p className="text-3xl font-bold text-gray-800 mt-2">{filteredData.total_orders}</p>
+          </div>
+          <div className="flex-1 bg-white border border-green-200 p-5 rounded-xl shadow-sm flex flex-col items-center">
+            <h3 className="text-lg font-semibold text-green-700">Tổng doanh thu</h3>
+            <p className="text-3xl font-bold text-gray-800 mt-2">{formatCurrency(filteredData.total_revenue)}</p>
+          </div>
+          {topProductMonth?.name && (
+            <div className="flex-1 bg-gradient-to-br from-yellow-100 to-yellow-50 border-l-4 border-yellow-400 p-5 rounded-xl shadow-lg flex flex-col items-center min-w-[280px] max-w-xs mx-auto">
+              <h3 className="text-lg font-semibold text-yellow-800 flex items-center">
+                <span className="mr-2">⭐</span> Món bán chạy nhất
+              </h3>
+              <p className="mt-1 text-gray-800 font-medium text-lg">{topProductMonth.name}</p>
+              <p className="text-sm text-gray-600 mt-1">Đã bán: {topProductMonth.quantitySold} món</p>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
       {/* Revenue Chart */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 items-start">
-        {/* Chart */}
-        <div>
-          <h3 className="text-xl font-semibold text-gray-800 mb-3">📈 Biểu đồ doanh thu</h3>
-          <div className="h-96">
-            <Bar options={chartOptions} data={chartData} />
+      {timeFilter !== 'today' && (
+        <div className="bg-gradient-to-br from-purple-50 to-white p-7 rounded-2xl border border-purple-200 shadow-xl w-full max-w-5xl mx-auto">
+          <h3 className="text-xl font-semibold text-purple-800 mb-4 flex items-center">
+            <span className="mr-2">📈</span> Biểu đồ doanh thu
+          </h3>
+          <div className="h-96 w-full">
+            <Bar options={{
+              ...chartOptions,
+              maintainAspectRatio: false,
+            }} data={chartData} />
           </div>
         </div>
-
-        {/* Top Product */}
-        {revenueData?.top_product?.pd_name && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-400 p-5 rounded-lg shadow-sm">
-            <h3 className="text-lg font-semibold text-yellow-800">⭐ Món bán chạy nhất</h3>
-            <p className="mt-1 text-gray-800 font-medium">{revenueData.top_product.pd_name}</p>
-            <p className="text-sm text-gray-600">Đã bán: {revenueData.top_product.total_sold} món</p>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };

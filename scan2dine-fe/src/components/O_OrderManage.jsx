@@ -120,11 +120,11 @@ const O_OrderManage = ({ stallId }) => {
             console.error("Lỗi khi cập nhật trạng thái:", error.response?.data || error.message);
         }
     };
-    
+
     const filteredOrders = orders.filter(order =>
         order.order_id.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    
+
 
     const formatDateTime = (dateString) => {
         let date;
@@ -162,7 +162,7 @@ const O_OrderManage = ({ stallId }) => {
                             onClick={() => setSelectedOrder(order)}
                             className={`p-3 border rounded-lg cursor-pointer ${selectedOrder?.order_id === order.order_id ? 'bg-red-100 border-red-400' : 'hover:bg-gray-100'}`}
                         >
-                            <div>Đơn #{order.order_id.slice(-6)}</div>
+                            <div >Đơn #{order.order_id.slice(-6)}</div>
                             <div className="text-sm text-gray-500">Bàn: {order.table_number}</div>
                             <div className="text-sm">{renderStatusBadge(order.order_status)}</div>
                         </div>
@@ -176,14 +176,9 @@ const O_OrderManage = ({ stallId }) => {
                         <div className="text-center mb-4 text-xl font-bold text-red-600 uppercase">Tất cả đơn hàng</div>
 
                         <div className="flex justify-between mb-2 text-sm">
-                            <div>
-                                <div>Đơn hàng: <span className="text-red-600 font-semibold">#{selectedOrder.order_id}</span></div>
-                                <div>Giờ bắt đầu: {formatDateTime(selectedOrder.start_time)}</div>
-                            </div>
-                            <div className="text-right">
-                                <div>Nhân viên:{selectedOrder.staff?.full_name || selectedOrder.staff_name || "--"}</div>
-                                <div>Giờ kết thúc:</div>
-                            </div>
+                            <div>Đơn hàng: <span className="text-primary font-semibold uppercase ">#{selectedOrder.order_id}</span></div>
+
+                            <div>Giờ bắt đầu: {formatDateTime(selectedOrder.start_time)}</div>
                         </div>
 
                         <hr className="my-2" />
