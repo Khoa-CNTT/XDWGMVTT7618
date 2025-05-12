@@ -1,227 +1,200 @@
-const { Customer, Cart, Order } = require('../model/model');
-const { creatCart } = require('../service/cartService');
-const { notifyCustomerAdded, notifyCustomerUpdated, notifyCustomerDeleted } = require('../utils/socketUtils');
-
+const { default: mongoose } = require("mongoose");
+const { Customer, Cart, Order } = require("../model/model");
+const { creatCart } = require("../service/cartService");
+const { notifyCustomerAdded, notifyCustomerUpdated, notifyCustomerDeleted } = require("../utils/socketUtils");
 const customerController = {
-  // Add a customer
+  //  ADD CUSTOMER
   addCustomer: async (req, res) => {
     try {
       const { phone, name } = req.body;
-
-      if (!phone || !name) {
-        return res.status(400).json({ message: 'Thiếu số điện thoại hoặc tên khách hàng' });
-      }
-
-      const existingCustomer = await Customer.findOne({ phone });
-      if (existingCustomer) {
+      const checkphone = await Customer.findOne({ phone });
+      if (checkphone) {
         return res.status(200).json({
-          message: 'Khách hàng đã tồn tại',
-          customer: existingCustomer
+          message: "Khách hàng đã tồn tại",
+          customer: checkphone,
         });
       }
-
+      // nếu chưa tồn tại thì tạo mới
       const newCustomer = new Customer(req.body);
-      const io = req.app.get('io');
-      if (!io) {
-        console.error('Socket.IO is not initialized');
-        return res.status(500).json({ message: 'Socket.IO not available' });
-      }
-
+      const io = req.app.get("io");
       const cart = await creatCart(null, io);
       newCustomer.cart = cart._id;
-      const savedCustomer = await newCustomer.save();
-
-      // Gắn customerId vào cart
+      const saveCustomer = await newCustomer.save();
+      // Gắn lại customerId vào cart (đảm bảo schema Cart có trường customer)
       await Cart.findByIdAndUpdate(cart._id, {
-        customer: savedCustomer._id
+        customer: saveCustomer._id,
       });
-
-      notifyCustomerAdded(io, savedCustomer._id, {
-        customerId: savedCustomer._id,
-        phone: savedCustomer.phone,
-        name: savedCustomer.name,
-        cartId: cart._id,
-        message: 'Khách hàng mới đã được thêm'
+      // thông báo cho client
+      notifyCustomerAdded(io, saveCustomer._id, {
+        customer: saveCustomer._id,
+        phone: saveCustomer.phone,
+        name: saveCustomer.name,
+        cart: cart._id,
+        message: "Khách hàng mới đã được thêm",
       });
-
-      return res.status(200).json(savedCustomer);
+      res.status(200).json(saveCustomer);
     } catch (error) {
-      console.error('Error in addCustomer:', error);
-      return res.status(500).json({ message: 'Server error', error: error.message });
+      console.error("Error in creating customer:", error);
+      res
+        .status(500)
+        .json({ message: "Lỗi server", error: error.message || error });
     }
   },
 
-  // Get all customers
+  // SHOW ALL CUSTOMER
   getAllCustomer: async (req, res) => {
     try {
       const customers = await Customer.find();
-      return res.status(200).json(customers);
+      // trả về kết quả all customer
+      res.status(200).json(customers);
     } catch (error) {
-      console.error('Error in getAllCustomer:', error);
-      return res.status(500).json({ message: 'Server error', error: error.message });
+      res.status(500).json(error);
     }
   },
-
-  // Update a customer
+  // update customer
   updateCustomer: async (req, res) => {
     try {
-      const customer = await Customer.findById(req.params.id);
-      if (!customer) {
-        return res.status(404).json({ message: 'Customer not found' });
+      const customerID = await Customer.findById(req.params.id);
+      if (!customerID) {
+        res.status(404).json("not found");
       }
-
-      if (req.body.cart && req.body.cart !== customer.cart?.toString()) {
-        // Gỡ liên kết với cart cũ (nếu có)
-        if (customer.cart) {
-          await Cart.findByIdAndUpdate(customer.cart, {
-            $unset: { customer: '' }
+      // nếu có giỏ hagnf thif xóa
+      if (req.body.cart && req.body.cart !== customerID.cart?.toString()) {
+        // check có id của cart trong customer không
+        if (customerID.cart) {
+          await Cart.findByIdAndUpdate(customerID.cart, {
+            $pull: {
+              customer: customerID._id,
+            },
           });
         }
-        // Gắn liên kết với cart mới
         await Cart.findByIdAndUpdate(req.body.cart, {
-          customer: customer._id
+          $push: {
+            customer: customerID._id,
+          },
         });
       }
 
-      const updatedCustomer = await Customer.findByIdAndUpdate(
+      const updateCustomer = await Customer.findByIdAndUpdate(
         req.params.id,
-        { $set: req.body },
+        {
+          $set: req.body,
+        },
         { new: true }
       );
-
       const io = req.app.get('io');
-      if (!io) {
-        console.error('Socket.IO is not initialized');
-        return res.status(500).json({ message: 'Socket.IO not available' });
-      }
-
-      notifyCustomerUpdated(io, updatedCustomer._id, {
-        customerId: updatedCustomer._id,
-        phone: updatedCustomer.phone,
-        name: updatedCustomer.name,
-        cartId: updatedCustomer.cart,
-        message: 'Thông tin khách hàng đã được cập nhật'
+      notifyCustomerUpdated(io, updateCustomer._id, {
+        customerId: updateCustomer._id,
+        phone: updateCustomer.phone,
+        name: updateCustomer.name,
+        cartId: updateCustomer.cart,
+        message: 'Thông tin khách hàng đã được cập nhật',
       });
-
-      return res.status(200).json({
-        message: 'Customer updated successfully',
-        customer: updatedCustomer
-      });
+      res.status(200).json(updateCustomer);
     } catch (error) {
-      console.error('Error in updateCustomer:', error);
-      return res.status(500).json({ message: 'Server error', error: error.message });
+      res.status(500).json(error);
     }
   },
 
-  // Delete a customer
+  // delete customer
   deleteCustomer: async (req, res) => {
     try {
-      const customer = await Customer.findById(req.params.id);
-      if (!customer) {
-        return res.status(404).json({ message: 'Customer not found' });
+      const deleteCustomer = await Customer.findByIdAndDelete(req.params.id);
+      if (!deleteCustomer) {
+        res.status(404).json({ message: "not found" });
       }
-
-      // Gỡ liên kết với cart
-      if (customer.cart) {
-        await Cart.findByIdAndUpdate(customer.cart, {
-          $unset: { customer: '' }
-        });
-      }
-
-      await Customer.findByIdAndDelete(req.params.id);
-
-      const io = req.app.get('io');
-      if (!io) {
-        console.error('Socket.IO is not initialized');
-        return res.status(500).json({ message: 'Socket.IO not available' });
-      }
-
-      notifyCustomerDeleted(io, customer._id, {
-        customerId: customer._id,
-        phone: customer.phone,
-        name: customer.name,
-        message: 'Khách hàng đã bị xóa'
+      // xóa customer khoir giỏ hàng
+      await Cart.findByIdAndUpdate(deleteCustomer.cart, {
+        $pull: {
+          customer: deleteCustomer._id,
+        },
       });
-
-      return res.status(200).json({ message: 'Customer deleted successfully' });
+      const io = req.app.get('io');
+      notifyCustomerDeleted(io, deleteCustomer._id, {
+        customerId: deleteCustomer._id,
+        phone: deleteCustomer.phone,
+        name: deleteCustomer.name,
+        message: 'Khách hàng đã bị xóa',
+      });
+      res.status(200).json("Delete Succesfully");
     } catch (error) {
-      console.error('Error in deleteCustomer:', error);
-      return res.status(500).json({ message: 'Server error', error: error.message });
+      res.status(500).json(error);
     }
   },
-
-  // Check customer by phone
+  // KIỂM TRA SỐ ĐIỆN THOẠI KHÁCH HÀNG
   checkCustomerByPhone: async (req, res) => {
     try {
-      const { phone } = req.body;
+      const phone = req.body.phone;
 
-      if (!phone) {
-        return res.status(400).json({ message: 'Thiếu số điện thoại' });
-      }
-
+      // Kiểm tra số điện thoại có tồn tại trong database không
       const existingCustomer = await Customer.findOne({ phone });
 
       if (existingCustomer) {
-        return res.status(200).json({
-          message: 'Customer exists',
-          customer: existingCustomer
+        // Nếu đã có => trả về thông tin khách hàng
+        res.status(200).json({
+          message: "Customer exists",
+          customer: existingCustomer,
+        });
+      } else {
+        // Nếu chưa có => yêu cầu nhập tên để tạo mới
+        res.status(404).json({
+          message: "Customer not found. Please enter your name.",
         });
       }
-
-      return res.status(404).json({
-        message: 'Customer not found. Please enter your name.'
-      });
     } catch (error) {
-      console.error('Error in checkCustomerByPhone:', error);
-      return res.status(500).json({ message: 'Server error', error: error.message });
+      res.status(500).json({ message: "Internal server error", error });
     }
   },
+  // show all KH mua hàng
 
-  // Get customer statistics
   getCustomerStatistics: async (req, res) => {
     try {
       const data = await Order.aggregate([
         {
-          $sort: { _id: -1 } // Sort by _id descending (newest first)
+          $sort: { _id: -1 } // Đảm bảo đơn mới nhất nằm đầu tiên (dựa vào _id)
         },
         {
           $group: {
-            _id: '$customer',
+            _id: "$customer", // Gom nhóm theo khách hàng
             totalOrders: { $sum: 1 },
-            totalSpent: { $sum: { $toDouble: '$total_amount' } },
-            latestOrder: { $first: '$$ROOT' }
+            totalSpent: {
+              $sum: { $toDouble: "$total_amount" }
+            },
+            latestOrder: { $first: "$$ROOT" } // Lấy đơn mới nhất trong nhóm
           }
         },
         {
           $lookup: {
-            from: 'CUSTOMER', // Sửa 'CUSTOMER' thành 'customers' (tên collection thường là chữ thường)
-            localField: '_id',
-            foreignField: '_id',
-            as: 'customerInfo'
+            from: "CUSTOMER",
+            localField: "_id",
+            foreignField: "_id",
+            as: "customerInfo"
           }
         },
         {
-          $unwind: '$customerInfo'
+          $unwind: "$customerInfo"
         },
         {
           $project: {
             _id: 0,
-            customer_id: '$_id',
-            name: '$customerInfo.name',
-            phone: '$customerInfo.phone',
+            customer_id: "$_id",
+            name: "$customerInfo.name",
+            phone: "$customerInfo.phone",
             totalOrders: 1,
             totalSpent: 1,
-            latestOrderDate: '$latestOrder.od_date',
-            latestOrderAmount: { $toDouble: '$latestOrder.total_amount' },
-            latestOrderNote: '$latestOrder.od_note'
+            latestOrderDate: "$latestOrder.od_date",
+            latestOrderAmount: {
+              $toDouble: "$latestOrder.total_amount"
+            },
+            latestOrderNote: "$latestOrder.od_note"
           }
         }
       ]);
-
-      return res.status(200).json({ success: true, data });
+  
+      res.status(200).json({ success: true, data });
     } catch (error) {
-      console.error('Error in getCustomerStatistics:', error);
-      return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+      console.error("Lỗi khi lấy thống kê khách hàng:", error);
+      res.status(500).json({ success: false, message: "Lỗi server" });
     }
   }
 };

@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { FaUtensils, FaClock, FaCheckCircle, FaPrint, FaCheck, FaTimes, FaSpinner, FaUser, FaPhone } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import api from '../server/api';
 import { E_ItemOrderDetail } from './E_ItemOrderDetail';
-import PrintBillComponent from './PrintBillComponent';
+import { registerSocketListeners, cleanupSocketListeners } from '../services/socketListeners';
+import debounce from 'lodash/debounce'; // Dùng lodash để debounce thông báo
 
 const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     const [loading, setLoading] = useState(true);
@@ -14,19 +15,31 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     const [infoPayment, setInfoPayment] = useState([]);
     const [expandedItemId, setExpandedItemId] = useState(null);
 
-    const handleToggleExpand = (itemId) => {
+    const handleToggleExpand = useCallback((itemId) => {
         setExpandedItemId(expandedItemId === itemId ? null : itemId);
-    };
+    }, [expandedItemId]);
+
+    // Debounce thông báo để tránh spam toast
+    const debouncedToast = useCallback(
+        debounce((message, type = 'info') => {
+            toast[type](message);
+        }, 1000),
+        []
+    );
 
     // Load dữ liệu thông tin đơn hàng
-    useEffect(() => {
-        if (isOpen && tableId) {
-            setLoading(true);
-            setTimeout(() => {
-                fetchInfoOrder().finally(() => setLoading(false));
-            }, 500);
+    const fetchInfoOrder = useCallback(async () => {
+        try {
+            const res = await api.get(`/s2d/table/current/${tableId}`);
+            const order = res.data.orders[0];
+            setTableInfo(order);
+            setOrderItems(order.products);
+            setError(null);
+        } catch (error) {
+            setError('Bàn trống.');
         }
-    }, [isOpen, tableId]);
+    }, [tableId]);
+
     // Tính tổng tiền khi orderItems thay đổi
     useEffect(() => {
         if (orderItems.length > 0) {
@@ -39,32 +52,125 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
         }
     }, [orderItems]);
 
-    // Lấy dữ liệu order
-    const fetchInfoOrder = async () => {
-        try {
-            const res = await api.get(`/s2d/table/current/${tableId}`);
-            const order = res.data.orders[0];
-            setTableInfo(order);
-            setOrderItems(order.products);
-            setError(null);
-        } catch (error) {
-            setError('Bàn trống.');
+    // Load dữ liệu khi dialog mở
+    useEffect(() => {
+        if (isOpen && tableId) {
+            setLoading(true);
+            setTimeout(() => {
+                fetchInfoOrder().finally(() => setLoading(false));
+            }, 500);
         }
-    };
+    }, [isOpen, tableId, fetchInfoOrder]);
+
+    // Đăng ký socket listeners
+    useEffect(() => {
+        if (!isOpen || !tableId) return;
+
+        const customer = {
+            idTable: tableId,
+            orderId: tableInfo?.orderId,
+        };
+
+        registerSocketListeners({
+            customer,
+            TableUpdated: (data) => {
+                // Cập nhật trực tiếp nếu dữ liệu từ socket đủ
+                if (data.tableStatus) {
+                    setTableInfo((prev) => ({ ...prev, tableStatus: data.tableStatus }));
+                    fetchTables(); // Cập nhật danh sách bàn
+                    debouncedToast('Thông tin bàn đã được cập nhật!');
+                } else {
+                    fetchInfoOrder(); // Fallback nếu dữ liệu không đủ
+                }
+            },
+            CartUpdated: (data) => {
+                fetchInfoOrder(); // Cập nhật toàn bộ nếu cần
+                debouncedToast('Giỏ hàng đã được cập nhật!');
+            },
+            OrderCreated: (orderData) => {
+                if (orderData.tableId === tableId) {
+                    fetchInfoOrder();
+                    debouncedToast('Đơn hàng mới đã được tạo!', 'success');
+                }
+            },
+            OrderUpdated: (orderData) => {
+                if (orderData.orderId === tableInfo?.orderId) {
+                    // Cập nhật trực tiếp nếu có dữ liệu từ socket
+                    if (orderData.products) {
+                        setOrderItems(orderData.products);
+                        setTableInfo((prev) => ({ ...prev, ...orderData }));
+                        debouncedToast('Đơn hàng đã được cập nhật!');
+                    } else {
+                        fetchInfoOrder();
+                    }
+                }
+            },
+            OrderDetailAdded: (data) => {
+                // Cập nhật trực tiếp danh sách món
+                if (data.item) {
+                    setOrderItems((prev) => [...prev, data.item]);
+                    debouncedToast('Đã thêm món mới vào đơn hàng!');
+                } else {
+                    fetchInfoOrder();
+                }
+            },
+            OrderDetailUpdated: (data) => {
+                // Cập nhật trực tiếp món
+                if (data.item) {
+                    setOrderItems((prev) =>
+                        prev.map((item) => (item.id === data.item.id ? { ...item, ...data.item } : item))
+                    );
+                    debouncedToast('Chi tiết đơn hàng đã được cập nhật!');
+                } else {
+                    fetchInfoOrder();
+                }
+            },
+            OrderDetailDeleted: (data) => {
+                // Xóa trực tiếp món
+                if (data.itemId) {
+                    setOrderItems((prev) => prev.filter((item) => item.id !== data.itemId));
+                    debouncedToast('Đã xóa món khỏi đơn hàng!');
+                } else {
+                    fetchInfoOrder();
+                }
+            },
+            OrderDetailQuantityDecreased: (data) => {
+                // Cập nhật số lượng trực tiếp
+                if (data.itemId && data.quantity) {
+                    setOrderItems((prev) =>
+                        prev.map((item) =>
+                            item.id === data.itemId ? { ...item, quantity: data.quantity } : item
+                        )
+                    );
+                    debouncedToast('Số lượng món đã được giảm!');
+                } else {
+                    fetchInfoOrder();
+                }
+            },
+            OrderConfirmed: (data) => {
+                if (data.orderId === tableInfo?.orderId) {
+                    setTableInfo((prev) => ({ ...prev, od_status: '3' }));
+                    fetchTables();
+                    debouncedToast('Đơn hàng đã được xác nhận!', 'success');
+                }
+            },
+        });
+
+        return () => {
+            cleanupSocketListeners();
+        };
+    }, [isOpen, tableId, tableInfo?.orderId, fetchInfoOrder, fetchTables, debouncedToast]);
 
     // Cập nhật số lượng sản phẩm
     const handleUpdateQuantity = async (itemId, newQuantity) => {
         try {
-            // Gọi API để cập nhật số lượng
-            await api.patch(`/s2d/orderdetail/update1/${itemId}`, { quantity: newQuantity });
-
-            // Cập nhật state orderItems
+            await api.patch(`/s2d/orderdetail/${itemId}`, { quantity: newQuantity });
             setOrderItems((prevItems) =>
                 prevItems.map((item) =>
                     item.id === itemId ? { ...item, quantity: newQuantity } : item
                 )
             );
-            toast.success('Cập nhật số lượng thành công!');
+            debouncedToast('Cập nhật số lượng thành công!', 'success');
         } catch (error) {
             console.error('Lỗi cập nhật số lượng:', error);
             throw new Error('Cập nhật số lượng thất bại');
@@ -74,13 +180,10 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     // Xóa sản phẩm
     const handleDeleteItem = async (itemId) => {
         try {
-            // Gọi API để xóa sản phẩm
             await api.delete(`/s2d/orderdetail/${itemId}`);
-
-            // Cập nhật state orderItems
             setOrderItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
-            toast.success('Đã xóa sản phẩm!');
-            fetchInfoOrder(); // Cập nhật danh sách bàn
+            debouncedToast('Đã xóa sản phẩm!', 'success');
+            fetchInfoOrder();
         } catch (error) {
             console.error('Lỗi xóa sản phẩm:', error);
             throw new Error('Xóa sản phẩm thất bại');
@@ -94,10 +197,10 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
             await api.patch(`/s2d/order/${tableInfo.orderId}`, { od_status: '3' });
             fetchInfoOrder();
             fetchTables();
-            toast.success('Đơn hàng hoàn thành!');
+            debouncedToast('Đơn hàng hoàn thành!', 'success');
         } catch (error) {
             console.error('Lỗi hoàn thành đơn hàng:', error);
-            toast.error('Hoàn thành đơn hàng thất bại!');
+            debouncedToast('Hoàn thành đơn hàng thất bại!', 'error');
         }
     };
 
@@ -107,10 +210,10 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
             await api.patch(`/s2d/order/confirm-all/${tableInfo.orderId}`);
             fetchInfoOrder();
             fetchTables();
-            toast.success('Xác nhận món thành công!');
+            debouncedToast('Xác nhận món thành công!', 'success');
         } catch (error) {
             console.error('Lỗi xác nhận:', error);
-            toast.error('Xác nhận món thất bại!');
+            debouncedToast('Xác nhận món thất bại!', 'error');
         }
     };
 
@@ -120,130 +223,108 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
             await api.delete(`/s2d/order/removestatus/${tableInfo.orderId}`);
             fetchInfoOrder();
             fetchTables();
-            toast.success('Đã hủy đơn hàng!');
+            debouncedToast('Đã hủy đơn hàng!', 'success');
         } catch (error) {
             console.error('Lỗi hủy đơn hàng:', error);
-            toast.error('Hủy đơn hàng thất bại!');
+            debouncedToast('Hủy đơn hàng thất bại!', 'error');
         }
     };
 
-    // In hóa đơn
-    // const handlePrintBill = async () => {
-    //     try {
-    //         const res = await api.post(`/s2d/vietqr/generate-vietqr`, {
-    //             orderId: tableInfo.orderId,
-    //         });
-    //         console.log('QR response:', res);
-
-    //         setInfoPayment(res);
-
-    //         const printWindow = window.open('', '_blank', 'width=800,height=600');
-    //         if (printWindow) {
-    //             printWindow.document.write(`
-    //       <html lang="vi">
-    //         <head>
-    //           <meta charset="UTF-8">
-    //           <title>Hóa Đơn Thanh Toán</title>
-    //           <style>
-    //             body { font-family: Arial, sans-serif; margin: 20px; }
-    //             h1 { text-align: center; margin-bottom: 10px; }
-    //             .info, .total { margin-bottom: 20px; }
-    //             table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-    //             table, th, td { border: 1px solid #000; }
-    //             th, td { padding: 8px; text-align: center; }
-    //             .total p { text-align: right; margin: 5px 0; }
-    //             .footer { text-align: center; margin-top: 30px; font-style: italic; }
-    //             .qr-code { text-align: center; margin-top: 20px; }
-    //           </style>
-    //         </head>
-    //         <body>
-    //           <h1>HÓA ĐƠN THANH TOÁN</h1>
-    //           <div class="info">
-    //             <p><strong>Nhà hàng:</strong> Khu chợ đêm SCAN2DINE</p>
-    //             <p><strong>Địa chỉ:</strong> Cù Chính Lan</p>
-    //             <p><strong>SĐT:</strong> 0909 123 456</p>
-    //             <hr>
-    //             <p><strong>Mã hóa đơn:</strong> ${tableInfo?.orderId.toUpperCase()}</p>
-    //             <p><strong>Bàn số:</strong> ${tableInfo?.tableNumber || ''}</p>
-    //             <p><strong>Ngày giờ:</strong> ${formatDate(new Date().toISOString())}</p>
-    //             <p><strong>Khách hàng:</strong> ${tableInfo?.customer.name || 'Khách lẻ'}</p>
-    //             <p><strong>Số điện thoại:</strong> ${tableInfo?.customer.phone || '---'}</p>
-    //           </div>
-    //           <table>
-    //             <thead>
-    //               <tr>
-    //                 <th>Món ăn</th>
-    //                 <th>Số lượng</th>
-    //                 <th>Đơn giá</th>
-    //                 <th>Thành tiền</th>
-    //               </tr>
-    //             </thead>
-    //             <tbody>
-    //               ${orderItems
-    //                     .map(
-    //                         (item) => `
-    //                 <tr>
-    //                   <td>${item.productName}</td>
-    //                   <td>${item.quantity}</td>
-    //                   <td>${formatCurrency(item.price)}</td>
-    //                   <td>${formatCurrency(item.price * item.quantity)}</td>
-    //                 </tr>
-    //               `
-    //                     )
-    //                     .join('')}
-    //             </tbody>
-    //           </table>
-    //           <div class="total">
-    //             <p><strong>Tạm tính:</strong> ${formatCurrency(total)}</p>
-    //             <p><strong>Thuế (0%):</strong> ${formatCurrency(total * 0.0)}</p>
-    //             <p><strong>Tổng cộng:</strong> ${formatCurrency(total * 1.0)}</p>
-    //           </div>
-    //           <div class="qr-code">
-    //             <p>Quét mã để thanh toán hóa đơn:</p>
-    //             <img src="${res.data.qr_url}" alt="QR Code" style="width: 240px; height: 300px;" />
-    //           </div>
-    //           <div class="footer">
-    //             <p>Cảm ơn Quý khách! Hẹn gặp lại!</p>
-    //           </div>
-    //           <script>
-    //             window.onload = function() {
-    //               window.print();
-    //               setTimeout(() => window.close(), 500);
-    //             };
-    //           </script>
-    //         </body>
-    //       </html>
-    //     `);
-    //             printWindow.document.close();
-    //         } else {
-    //             toast.error('Không thể mở cửa sổ in hóa đơn.');
-    //         }
-    //     } catch (error) {
-    //         console.error('Lỗi in hóa đơn:', error);
-    //         toast.error('Không thể tạo QR thanh toán.');
-    //     }
-    // };
+    // In hóa đơn (giữ nguyên logic hiện tại, nhưng thêm debounce cho toast)
     const handlePrintBill = async () => {
         try {
             const res = await api.post(`/s2d/vietqr/generate-vietqr`, {
                 orderId: tableInfo.orderId,
             });
-
             setInfoPayment(res);
 
-            PrintBillComponent({
-                tableInfo,
-                orderItems,
-                total,
-                qrUrl: res.data.qr_url,
-            });
+            const printWindow = window.open('', '_blank', 'width=800,height=600');
+            if (printWindow) {
+                printWindow.document.write(`
+          <html lang="vi">
+            <head>
+              <meta charset="UTF-8">
+              <title>Hóa Đơn Thanh Toán</title>
+              <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                h1 { text-align: center; margin-bottom: 10px; }
+                .info, .total { margin-bottom: 20px; }
+                table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+                table, th, td { border: 1px solid #000; }
+                th, td { padding: 8px; text-align: center; }
+                .total p { text-align: right; margin: 5px 0; }
+                .footer { text-align: center; margin-top: 30px; font-style: italic; }
+                .qr-code { text-align: center; margin-top: 20px; }
+              </style>
+            </head>
+            <body>
+              <h1>HÓA ĐƠN THANH TOÁN</h1>
+              <div class="info">
+                <p><strong>Nhà hàng:</strong> Khu chợ đêm SCAN2DINE</p>
+                <p><strong>Địa chỉ:</strong> Cù Chính Lan</p>
+                <p><strong>SĐT:</strong> 0909 123 456</p>
+                <hr>
+                <p><strong>Mã hóa đơn:</strong> ${tableInfo?.orderId.toUpperCase()}</p>
+                <p><strong>Bàn số:</strong> ${tableInfo?.tableNumber || ''}</p>
+                <p><strong>Ngày giờ:</strong> ${formatDate(new Date().toISOString())}</p>
+                <p><strong>Khách hàng:</strong> ${tableInfo?.customer.name || 'Khách lẻ'}</p>
+                <p><strong>Số điện thoại:</strong> ${tableInfo?.customer.phone || '---'}</p>
+              </div>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Món ăn</th>
+                    <th>Số lượng</th>
+                    <th>Đơn giá</th>
+                    <th>Thành tiền</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${orderItems
+                        .map(
+                            (item) => `
+                    <tr>
+                      <td>${item.productName}</td>
+                      <td>${item.quantity}</td>
+                      <td>${formatCurrency(item.price)}</td>
+                      <td>${formatCurrency(item.price * item.quantity)}</td>
+                    </tr>
+                  `
+                        )
+                        .join('')}
+                </tbody>
+              </table>
+              <div class="total">
+                <p><strong>Tạm tính:</strong> ${formatCurrency(total)}</p>
+                <p><strong>Thuế (0%):</strong> ${formatCurrency(total * 0.0)}</p>
+                <p><strong>Tổng cộng:</strong> ${formatCurrency(total * 1.0)}</p>
+              </div>
+              <div class="qr-code">
+                <p>Quét mã để thanh toán hóa đơn:</p>
+                <img src="${res.data.qr_url}" alt="QR Code" style="width: 240px; height: 300px;" />
+              </div>
+              <div class="footer">
+                <p>Cảm ơn Quý khách! Hẹn gặp lại!</p>
+              </div>
+              <script>
+                window.onload = function() {
+                  window.print();
+                  setTimeout(() => window.close(), 500);
+                };
+              </script>
+            </body>
+          </html>
+        `);
+                printWindow.document.close();
+            } else {
+                debouncedToast('Không thể mở cửa sổ in hóa đơn.', 'error');
+            }
         } catch (error) {
             console.error('Lỗi in hóa đơn:', error);
-            toast.error('Không thể tạo QR thanh toán.');
+            debouncedToast('Không thể tạo QR thanh toán.', 'error');
         }
     };
 
-    // Format ngày giờ
     const formatDate = (dateString) => {
         if (!dateString) return '';
         return new Date(dateString).toLocaleString('vi-VN', {
@@ -256,12 +337,10 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
         });
     };
 
-    // Format tiền tệ
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     };
 
-    // Chuyển đổi trạng thái đơn hàng
     const getStatusLabel = (status) => {
         switch (status) {
             case '1':
@@ -284,7 +363,6 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] flex flex-col">
-                {/* Dialog Header */}
                 <div className="bg-primary p-4 text-white flex items-center justify-between rounded-t-lg">
                     <h2 className="text-lg font-medium">
                         {loading
@@ -301,7 +379,6 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                     </button>
                 </div>
 
-                {/* Dialog Content */}
                 <div className="flex-1 overflow-auto">
                     {loading ? (
                         <div className="flex justify-center items-center h-64">
@@ -309,7 +386,6 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                         </div>
                     ) : (
                         <>
-                            {/* Table Info */}
                             <div className="p-4 border-b bg-gray-50">
                                 <div className="space-y-2">
                                     {tableInfo?.customer && (
@@ -344,7 +420,6 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                                 </div>
                             </div>
 
-                            {/* Order Items */}
                             <div className="p-4">
                                 <h3 className="font-medium text-gray-800 mb-3">Danh sách món</h3>
                                 {orderItems.length === 0 ? (
@@ -367,7 +442,6 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                                     </div>
                                 )}
 
-                                {/* Order Summary */}
                                 {orderItems.length > 0 && (
                                     <div className="mt-4 pt-3 border-t border-gray-200">
                                         <div className="flex justify-between py-1">
@@ -389,7 +463,6 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                     )}
                 </div>
 
-                {/* Dialog Actions */}
                 {!loading && !error && tableInfo && (
                     <div className="p-4 border-t bg-gray-50 rounded-b-lg">
                         <div className="grid grid-cols-2 gap-3">
