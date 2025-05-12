@@ -16,7 +16,7 @@ import {
 } from 'recharts';
 
 import {
-    FaChartLine,
+
     FaUsers,
     FaShoppingCart,
     FaDollarSign,
@@ -31,16 +31,23 @@ import {
 export default function Dashboard() {
 
     const [data, setData] = useState({});
+    const [data2, setData2] = useState({});
+
 
     useEffect(() => {
         fetchData();
     }, []);
     const fetchData = async () => {
-        const res = await api.get('/s2d/foodstall/thongke');
-        console.log('data', res.data);
+        const [res, res2] = await Promise.all([
+            api.get('/s2d/foodstall/thongke'),
+            api.get('/s2d/foodstall/thongkeCustomer'),
+        ]);
+        console.log('data', res2.data);
         setData(res.data)
+        setData2(res2.data)
 
     }
+
 
     // 
     const formatCurrency = (value) => {
@@ -51,36 +58,12 @@ export default function Dashboard() {
     };
     // Dữ liệu thống kê mẫu
     const stats = [
-        { id: 1, title: "Khách hàng", value: "1,257", icon: FaUsers, change: "+5%", color: "bg-blue-500" },
+        { id: 1, title: "Khách hàng", value: (data2.totalCustomers), icon: FaUsers, change: "+5%", color: "bg-blue-500" },
         { id: 2, title: "Doanh thu", value: formatCurrency(data?.totalRevenue || 0), icon: FaDollarSign, change: "+12%", color: "bg-green-500" },
         { id: 3, title: "Đơn hàng", value: (data.totalOrders), icon: FaShoppingCart, change: "-2%", color: "bg-purple-500" },
     ];
 
-    // Dữ liệu biểu đồ mẫu
-    const chartData = [
-        { month: 'Jan', sales: 65, customers: 45 },
-        { month: 'Feb', sales: 59, customers: 39 },
-        { month: 'Mar', sales: 80, customers: 55 },
-        { month: 'Apr', sales: 81, customers: 60 },
-        { month: 'May', sales: 56, customers: 42 },
-        { month: 'Jun', sales: 55, customers: 40 },
-        { month: 'Jul', sales: 78, customers: 63 },
-        { month: 'Aug', sales: 65, customers: 45 },
-        { month: 'Sep', sales: 90, customers: 70 },
-        { month: 'Oct', sales: 75, customers: 55 },
-        { month: 'Nov', sales: 85, customers: 65 },
-        { month: 'Dec', sales: 95, customers: 75 }
-    ];
-
-    // Dữ liệu hoạt động gần đây
-    const recentActivities = [
-        { id: 1, action: "Đơn hàng mới", details: "Đơn hàng #12345 đã được tạo", time: "5 phút trước" },
-        { id: 2, action: "Khách hàng mới", details: "John Smith đã đăng ký tài khoản", time: "15 phút trước" },
-        { id: 3, action: "Thanh toán", details: "Đơn hàng #12344 đã được thanh toán", time: "1 giờ trước" },
-        { id: 4, action: "Báo cáo mới", details: "Báo cáo tháng 4 đã sẵn sàng", time: "3 giờ trước" },
-        { id: 5, action: "Phản hồi", details: "Khách hàng Jane Doe đã gửi phản hồi", time: "5 giờ trước" },
-    ];
-
+    //custom rê chuột biểu đồ
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
@@ -132,19 +115,6 @@ export default function Dashboard() {
                             <FaChartBar size={18} />
                         </div>
                     </div>
-                    {/* <div className="h-64 flex items-end justify-between px-4">
-                        {chartData.map((data, index) => (
-                            <div key={index} className="flex flex-col items-center">
-                                <div className="flex flex-col items-center space-y-1">
-                                    <div
-                                        className="bg-blue-500 rounded-t w-8"
-                                        style={{ height: `${data.sales * 2}px` }}
-                                    ></div>
-                                </div>
-                                <div className="text-xs text-gray-500 mt-2">{data.month}</div>
-                            </div>
-                        ))}
-                    </div> */}
                     <ResponsiveContainer width="100%" height={300}>
                         <LineChart
                             width={500}

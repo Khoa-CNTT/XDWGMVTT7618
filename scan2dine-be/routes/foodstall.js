@@ -13,10 +13,21 @@ router.post("/month", foodstallController.getMonthlyRevenue);
 
 router.get("/DayWeakMonth", foodstallController.getOrderStats);
 // cho hiếu
+
 router.post("/day", foodstallController.getStatisticByDateRange);
-router.get("/thongkeCustomer", foodstallController.getCustomerStatistics);
+
+router.post("/thongkeCustomer", foodstallController.getStatisticByDateRange);
+
 // 
+
 router.post("/inputMonthYear", foodstallController.getInputMonthYear);
+
+router.get("/inputMonthYear", foodstallController.getInputMonthYear);
+//
+router.post("/thongkequay", foodstallController.getRevenueByStallInRange);
+// thống kê các loại
+router.post("/thongkeall", foodstallController.getStatistics113);
+
 
 //
 router.get("/allDoanhthu", foodstallController.getAllDoanhThu);
