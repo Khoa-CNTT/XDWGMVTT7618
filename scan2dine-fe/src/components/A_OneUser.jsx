@@ -36,20 +36,34 @@ export const A_OneUser = ({ user, index, handleOpenModal, handleDelete, getRoleI
             <td className="py-3 px-4">
                 <div className="flex space-x-2">
                     <button
-                        onClick={() => handleOpenModal(true, user)}
-                        className="text-blue-600 hover:text-blue-800"
+                        onClick={() => {
+                            if (user.role_id?.role_name != 3) {
+                                handleOpenModal(true, user);
+                            }
+                        }}
+                        className={`${user.role_id?.role_name == 3
+                            ? 'text-gray-400 cursor-not-allowed'
+                            : 'text-blue-600 hover:text-blue-800'
+                            }`}
                         title="Chỉnh sửa"
+                        disabled={user.role_id?.role_name == 3}
                     >
                         <FaEdit size={18} />
                     </button>
+
                     <button
                         onClick={() => {
-                            setUserToDelete(user);
-                            setShowConfirm(true);
-
+                            if (user.role_id?.role_name != 3) {
+                                setUserToDelete(user);
+                                setShowConfirm(true);
+                            }
                         }}
-                        className="text-red-600 hover:text-red-800"
+                        className={`${user.role_id?.role_name == 3
+                            ? 'text-gray-400 cursor-not-allowed'
+                            : 'text-red-600 hover:text-red-800'
+                            }`}
                         title="Xóa"
+                        disabled={user.role_id?.role_name == 3}
                     >
                         <FaTrash size={18} />
                     </button>
