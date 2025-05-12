@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { FaPlus, FaSearch, FaEdit, FaTrash } from 'react-icons/fa';
 import api from '../server/api';

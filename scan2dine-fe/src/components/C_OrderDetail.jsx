@@ -89,7 +89,7 @@ const OrderDetail = () => {
                 totalAmount,
                 totalItems
             });
-
+            sessionStorage.setItem('orderStartTime', orderRes.od_date ? new Date(orderRes.od_date).toLocaleString() : '');
 
 
         } catch (error) {
@@ -209,15 +209,14 @@ const OrderDetail = () => {
             {/* Footer */}
             <Footer></Footer>
 
-            {
-                showPaymentForm && (
-                    <C_ConfirmCallStaff
-                        title="Đã gửi yêu cầu thanh toán"
-                        message="Nhân viên đang đến bạn hãy chờ một lát ..."
-                        onConfirm={() => setShowPaymentForm(false)}
-                        onCancel={() => cancelCallPayment(orderData.order.table._id)}
-                    />
-                )
+            {showPaymentForm && (
+                <C_ConfirmCallStaff
+                    title="Đã gửi yêu cầu thanh toán"
+                    message="Nhân viên đang đến bạn hãy chờ một lát ..."
+                    onConfirm={() => setShowPaymentForm(false)}
+                    onCancel={() => cancelCallPayment(orderData.order.table._id)}
+                />
+            )
 
             }
         </div>
