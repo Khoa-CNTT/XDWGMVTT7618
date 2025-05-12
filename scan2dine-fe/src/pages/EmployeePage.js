@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Footer } from '../components/Footer';
 import ConfirmModal from '../components/ConfirmModal'
+import { registerSocketListeners, cleanupSocketListeners } from '../services/socketListeners';
 
 export const EmployeePage = () => {
     const [tables, setTables] = useState([]);
@@ -37,6 +38,22 @@ export const EmployeePage = () => {
             setFilteredTables(filtered);
         }
     }, [searchTerm, tables]);
+    useEffect(() => {
+        const customerInfo = {
+            idTable: null, // Không có bàn cụ thể (nghe tất cả)
+            cart: null,
+            orderId: null,
+        };
+
+        registerSocketListeners({
+            customer: customerInfo,
+            TableUpdated: handleTableUpdated,
+        });
+
+        return () => {
+            cleanupSocketListeners();
+        };
+    }, []);
 
     const fetchTables = async () => {
         setLoading(true);
@@ -52,6 +69,13 @@ export const EmployeePage = () => {
         } finally {
             setLoading(false);
         }
+    };
+    const handleTableUpdated = (data) => {
+        console.log('Nhận table_updated từ socket:', data);
+        setTables((prev) => {
+            const updated = prev.map((table) => table._id === data.tableId ? { ...table, ...data } : table);
+            return updated;
+        });
     };
 
     //Đăng xuất
