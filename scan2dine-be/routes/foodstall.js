@@ -18,6 +18,7 @@ router.post("/day", foodstallController.getStatisticByDateRange);
 router.post("/thongkeCustomer", foodstallController.getStatisticByDateRange);
 // router.post("/day", foodstallController.getStatisticByDateRange);
 router.get("/thongkeCustomer", foodstallController.getStatisticByDateRange);
+
 // 
 router.get("/inputMonthYear", foodstallController.getInputMonthYear);
 //
