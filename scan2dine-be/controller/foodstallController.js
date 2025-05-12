@@ -1033,35 +1033,90 @@ getStatisticByDateRange : async (req, res) => {
     return res.status(500).json({ message: "Đã xảy ra lỗi khi thống kê." });
   }
 },
-getCustomerStatistics: async (req, res) => {
+getRevenueByStallInRange: async (req, res) => {
   try {
-    // Lấy ngày hiện tại
-    const now = new Date();
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1); // Ngày đầu tháng
-    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999); // Ngày cuối tháng
+    const { from, to } = req.body;
+    if (!from || !to) {
+      return res.status(400).json({ message: "Thiếu ngày bắt đầu hoặc kết thúc" });
+    }
 
-    // Thống kê số lượng khách hàng trong tháng này
-    const orders = await Order.find({
-      od_date: { $gte: firstDayOfMonth, $lte: lastDayOfMonth }
-    }).select("customer");
+    const start = new Date(from);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(to);
+    end.setHours(23, 59, 59, 999);
 
-    // Lọc ra customer_id duy nhất, tránh trường hợp customer bị undefined
-    const customerIds = new Set();
-    orders.forEach(o => {
-      if (o.customer) {
-        customerIds.add(o.customer.toString()); // Chỉ thêm vào Set nếu customer có giá trị
+    const result = await Order.aggregate([
+      {
+        $match: {
+          od_date: { $gte: start, $lte: end },
+          od_status: "3"
+        }
+      },
+      {
+        $lookup: {
+          from: "ORDERDETAIL",
+          localField: "orderdetail",
+          foreignField: "_id",
+          as: "details"
+        }
+      },
+      { $unwind: "$details" },
+      {
+        $lookup: {
+          from: "PRODUCT",
+          localField: "details.products",
+          foreignField: "_id",
+          as: "product"
+        }
+      },
+      { $unwind: "$product" },
+      {
+        $group: {
+          _id: "$product.stall_id",
+          totalRevenue: { $sum: "$details.total" }
+        }
+      },
+      {
+        $lookup: {
+          from: "FOODSTALL",
+          localField: "_id",
+          foreignField: "_id",
+          as: "stall"
+        }
+      },
+      { $unwind: "$stall" },
+      {
+        $lookup: {
+          from: "USER",
+          localField: "stall.user",
+          foreignField: "_id",
+          as: "owner"
+        }
+      },
+      {
+        $lookup: {
+          from: "PRODUCT",
+          localField: "_id",
+          foreignField: "stall_id",
+          as: "products"
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          totalRevenue: 1,
+          stall_name: "$stall.stall_name",
+          location: "$stall.location",
+          owner_name: { $arrayElemAt: ["$owner.full_name", 0] },
+          totalProducts: { $size: "$products" }
+        }
       }
-    });
+    ]);
 
-    const totalCustomers = customerIds.size;
-
-    // Trả về kết quả
-    res.status(200).json({
-      totalCustomers
-    });
+    res.json(result);
   } catch (err) {
-    console.error("Lỗi thống kê khách hàng:", err);
-    res.status(500).json({ error: "Có lỗi xảy ra khi thống kê khách hàng." });
+    console.error("Lỗi lấy doanh thu:", err);
+    res.status(500).json({ message: "Server error" });
   }
 }
 }
