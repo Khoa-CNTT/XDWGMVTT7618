@@ -1,10 +1,10 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 import { A_SideBar } from '../components/A_SideBar';
 import { A_Breadcrumb } from '../components/A_Breadcrumb';
 import Dashboard from '../components/DashBoard';
 import TableManagementSystem from '../components/A_TableManagementSystem';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import UserManagementSystem from '../components/A_UserManagementSystem';
 import CustomerManagement from '../components/A_CustomerManagement';
 export const AdminPage = () => {
@@ -12,6 +12,21 @@ export const AdminPage = () => {
     // Trạng thái để theo dõi trang đang được hiển thị
     const [currentPage, setCurrentPage] = useState('tổng quan hệ thống');
 
+    const location = useLocation();
+
+    useEffect(() => {
+        // Map đường dẫn đến tên trang
+        const pathNameMap = {
+            '/admin/dashboard': 'tổng quan hệ thống',
+            '/admin/tables-management': 'quản lý bàn',
+            '/admin/users-management': 'quản lý người dùng',
+            '/admin/customers-management': 'quản lý khách hàng'
+        };
+
+        const currentPath = location.pathname;
+        const mappedPage = pathNameMap[currentPath] || 'tổng quan hệ thống';
+        setCurrentPage(mappedPage);
+    }, [location]);
 
 
     return (

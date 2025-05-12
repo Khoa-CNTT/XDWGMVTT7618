@@ -2,14 +2,16 @@ import React from 'react';
 import {
     FaUser,
     FaSignInAlt,
-    FaHome
+    FaHome, FaStore
 } from 'react-icons/fa';
 import { MdTableRestaurant } from "react-icons/md";
 import { IoMdCash } from "react-icons/io";
 
-import { Navigate, NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 
 export const A_SideBar = ({ setCurrentPage }) => {
+
+    const navigate = useNavigate();
 
     const linkClass = ({ isActive }) =>
         `flex items-center px-4 py-3 ${isActive ? 'bg-primary text-white' : 'text-gray-300 hover:bg-gray-800'}`;
@@ -17,11 +19,11 @@ export const A_SideBar = ({ setCurrentPage }) => {
 
     const handleLogout = () => {
         localStorage.removeItem('user');
-        Navigate('/login');
+        navigate('/login');
     };
 
     return (
-        <div className="w-64 bg-gray-900 text-white">
+        <div className="w-64 bg-gray-900 text-white h-screen overflow-y-auto">
             <div className="p-4 flex items-center">
                 <span className="text-xl font-extrabold">
                     Quản trị <br />
@@ -32,6 +34,7 @@ export const A_SideBar = ({ setCurrentPage }) => {
             </div>
 
             <div className="mt-6">
+                {/* TỔNG QUAN */}
                 <div className="px-4 py-2 text-xs font-semibold text-gray-400">TỔNG QUAN</div>
                 <div className="mt-2">
                     <NavLink to="/admin/dashboard" className={linkClass}>
@@ -40,7 +43,8 @@ export const A_SideBar = ({ setCurrentPage }) => {
                     </NavLink>
                 </div>
 
-                <div className="mt-6 px-4 py-2 text-xs font-semibold text-gray-400">QUẢN LÝ</div>
+                {/* QUẢN LÝ */}
+                <div className="mt-4 px-4 py-2 text-xs font-semibold text-gray-400">QUẢN LÝ</div>
                 <div className="mt-2">
                     <NavLink to="/admin/tables-management" className={linkClass}>
                         <MdTableRestaurant size={19} className="mr-3" />
@@ -56,15 +60,42 @@ export const A_SideBar = ({ setCurrentPage }) => {
                         <IoMdCash size={16} className="mr-3" />
                         <span>Khách Hàng</span>
                     </NavLink>
+                </div>
 
-                    <NavLink to="" className="flex items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white"
+                {/* THỐNG KÊ */}
+                <div className="mt-4 px-4 py-2 text-xs font-semibold text-gray-400">THỐNG KÊ</div>
+                <div className="mt-2">
+                    <NavLink to="/admin/statisticsbycounter" className={linkClass}>
+                        <FaStore size={16} className="mr-3" />
+                        <span>Theo Quầy</span>
+                    </NavLink>
+                    <NavLink to="/admin/statisticsbyorder" className={linkClass}>
+                        <FaHome size={16} className="mr-3" />
+                        <span>Theo Đơn Hàng</span>
+                    </NavLink>
+                    <NavLink to="/admin/statisticsbydish" className={linkClass}>
+                        <FaHome size={16} className="mr-3" />
+                        <span>Theo Món Ăn</span>
+                    </NavLink>
+                    <NavLink to="/admin/revenue" className={linkClass}>
+                        <FaHome size={16} className="mr-3" />
+                        <span>Doanh Thu</span>
+                    </NavLink>
+                </div>
+
+                {/* HỆ THỐNG */}
+                <div className="mt-4 px-4 py-2 text-xs font-semibold text-gray-400">HỆ THỐNG</div>
+                <div className="mt-2">
+                    <button
                         onClick={handleLogout}
+                        className="flex w-full items-center px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white"
                     >
                         <FaSignInAlt size={16} className="mr-3" />
                         <span>Đăng Xuất</span>
-                    </NavLink>
+                    </button>
                 </div>
             </div>
-        </div >
+        </div>
+
     );
 };
