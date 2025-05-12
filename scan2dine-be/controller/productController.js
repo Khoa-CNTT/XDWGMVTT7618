@@ -119,7 +119,7 @@ const productController = {
             const updatedProduct = await Product.findByIdAndUpdate(
                 productId,
                 updatedData,
-                { new: true }
+                { new: trioue }
             );
 
             res.status(200).json(updatedProduct);
