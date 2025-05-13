@@ -244,7 +244,7 @@ const foodstallController = {
         status: { $in: ['2', '3', '4'] }
       }).populate({
         path: "order",
-        select: "table od_status",
+        select: "table od_status od_date",
         populate: {
           path: "table",
           select: "tb_number status",
@@ -275,6 +275,7 @@ const foodstallController = {
             order_status: order.od_status,
             table_number: order.table?.tb_number,
             table_status: order.table?.status,
+            order_date: order.od_date,
             orderdetail: [],
           };
         }

@@ -78,26 +78,45 @@ const registerSocketListeners = ({
     const debouncedOrderDetailChanged = debounce(handleOrderDetailChanged, 300);
 
     // Kiểm tra kết nối hiện tại và tham gia rooms
-    const joinRooms = () => {
-        if (customer?.cart) {
-            socket.emit('join', `cart_${customer.cart}`);
-            console.log('Đã tham gia room cart:', `cart_${customer.cart}`);
-        } else {
-            console.warn('Không tìm thấy customer.cart, không tham gia room cart');
-        }
-        if (customer?.idTable) {
-            socket.emit('join', `table_${customer.idTable}`);
-            console.log('Đã tham gia room table:', `table_${customer.idTable}`);
-        } else {
-            console.warn('Không tìm thấy customer.idTable, không tham gia room table');
-        }
-        if (customer?.orderId) {
-            socket.emit('join', `order_${customer.orderId}`);
-            console.log('Đã tham gia room order:', `order_${customer.orderId}`);
-        } else {
-            console.warn('Không tìm thấy customer.orderId, không tham gia room order');
-        }
-    };
+const joinRooms = () => {
+    if (!socket || !socket.connected) {
+        console.warn('Socket chưa kết nối, không thể join room');
+        return;
+    }
+
+    const rooms = [];
+
+    if (customer?.cart) {
+        const room = `cart_${customer.cart}`;
+        socket.emit('join', room);
+        console.log('✅ Đã tham gia room cart:', room);
+        rooms.push(room);
+    } else {
+        console.warn('⚠️ Không tìm thấy customer.cart');
+    }
+
+    if (customer?.idTable) {
+        const room = `table_${customer.idTable}`;
+        socket.emit('join', room);
+        console.log('✅ Đã tham gia room table:', room);
+        rooms.push(room);
+    } else {
+        console.warn('⚠️ Không tìm thấy customer.idTable');
+    }
+
+    if (customer?.orderId) {
+        const room = `order_${customer.orderId}`;
+        socket.emit('join', room);
+        console.log('✅ Đã tham gia room order:', room);
+        rooms.push(room);
+    } else {
+        console.warn('⚠️ Không tìm thấy customer.orderId');
+    }
+
+    if (rooms.length === 0) {
+        console.log('🟡 Không có room nào để tham gia');
+    }
+};
 
     if (socket.connected) {
         console.log('Đã kết nối trước đó:', socket.id, new Date().toISOString());
@@ -116,6 +135,7 @@ const registerSocketListeners = ({
 
     // Lắng nghe các sự kiện
     socket.on('table_updated', (data) => {
+        console.log('Dữ liệu nhận được từ sự kiện table_updated:', data);
         if (!data || typeof data !== 'object' || !data.tableId) {
             console.warn('Dữ liệu table_updated không hợp lệ:', data);
             return;

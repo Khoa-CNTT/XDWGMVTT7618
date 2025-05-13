@@ -1,6 +1,4 @@
-// utils/cartUtils.js
-
-const {Cart,CartDetail, Product} = require('../model/model');
+const { Cart, CartDetail, Product } = require('../model/model');
 const { notifyCartDetailsDeleted } = require('./socketUtils');
 
 const deleteCartDetailsByCartId = async (cartId, io) => {
@@ -15,6 +13,10 @@ const deleteCartDetailsByCartId = async (cartId, io) => {
         const relatedCartDetails = await CartDetail.find({ cart: cart._id });
         const cartDetailIds = relatedCartDetails.map(cd => cd._id);
 
+        if (relatedCartDetails.length === 0) {
+            throw new Error("No cart details found for this cart.");
+        }
+
         // Xoá các CartDetail liên quan đến cart
         await CartDetail.deleteMany({ cart: cart._id });
 
@@ -28,6 +30,8 @@ const deleteCartDetailsByCartId = async (cartId, io) => {
         await Cart.findByIdAndUpdate(cart._id, {
             $set: { cartdetail: [] }
         });
+
+        // Thông báo qua socket nếu có io
         if (io) {
             notifyCartDetailsDeleted(io, cartId, {
                 cartId,
@@ -40,7 +44,6 @@ const deleteCartDetailsByCartId = async (cartId, io) => {
     } catch (error) {
         console.error("Error in deleteCartdetail:", error);
         throw error;
-        // return res.status(500).json({ message: "Server error", error: error.message || error });
     }
 };
 

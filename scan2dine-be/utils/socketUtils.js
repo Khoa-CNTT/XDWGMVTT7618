@@ -12,12 +12,31 @@ const notifyOrderUpdated = (io, orderId, data) => {
     io.to(`order_${orderId}`).emit('order_updated', enrichedData);
 };
 
+// const notifyTableUpdated = (io, tableId, data) => {
+//     const validData = data && typeof data === 'object' && data !== null ? data : {};
+//     const enrichedData = { tableId, ...validData };
+//     console.log('Emitting table_updated with data:', enrichedData);
+//     io.to(`table_${tableId}`).emit('table_updated', enrichedData);
+// };
 const notifyTableUpdated = (io, tableId, data) => {
+    if (!tableId) {
+        console.error("Không có tableId để gửi sự kiện.");
+        return; // Nếu không có tableId, không làm gì và thoát
+    }
+
+    // Kiểm tra dữ liệu có hợp lệ không
     const validData = data && typeof data === 'object' && data !== null ? data : {};
+
+    // Kết hợp tableId vào dữ liệu
     const enrichedData = { tableId, ...validData };
+
+    // Log thông tin cho việc debug
     console.log('Emitting table_updated with data:', enrichedData);
+
+    // Gửi sự kiện cho tất cả người tham gia room tương ứng với tableId
     io.to(`table_${tableId}`).emit('table_updated', enrichedData);
 };
+
 
 const notifyCartUpdated = (io, cartId, data) => {
     const validData = data && typeof data === 'object' && data !== null ? data : {};

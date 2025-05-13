@@ -126,12 +126,19 @@ const CartDetails = () => {
         table: customer.idTable,
       });
       await api.patch(`/s2d/table/${customer.idTable}`, { status: '3' });
+
+      // Cập nhật trạng thái bàn ngay trong giao diện (chắc chắn đã cập nhật thành công)
       setOrderResult(res.data);
       setShowUnderstand(true);
+
+      // Có thể thêm logic để cập nhật trạng thái bàn trong UI ngay lập tức nếu cần
+      // Ví dụ, bạn có thể tự động fetch lại trạng thái bàn mới nhất
+      fetchCartItems();
     } catch (error) {
       console.error('Error confirming order:', error);
     }
   };
+
 
   const handleUnderstand = () => {
     setShowUnderstand(false);

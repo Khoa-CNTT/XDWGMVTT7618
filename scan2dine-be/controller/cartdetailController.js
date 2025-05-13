@@ -145,6 +145,7 @@ const cartdetailController = {
           detail: downQuantity
         });
       }
+      const io = req.app.get('io')
       notifyCartDetailQuantityDecreased(io, cart ,{
                 cartId: cart,
                 detailId: downQuantity,
