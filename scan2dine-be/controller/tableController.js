@@ -104,54 +104,105 @@ const tableController = {
   },
 
   // Update a table
-  updatetable: async (req, res) => {
+  // updatetable: async (req, res) => {
+  //   try {
+  //     const table = await Table.findById(req.params.id);
+  //     if (!table) {
+  //       return res.status(404).json({ message: 'Không tìm thấy bàn' });
+  //     }
+
+  //     const { status, order } = req.body;
+
+  //     // Validate status
+  //     if (status && !['1', '2', '3'].includes(status)) {
+  //       return res.status(400).json({ message: 'Trạng thái bàn không hợp lệ' });
+  //     }
+
+  //     // Prevent updating order if table has active orders
+  //     if (order && table.order && table.order.length > 0 && order !== table.order.toString()) {
+  //       return res.status(400).json({ message: 'Không thể cập nhật đơn hàng vì bàn đang có đơn hàng hoạt động' });
+  //     }
+
+  //     const updatedTable = await Table.findByIdAndUpdate(
+  //       req.params.id,
+  //       { $set: { status: status || table.status, order: order || table.order } },
+  //       { new: true }
+  //     );
+
+  //     const io = req.app.get('io');
+  //     if (!io) {
+  //       console.error('Socket.IO is not initialized');
+  //       return res.status(500).json({ message: 'Socket.IO không khả dụng' });
+  //     }
+
+  //     notifyTableUpdated(io, updatedTable._id, {
+  //       tableId: updatedTable._id,
+  //       tableNumber: updatedTable.tb_number,
+  //       status: updatedTable.status,
+  //       message: 'Thông tin bàn đã được cập nhật'
+  //     });
+
+  //     return res.status(200).json({
+  //       message: 'Cập nhật bàn thành công',
+  //       table: {
+  //         ...updatedTable.toObject(),
+  //         name: `Bàn ${updatedTable.tb_number}`
+  //       }
+  //     });
+  //   } catch (error) {
+  //     console.error('Error in updatetable:', error);
+  //     return res.status(500).json({ message: 'Lỗi server', error: error.message });
+  //   }
+  // },
+updatetable: async (req, res) => {
     try {
-      const table = await Table.findById(req.params.id);
-      if (!table) {
-        return res.status(404).json({ message: 'Không tìm thấy bàn' });
-      }
-
-      const { status, order } = req.body;
-
-      // Validate status
-      if (status && !['1', '2', '3'].includes(status)) {
-        return res.status(400).json({ message: 'Trạng thái bàn không hợp lệ' });
-      }
-
-      // Prevent updating order if table has active orders
-      if (order && table.order && table.order.length > 0 && order !== table.order.toString()) {
-        return res.status(400).json({ message: 'Không thể cập nhật đơn hàng vì bàn đang có đơn hàng hoạt động' });
-      }
-
-      const updatedTable = await Table.findByIdAndUpdate(
-        req.params.id,
-        { $set: { status: status || table.status, order: order || table.order } },
-        { new: true }
-      );
-
-      const io = req.app.get('io');
-      if (!io) {
-        console.error('Socket.IO is not initialized');
-        return res.status(500).json({ message: 'Socket.IO không khả dụng' });
-      }
-
-      notifyTableUpdated(io, updatedTable._id, {
-        tableId: updatedTable._id,
-        tableNumber: updatedTable.tb_number,
-        status: updatedTable.status,
-        message: 'Thông tin bàn đã được cập nhật'
-      });
-
-      return res.status(200).json({
-        message: 'Cập nhật bàn thành công',
-        table: {
-          ...updatedTable.toObject(),
-          name: `Bàn ${updatedTable.tb_number}`
+        const table = await Table.findById(req.params.id);
+        if (!table) {
+            return res.status(404).json({ message: 'Không tìm thấy bàn' });
         }
-      });
+
+        const { status, order } = req.body;
+
+        // Validate status
+        if (status && !['1', '2', '3'].includes(status)) {
+            return res.status(400).json({ message: 'Trạng thái bàn không hợp lệ' });
+        }
+
+        // Prevent updating order if table has active orders
+        if (order && table.order && table.order.length > 0 && order !== table.order.toString()) {
+            return res.status(400).json({ message: 'Không thể cập nhật đơn hàng vì bàn đang có đơn hàng hoạt động' });
+        }
+
+        const updatedTable = await Table.findByIdAndUpdate(
+            req.params.id,
+            { $set: { status: status || table.status, order: order || table.order } },
+            { new: true }
+        );
+
+        const io = req.app.get('io');
+        if (!io) {
+            console.error('Socket.IO is not initialized');
+            return res.status(500).json({ message: 'Socket.IO không khả dụng' });
+        }
+
+        // Phát sự kiện table_updated đến tất cả client đang tham gia room của bàn
+        notifyTableUpdated(io, updatedTable._id, {
+            tableId: updatedTable._id,
+            tableNumber: updatedTable.tb_number,
+            status: updatedTable.status,
+            message: 'Thông tin bàn đã được cập nhật'
+        });
+
+        return res.status(200).json({
+            message: 'Cập nhật bàn thành công',
+            table: {
+                ...updatedTable.toObject(),
+                name: `Bàn ${updatedTable.tb_number}`
+            }
+        });
     } catch (error) {
-      console.error('Error in updatetable:', error);
-      return res.status(500).json({ message: 'Lỗi server', error: error.message });
+        console.error('Error in updatetable:', error);
+        return res.status(500).json({ message: 'Lỗi server', error: error.message });
     }
   },
 

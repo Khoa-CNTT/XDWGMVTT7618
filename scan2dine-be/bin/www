@@ -38,7 +38,11 @@ io.on("connection", (socket) => {
   // Xử lý sự kiện join room
     socket.on('join', (room) => {
         socket.join(room);
-        console.log(`Client ${socket.id} đã tham gia room: ${room}`);
+        console.log(`✅ Socket ${socket.id} joined room: ${room}`);
+    });
+    socket.on('leave', (room) => {
+        socket.leave(room);
+        console.log(`↩️ Socket ${socket.id} left room: ${room}`);
     });
   socket.on("message", (msg) => {
     try {

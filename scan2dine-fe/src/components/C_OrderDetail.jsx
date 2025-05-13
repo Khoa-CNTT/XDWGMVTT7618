@@ -26,10 +26,10 @@ const OrderDetail = () => {
         totalAmount: 0,
         totalItems: 0,
     });
-const [showPaymentForm, setShowPaymentForm] = useState(false);
-const cancelCallPayment = () => {
-    setShowPaymentForm(false);
-};
+    const [showPaymentForm, setShowPaymentForm] = useState(false);
+    const cancelCallPayment = () => {
+        setShowPaymentForm(false);
+    };
 
     const location = useLocation();
     const orderData = location.state?.orderData;
@@ -57,7 +57,7 @@ const cancelCallPayment = () => {
             if (!orderRes) throw new Error('Không tìm thấy đơn hàng');
 
             const { data: products } = await api.get('/s2d/product');
-            
+
 
             const items = orderRes.orderdetail || [];
             let totalItems = 0;
@@ -304,6 +304,24 @@ const cancelCallPayment = () => {
                     console.error('Dữ liệu không hợp lệ từ OrderDeleted:', data);
                 }
             },
+            // ✅ Thêm mới tableupdate
+            TableUpdated: (data) => {
+                console.log('Dữ liệu nhận được từ sự kiện table update :', data); 
+                if (data && typeof data === 'object' && data.tableId === customer.idTable) {
+                    setOrderDetails((prev) => ({
+                        ...prev,
+                        table: {
+                            ...prev.table,
+                            status: data.status,
+                            tableNumber: data.tableNumber,
+                        },
+                    }));
+                    debouncedToast(data.message || 'Trạng thái bàn đã được cập nhật!', 'info');
+                } else {
+                    console.error('Dữ liệu không hợp lệ từ TableUpdated:', data);
+                }
+            },
+
         });
 
         return () => {

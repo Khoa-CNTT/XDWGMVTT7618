@@ -38,20 +38,27 @@ export const EmployeePage = () => {
             setFilteredTables(filtered);
         }
     }, [searchTerm, tables]);
-    useEffect(() => {
-        const customerInfo = {
-            idTable: null, // Không có bàn cụ thể (nghe tất cả)
-            cart: null,
-            orderId: null,
-        };
 
+    useEffect(() => {
         registerSocketListeners({
-            customer: customerInfo,
-            TableUpdated: handleTableUpdated,
+            TableUpdated: (data) => {
+                console.log('Dữ liệu nhận được từ sự kiện TableUpdated:', data);
+
+                if (data && data.tableId) {
+                    setTables((prevTables) =>
+                        prevTables.map((table) =>
+                            table._id === data.tableId
+                                ? { ...table, status: data.status, tableNumber: data.tableNumber }
+                                : table
+                        )
+                    );
+                    toast.info(data.message || 'Trạng thái bàn đã được cập nhật!');
+                }
+            },
         });
 
         return () => {
-            cleanupSocketListeners();
+            cleanupSocketListeners(); // Cleanup khi component bị unmount
         };
     }, []);
 
@@ -70,13 +77,7 @@ export const EmployeePage = () => {
             setLoading(false);
         }
     };
-    const handleTableUpdated = (data) => {
-        console.log('Nhận table_updated từ socket:', data);
-        setTables((prev) => {
-            const updated = prev.map((table) => table._id === data.tableId ? { ...table, ...data } : table);
-            return updated;
-        });
-    };
+
 
     //Đăng xuất
     const handleLogout = () => {
