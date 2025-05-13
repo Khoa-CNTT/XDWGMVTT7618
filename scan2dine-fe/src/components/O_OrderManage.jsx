@@ -49,22 +49,31 @@ const O_OrderManage = ({ stallId }) => {
         try {
             const prevSelectedOrderId = selectedOrder?.order_id;
             const response = await api.get(`/s2d/foodstall/orderstall/${stallId}`);
+            console.log("response.data: ", response.data)
             let confirmedOrders = Array.isArray(response.data)
                 ? response.data.filter(order => ['2'].includes(order.order_status))
                 : [];
 
-            // Update order_status based on orderdetail statuses
+            // Update order_status and add startTime field
             confirmedOrders = confirmedOrders.map(order => {
+                // Add startTime field based on available fields
+                const startTime =
+                    order.od_date ||
+                    order.created_at ||
+                    order.start_time ||
+                    order.order_date ||
+                    '';
+
                 if (Array.isArray(order.orderdetail) && order.orderdetail.length > 0) {
                     const allCompleted = order.orderdetail.every(item => item.status === '4' || item.status === 'completed');
                     const anyPreparing = order.orderdetail.some(item => item.status === '3');
                     if (allCompleted) {
-                        return { ...order, order_status: '4' };
+                        return { ...order, order_status: '4', startTime };
                     } else if (anyPreparing) {
-                        return { ...order, order_status: '3' };
+                        return { ...order, order_status: '3', startTime };
                     }
                 }
-                return order;
+                return { ...order, startTime };
             });
 
             setOrders(confirmedOrders);
@@ -127,13 +136,9 @@ const O_OrderManage = ({ stallId }) => {
 
 
     const formatDateTime = (dateString) => {
-        let date;
-        if (!dateString) {
-            date = new Date();
-        } else {
-            date = new Date(dateString);
-            if (isNaN(date.getTime())) date = new Date();
-        }
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '';
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear();
@@ -162,7 +167,7 @@ const O_OrderManage = ({ stallId }) => {
                             onClick={() => setSelectedOrder(order)}
                             className={`p-3 border rounded-lg cursor-pointer ${selectedOrder?.order_id === order.order_id ? 'bg-red-100 border-red-400' : 'hover:bg-gray-100'}`}
                         >
-                            <div >Đơn #{order.order_id.slice(-6)}</div>
+                            <div>Đơn #{order.order_id.slice(-6)}</div>
                             <div className="text-sm text-gray-500">Bàn: {order.table_number}</div>
                             <div className="text-sm">{renderStatusBadge(order.order_status)}</div>
                         </div>
@@ -177,8 +182,11 @@ const O_OrderManage = ({ stallId }) => {
 
                         <div className="flex justify-between mb-2 text-sm">
                             <div>Đơn hàng: <span className="text-primary font-semibold uppercase ">#{selectedOrder.order_id}</span></div>
+                            <div className="flex justify-between">
+                                {console.log('selectedOrder.startTime:', selectedOrder.startTime)}
+                                <span>Giờ bắt đầu: {formatDateTime(selectedOrder.order_date)}</span>
 
-                            <div>Giờ bắt đầu: {formatDateTime(selectedOrder.start_time)}</div>
+                            </div>
                         </div>
 
                         <hr className="my-2" />

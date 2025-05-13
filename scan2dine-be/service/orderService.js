@@ -49,7 +49,7 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
         order = new Order({
             customer: customerId,
             table: tableId,
-            od_status: '1'
+            od_status: '1',
         });
         await order.save();
         // Cập nhật trạng thái bàn : yêu cầu xác nhận món ăn
