@@ -113,6 +113,10 @@ const customerSchema = new mongoose.Schema({
     type: String,
     // required: true
   },
+  status: {
+    type: String,
+    // default: "1",
+  },
   cart: {
     type: mongoose.Types.ObjectId,
     // liên kết với bảng cart
