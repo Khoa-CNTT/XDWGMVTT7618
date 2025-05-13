@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { FaTimes, FaUpload } from 'react-icons/fa';
 
 const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
+
     const initialFormState = {
         pd_name: '',
         price: '',
@@ -10,12 +11,14 @@ const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
         image: null
     };
     const [formData, setFormData] = useState(initialFormState);
-    const [previewImage, setPreviewImage] = useState(null);
     // Thêm state để theo dõi lỗi hình ảnh
     const [imageError, setImageError] = useState('');
     // Thêm state để kiểm tra xem form đã được submit chưa
     const [isSubmitted, setIsSubmitted] = useState(false);
-
+    // Thêm state để theo dõi trạng thái tải
+    const [loading, setLoading] = useState(false);
+    // Thêm state để hiển thị thông báo thành công
+    const [successMessage, setSuccessMessage] = useState('');
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -29,24 +32,30 @@ const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
     };
 
     const handleSubmit = (e) => {
-    e.preventDefault();
-    const form = new FormData();
-    form.append('pd_name', formData.pd_name);
-    form.append('price', formData.price);
-    form.append('description', formData.description);
-    form.append('category', formData.category);
-    if (formData.image) {
-      form.append('image', formData.image);
-    }
+        e.preventDefault();
+        setLoading(true); // Start loading
+        const form = new FormData();
+        form.append('pd_name', formData.pd_name);
+        form.append('price', formData.price);
+        form.append('description', formData.description);
+        form.append('category', formData.category);
+        if (formData.image) {
+            form.append('image', formData.image);
+        }
 
-    console.log('FormData in O_AddProductModal:');
-    for (let pair of form.entries()) {
-      console.log(`${pair[0]}: ${pair[1]}`);
-    }
+        console.log('FormData in O_AddProductModal:');
+        for (let pair of form.entries()) {
+            console.log(`${pair[0]}: ${pair[1]}`);
+        }
 
-    onSave(form);
-    setFormData({ pd_name: '', price: '', description: '', category: '', image: null });
-  };
+        onSave(form);
+        setSuccessMessage('Thêm thành công!');
+        setFormData({ pd_name: '', price: '', description: '', category: '', image: null });
+        setTimeout(() => {
+            setSuccessMessage('');
+            setLoading(false); // Stop loading after success message disappears
+        }, 2000);
+    };
 
     // Reset trạng thái khi modal đóng
     const handleClose = () => {
@@ -67,6 +76,13 @@ const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
                             <FaTimes className="w-6 h-6" />
                         </button>
                     </div>
+                    {successMessage && (
+                        <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[9999] transition-all duration-300">
+                            <div className="bg-green-500 text-white px-6 py-3 rounded shadow-lg font-semibold min-w-[220px] text-center">
+                                {successMessage}
+                            </div>
+                        </div>
+                    )}
 
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-2 gap-6">
@@ -198,9 +214,10 @@ const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-red-600"
+                                    className={`px-6 py-2 bg-primary text-white rounded-lg hover:bg-red-600 ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                    disabled={loading}
                                 >
-                                    Thêm
+                                    {loading ? 'Đang thêm...' : 'Thêm'}
                                 </button>
                             </div>
                         </div>
