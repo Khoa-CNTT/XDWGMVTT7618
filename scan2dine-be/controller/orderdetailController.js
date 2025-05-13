@@ -27,7 +27,7 @@ const orderdetailCOntroller = {
                 })
             }
             const io = req.app.get('io'); // Lấy io từ app
-            notifyOrderDetailChanged(io, order,"added", {
+            notifyOrderDetailChanged(io, order, 'added',{
                 orderId: order,
                 detailId: upProduttoorderdetail.detail._id,
                 message: upProduttoorderdetail.updated ? 'Tăng số lượng sản phẩm' : 'Thêm sản phẩm mới',
@@ -89,7 +89,7 @@ const orderdetailCOntroller = {
                 }
             );
             const io = req.app.get('io');
-            notifyOrderDetailChanged(io, deleteOrderdetail.order,"deleted", {
+            notifyOrderDetailChanged(io, deleteOrderdetail.order, 'deleted',{
                 orderId: deleteOrderdetail.order,
                 detailId: deleteOrderdetail._id,
                 message: 'Chi tiết đơn hàng đã bị xóa',
@@ -148,7 +148,7 @@ const orderdetailCOntroller = {
                 new: true
             })
             const io = req.app.get('io');
-            notifyOrderDetailChanged(io, updateOrderdetial.order,"updated", {
+            notifyOrderDetailChanged(io, updateOrderdetial.order, 'updated',{
                 orderId: updateOrderDetial.order,
                 detailId: updateOrderDetial._id,
                 message: 'Thông tin chi tiết đơn hàng đã được cập nhật',
@@ -160,7 +160,7 @@ const orderdetailCOntroller = {
         }
     },
     // quyền làm
-    updateOrderDetail: async (req, res) => {
+    updateOrderDetail : async (req, res) => {
         try {
             const { id } = req.params; // lấy _id của orderdetail từ URL
             const { quantity, status, note, total } = req.body;
@@ -201,7 +201,7 @@ const orderdetailCOntroller = {
                 await Orderdetail.findByIdAndDelete(downQuantity._id);
                 await Order.findByIdAndUpdate(order, { $pull: { orderdetail: downQuantity._id } });
                 await Product.findByIdAndUpdate(products, { $pull: { orderdetail: downQuantity._id } });
-                notifyOrderDetailChanged(io, order, "deleted",{
+                notifyOrderDetailChanged(io, order,'deleted' ,{
                     orderId: order,
                     detailId: downQuantity._id,
                     message: 'Sản phẩm đã bị xóa khỏi đơn hàng',
@@ -230,7 +230,7 @@ const orderdetailCOntroller = {
             const { order, newStatus } = req.body;
             const updateStatus = await updateOrderDetailStatus(order, orderdetail, newStatus);
             const io = req.app.get('io')
-            notifyOrderDetailStatusUpdated(io, order, {
+            notifyOrderDetailChanged(io, order,'updated',{
                 orderId: order,
                 detailId: orderdetail,
                 newStatus,
@@ -262,7 +262,7 @@ const orderdetailCOntroller = {
             }
 
             const io = req.app.get('io');
-            notifyOrderDetailChanged(io, order, "updated", {
+            notifyOrderDetailChanged(io, order,"updated", {
                 orderId: order,
                 detailId: orderdetail,
                 newStatus,
@@ -292,6 +292,7 @@ const orderdetailCOntroller = {
             if (!confirmStatus) {
                 return res.status(404).json({ message: "Không tìm thấy orderdetail để cập nhật" });
             }
+
             const io = req.app.get('io');
             notifyOrderDetailChanged(io, order,"updated", {
                 orderId: order,

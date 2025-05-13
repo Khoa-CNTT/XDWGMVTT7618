@@ -5,6 +5,7 @@ import api from '../server/api';
 import ConfirmModal from './ConfirmModal';
 import { registerSocketListeners, cleanupSocketListeners } from '../services/socketListeners';
 
+
 const CartDetails = () => {
   const navigate = useNavigate();
   const [cartItems, setCartItems] = useState([]);
@@ -15,6 +16,7 @@ const CartDetails = () => {
   const [itemDelete, setItemDelete] = useState(null);
   const [editingCounter, setEditingCounter] = useState(null);
   const [orderResult, setOrderResult] = useState(null);
+  const [isListenerRegistered, setIsListenerRegistered] = useState(false);
 
   const customer = JSON.parse(sessionStorage.getItem('customer'));
   console.log('Customer:', customer); // Log để kiểm tra
@@ -48,7 +50,6 @@ const CartDetails = () => {
       cleanupSocketListeners();
     };
   }, [customer]);
-
   const fetchCartItems = async () => {
     try {
       const [cartDetailRes, foodstallRes] = await Promise.all([
@@ -125,12 +126,19 @@ const CartDetails = () => {
         table: customer.idTable,
       });
       await api.patch(`/s2d/table/${customer.idTable}`, { status: '3' });
+
+      // Cập nhật trạng thái bàn ngay trong giao diện (chắc chắn đã cập nhật thành công)
       setOrderResult(res.data);
       setShowUnderstand(true);
+
+      // Có thể thêm logic để cập nhật trạng thái bàn trong UI ngay lập tức nếu cần
+      // Ví dụ, bạn có thể tự động fetch lại trạng thái bàn mới nhất
+      fetchCartItems();
     } catch (error) {
       console.error('Error confirming order:', error);
     }
   };
+
 
   const handleUnderstand = () => {
     setShowUnderstand(false);
@@ -262,9 +270,8 @@ const CartDetails = () => {
 
                     {/* Buttons khi chỉnh sửa */}
                     <div
-                      className={`absolute right-0 top-0 bottom-0 flex items-center w-32 h-full transition-opacity ${
-                        editingCounter === stallId ? 'opacity-100' : 'opacity-0 pointer-events-none'
-                      }`}
+                      className={`absolute right-0 top-0 bottom-0 flex items-center w-32 h-full transition-opacity ${editingCounter === stallId ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                        }`}
                     >
                       <button className="bg-yellow-500 text-white text-xs flex-1 h-full">Sản phẩm tương tự</button>
                       <button
@@ -297,9 +304,8 @@ const CartDetails = () => {
               }
               handleConfirmOrder();
             }}
-            className={`w-full py-3 rounded-full font-medium text-white transition ${
-              totalPrice === 0 ? 'bg-primary opacity-50 cursor-not-allowed' : 'bg-primary hover:opacity-90'
-            }`}
+            className={`w-full py-3 rounded-full font-medium text-white transition ${totalPrice === 0 ? 'bg-primary opacity-50 cursor-not-allowed' : 'bg-primary hover:opacity-90'
+              }`}
           >
             Xác nhận gửi yêu cầu gọi món
           </button>

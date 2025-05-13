@@ -128,9 +128,9 @@ export const Owner = () => {
         {/* Header */}
         <header className="w-full px-6 py-4 bg-white border-b shadow-sm flex justify-center items-center">
           <div className='text-center'>
-            <span className="font-medium text-lg">Xin chào, {stallName}!</span>
+            <span className="font-bold text-lg text-primary">Xin chào, {stallName}!</span>
           </div>
-        </header>
+        </header> 
 
         {/* Content Area */}
         <div className="flex-grow p-6 bg-gray-100">

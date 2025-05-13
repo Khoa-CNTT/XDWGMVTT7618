@@ -200,16 +200,20 @@ export const Menu = ({ direction }) => {
 
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 pb-32">
                     {menuItems.length > 0 ? (
-                        filteredMenuItems.map((item) => (
-                            <MenuItem
-                                key={item._id}
-                                item={item}
-                                onAddToCart={addToCart}
-                                onRemoveFromCart={removeFromCart}
-                                quantity={getItemQuantity(item._id)}
-                                fetchCart={fetchCart}
-                            />
-                        ))
+                        filteredMenuItems.length > 0 ? (
+                            filteredMenuItems.map((item) => (
+                                <MenuItem
+                                    key={item._id}
+                                    item={item}
+                                    onAddToCart={addToCart}
+                                    onRemoveFromCart={removeFromCart}
+                                    quantity={getItemQuantity(item._id)}
+                                    fetchCart={fetchCart}
+                                />
+                            ))
+                        ) : (
+                            <p className="col-span-full text-center text-gray-500">Sản phẩm không có sẵn</p>
+                        )
                     ) : (
                         <p>Loading menu items...</p>
                     )}

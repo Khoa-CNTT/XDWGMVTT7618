@@ -6,7 +6,7 @@ const customerController = {
   // Add a customer
   addCustomer: async (req, res) => {
     try {
-      const { phone, name} = req.body;
+      const { phone, name } = req.body;
 
       if (!phone || !name) {
         return res.status(400).json({ message: 'Thiếu số điện thoại hoặc tên khách hàng' });

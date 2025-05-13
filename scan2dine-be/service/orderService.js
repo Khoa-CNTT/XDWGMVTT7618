@@ -3,7 +3,7 @@ const moment = require('moment');
 const { mergeDuplicateOrderDetails, calculateTotalOrderPrice } = require('../utils/orderUtils');
 const { deleteCartDetailsByCartId } = require('../utils/cartUtils');
 const { updateOrderDetailStatus } = require('../utils/orderDetailUtils');
-const { notifyTableUpdated, notifyCartUpdated, notifyOrderCreated, notifyOrderUpdated } = require('../utils/socketUtils');
+const { notifyTableUpdated, notifyCartUpdated, notifyOrderCreated, notifyOrderUpdated, notifyCartDetailUpdated, notifyCartDetailAdded } = require('../utils/socketUtils');
 
 const confirmAllPendingOrderDetails = async (orderId, io) => {
     const order = await Order.findById(orderId).populate('orderdetail');
@@ -43,12 +43,13 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
         od_status: { $in: ['2', '1'] }
     });
     let isNewOrder = false;
+
     // Nếu chưa có đơn hàng chưa thanh toán cho bàn → tạo mới
     if (!order) {
         order = new Order({
             customer: customerId,
             table: tableId,
-            od_status: '1'
+            od_status: '1',
         });
         await order.save();
         // Cập nhật trạng thái bàn : yêu cầu xác nhận món ăn
@@ -60,6 +61,14 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
         // Cập nhật mối quan hệ vào bảng Table và Customer
         await Table.findByIdAndUpdate(tableId, { $push: { order: order._id } });
         await Customer.findByIdAndUpdate(customerId, { $push: { order: order._id } });
+
+        // Thông báo tạo đơn hàng mới
+        notifyOrderCreated(io, order._id, { 
+            orderId: order._id,
+            customerId: customerId,
+            tableId: tableId,
+            status: order.od_status
+        });
     }
 
     const orderDetails = []; // Danh sách các OrderDetail sẽ được xử lý và trả về
@@ -67,7 +76,6 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
 
     // Lặp qua từng sản phẩm trong giỏ hàng
     for (const item of cartDetails) {
-        // Kiểm tra xem sản phẩm này đã có trong OrderDetail với trạng thái "Chờ xác nhận" chưa
         const existingDetail = await Orderdetail.findOne({
             order: order._id,
             products: item.products._id,
@@ -80,11 +88,13 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
             existingDetail.total = existingDetail.quantity * item.products.price;
             await existingDetail.save();
             orderDetails.push(existingDetail);
+            // Thông báo cập nhật chi tiết giỏ hàng
+            notifyCartDetailUpdated(io, cartId, { cartId, detailId: existingDetail._id, quantity: existingDetail.quantity });
         } else {
             // Nếu chưa có thì tạo mới OrderDetail
             const newDetail = await Orderdetail.create({
                 order: order._id,
-                foodstall: item.products.stall_id, // Lấy stall từ sản phẩm
+                foodstall: item.products.stall_id,
                 products: item.products._id,
                 quantity: item.quantity,
                 total: item.products.price * item.quantity,
@@ -99,19 +109,18 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
 
             // Thêm vào danh sách orderdetail của đơn hàng
             order.orderdetail.push(newDetail._id);
-
-            // Đánh dấu là có thêm món mới cần cập nhật trạng thái bàn
             shouldUpdateTableStatus = true;
+
+            // Thông báo chi tiết giỏ hàng đã được thêm
+            notifyCartDetailAdded(io, cartId, { cartId, detailId: newDetail._id, product: item.products.pd_name });
         }
     }
 
     // Cập nhật trạng thái bàn nếu có ít nhất một món mới
     if (shouldUpdateTableStatus) {
-        await Table.findByIdAndUpdate(tableId, {
-            $set: { status: '1' }
-        });
+        await Table.findByIdAndUpdate(tableId, { $set: { status: '1' } });
+        notifyTableUpdated(io, tableId, { tableId, status: '1' });
     }
-    notifyTableUpdated(io, tableId, { tableId, status: '1' });
 
     // Lưu lại thay đổi trong đơn hàng
     await order.save();
@@ -120,10 +129,12 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
     await mergeDuplicateOrderDetails(order._id);
 
     // Xoá toàn bộ chi tiết giỏ hàng đã xử lý
-    await deleteCartDetailsByCartId(cartId,io);
+    await deleteCartDetailsByCartId(cartId, io);
     notifyCartUpdated(io, cartId, { cartId, message: 'Giỏ hàng đã được xóa sau khi tạo đơn hàng' });
-    // tôgnr tiền cho order
-    const totalPrice = await calculateTotalOrderPrice(order._id,io);
+
+    // Tính tổng tiền cho đơn hàng
+    const totalPrice = await calculateTotalOrderPrice(order._id, io);
+
     // Lấy lại đơn hàng sau khi populate đầy đủ
     const populatedOrder = await Order.findById(order._id)
         .populate('customer', 'name phone')
@@ -131,7 +142,7 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
         .populate('orderdetail', 'products quantity status')
         .populate('orderdetail.products', 'pd_name price');
 
-    // Format lại dữ liệu trả về: sản phẩm, số lượng, trạng thái, giá...
+    // Định dạng dữ liệu trả về
     const orderItems = orderDetails.map(item => ({
         product: item.products,
         price: item.products.price,
@@ -140,20 +151,9 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
         quantity: item.quantity,
         total: item.total
     }));
-    // const orderItems = populatedOrder.orderdetail.map(item => ({
-    //     product: item.products._id,
-    //     price: item.products.price,
-    //     name: item.products.pd_name,
-    //     status: item.status,
-    //     quantity: item.quantity,
-    //     total: item.total
-    // }));
-    
 
-    // Định dạng thời gian tạo đơn
     const formattedCreatedAt = moment(populatedOrder.createdAt).format('DD/MM/YYYY HH:mm:ss');
 
-    // Trả kết quả cho controller sử dụng
     const orderData = {
         _id: populatedOrder._id,
         customer: populatedOrder.customer,
@@ -163,6 +163,7 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
         total_amount: totalPrice,
         createdAt: formattedCreatedAt
     };
+
     if (isNewOrder) {
         notifyOrderCreated(io, order._id, orderData);
     } else {
@@ -174,6 +175,7 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
         order: orderData,
     };
 };
+
 
 module.exports = {
     confirmAllPendingOrderDetails,
