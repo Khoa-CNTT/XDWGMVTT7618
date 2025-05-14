@@ -115,8 +115,13 @@ const customerSchema = new mongoose.Schema({
   },
   status: {
     type: String,
+
     enum: ['1', '2'],
     default: "1",
+
+    enum: ['1', '2'],  // danh sách các trạng thái hợp lệ
+    default: "1"
+
   },
   cart: {
     type: mongoose.Types.ObjectId,
