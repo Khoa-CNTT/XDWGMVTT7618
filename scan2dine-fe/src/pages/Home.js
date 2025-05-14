@@ -293,87 +293,87 @@ const Home = ({ direction }) => {
                 </div >
             )}
             {showReviewForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative">
-                        <button
-                            className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
-                            onClick={() => {
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative">
+                    <button
+                        className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
+                        onClick={() => {
+                            setShowReviewForm(false);
+                            setSelectedOrder(null);
+                            setReviewProduct(null);
+                        }}
+                    >
+                        &times;
+                    </button>
+                    {!selectedOrder ? (
+                        <div>
+                            <h3 className="font-bold mb-2">Chọn đơn hàng đã thanh toán</h3>
+                            {paidOrders.length === 0 ? (
+                                <div className="text-gray-500 mb-4">Bạn chưa có đơn hàng nào đã thanh toán.</div>
+                            ) : (
+                                <ul>
+                                    {paidOrders.map((order) => (
+                                        <li key={order._id} className="mb-2">
+                                            <button
+                                                className="text-primary underline"
+                                                onClick={() => setSelectedOrder(order)}
+                                            >
+                                                Đơn #{order._id} - {order.customer?.name} - {order.od_date?.slice(0, 10)}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            <button
+                                className="mt-4 px-4 py-2 bg-gray-200 rounded"
+                                onClick={() => setShowReviewForm(false)}
+                            >
+                                Đóng
+                            </button>
+                        </div>
+                    ) : !reviewProduct ? (
+                        <div>
+                            <h3 className="font-bold mb-2">Chọn món để đánh giá</h3>
+                            {selectedOrder.orderdetail && selectedOrder.orderdetail.length > 0 ? (
+                                <ul>
+                                    {selectedOrder.orderdetail.map((item) => (
+                                        <li key={item._id} className="mb-2">
+                                            <button
+                                                className="text-primary underline"
+                                                onClick={() => setReviewProduct(item.products)}
+                                            >
+                                                {item.products.pd_name}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className="text-gray-500 mb-4">Đơn hàng này không có món nào để đánh giá.</div>
+                            )}
+                            <button
+                                className="mt-4 px-4 py-2 bg-gray-200 rounded"
+                                onClick={() => setSelectedOrder(null)}
+                            >
+                                Quay lại
+                            </button>
+                        </div>
+                    ) : (
+                        <C_ProductReviewForm
+                            product={reviewProduct}
+                            customerId={customer._id}
+                            onSuccess={() => {
                                 setShowReviewForm(false);
+                                setReviewProduct(null);
                                 setSelectedOrder(null);
+                            }}
+                            onCancel={() => {
                                 setReviewProduct(null);
                             }}
-                        >
-                            &times;
-                        </button>
-                        {!selectedOrder ? (
-                            <div>
-                                <h3 className="font-bold mb-2">Chọn đơn hàng đã thanh toán</h3>
-                                {paidOrders.length === 0 ? (
-                                    <div className="text-gray-500 mb-4">Bạn chưa có đơn hàng nào đã thanh toán.</div>
-                                ) : (
-                                    <ul>
-                                        {paidOrders.map((order) => (
-                                            <li key={order._id} className="mb-2">
-                                                <button
-                                                    className="text-primary underline"
-                                                    onClick={() => setSelectedOrder(order)}
-                                                >
-                                                    Đơn #{order._id} - {order.customer?.name} - {order.od_date?.slice(0, 10)}
-                                                </button>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                                <button
-                                    className="mt-4 px-4 py-2 bg-gray-200 rounded"
-                                    onClick={() => setShowReviewForm(false)}
-                                >
-                                    Đóng
-                                </button>
-                            </div>
-                        ) : !reviewProduct ? (
-                            <div>
-                                <h3 className="font-bold mb-2">Chọn món để đánh giá</h3>
-                                {selectedOrder.orderdetail && selectedOrder.orderdetail.length > 0 ? (
-                                    <ul>
-                                        {selectedOrder.orderdetail.map((item) => (
-                                            <li key={item._id} className="mb-2">
-                                                <button
-                                                    className="text-primary underline"
-                                                    onClick={() => setReviewProduct(item.products)}
-                                                >
-                                                    {item.products.pd_name}
-                                                </button>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    <div className="text-gray-500 mb-4">Đơn hàng này không có món nào để đánh giá.</div>
-                                )}
-                                <button
-                                    className="mt-4 px-4 py-2 bg-gray-200 rounded"
-                                    onClick={() => setSelectedOrder(null)}
-                                >
-                                    Quay lại
-                                </button>
-                            </div>
-                        ) : (
-                            <C_ProductReviewForm
-                                product={reviewProduct}
-                                customerId={customer._id}
-                                onSuccess={() => {
-                                    setShowReviewForm(false);
-                                    setReviewProduct(null);
-                                    setSelectedOrder(null);
-                                }}
-                                onCancel={() => {
-                                    setReviewProduct(null);
-                                }}
-                            />
-                        )}
-                    </div>
+                        />
+                    )}
                 </div>
-            )}
+            </div>
+)}
             {
                 showStaffForm && (
                     <C_ConfirmCallStaff
