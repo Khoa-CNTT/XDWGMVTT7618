@@ -61,6 +61,64 @@ const customerController = {
       return res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
+// updateCustomer: async (req, res) => {
+//   try {
+//     console.log('➡️ Nhận dữ liệu body:', req.body); // Debug
+//     const customerId = req.params.id;
+
+//     // Tìm khách hàng
+//     const customer = await Customer.findById(customerId);
+//     if (!customer) {
+//       return res.status(404).json({ message: 'Customer not found' });
+//     }
+
+//     // Nếu cart thay đổi thì cập nhật lại liên kết
+//     if (req.body.cart && req.body.cart !== customer.cart?.toString()) {
+//       // Gỡ cart cũ (nếu có)
+//       if (customer.cart) {
+//         await Cart.findByIdAndUpdate(customer.cart, { $unset: { customer: '' } });
+//       }
+
+//       // Gắn cart mới
+//       await Cart.findByIdAndUpdate(req.body.cart, { customer: customer._id });
+//     }
+
+//     // Cập nhật dữ liệu khách hàng
+//     const updatedCustomer = await Customer.findByIdAndUpdate(
+//       customerId,
+//       { $set: req.body },
+//       { new: true, runValidators: true }
+//     );
+
+//     if (!updatedCustomer) {
+//       return res.status(500).json({ message: 'Không thể cập nhật khách hàng' });
+//     }
+
+//     // Gửi socket nếu có
+//     const io = req.app.get('io');
+//     if (io) {
+//       notifyCustomerUpdated(io, updatedCustomer._id, {
+//         customerId: updatedCustomer._id,
+//         phone: updatedCustomer.phone,
+//         name: updatedCustomer.name,
+//         cartId: updatedCustomer.cart,
+//         status: updatedCustomer.status,
+//         message: 'Thông tin khách hàng đã được cập nhật'
+//       });
+//     } else {
+//       console.warn('⚠️ Socket.IO chưa được khởi tạo');
+//     }
+
+//     return res.status(200).json({
+//       message: 'Customer updated successfully',
+//       customer: updatedCustomer
+//     });
+
+//   } catch (error) {
+//     console.error('❌ Lỗi trong updateCustomer:', error);
+//     return res.status(500).json({ message: 'Server error', error: error.message });
+//   }
+// },
 
   // Update a customer
   updateCustomer: async (req, res) => {
@@ -82,11 +140,10 @@ const customerController = {
           customer: customer._id
         });
       }
-
       const updatedCustomer = await Customer.findByIdAndUpdate(
         req.params.id,
         { $set: req.body },
-        { new: true }
+        { new: true,runValidators: true }
       );
 
       const io = req.app.get('io');
@@ -99,6 +156,7 @@ const customerController = {
         customerId: updatedCustomer._id,
         phone: updatedCustomer.phone,
         name: updatedCustomer.name,
+        // status: updatedCustomer.status,
         cartId: updatedCustomer.cart,
         message: 'Thông tin khách hàng đã được cập nhật'
       });

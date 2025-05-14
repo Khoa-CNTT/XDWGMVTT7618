@@ -115,6 +115,7 @@ const customerSchema = new mongoose.Schema({
   },
   status: {
     type: String,
+    enum: ['1', '2'],
     default: "1",
   },
   cart: {
