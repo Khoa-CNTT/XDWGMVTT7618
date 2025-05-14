@@ -7,7 +7,7 @@ router.post('/', orderController.addOrder);
 // GET ORDErr
 router.get('/',orderController.getOrder);
 // Lấy những đơn hàng đã thanh toán
-router.get('/dathanhtoan',orderController.getPaidOrdersDetail);
+router.post('/dathanhtoan',orderController.getPaidOrdersDetail);
 
 router.get('/:id',orderController.getAorder);
 

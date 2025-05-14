@@ -294,40 +294,45 @@ const orderController = {
             return res.status(500).json({ message: 'Lỗi máy chủ', error: error.message });
         }
     },
-    getPaidOrdersDetail : async (req, res) => {
-        try {
-            const paidOrders = await Order.find({ od_status: '3' })
-                .populate({
-                    path: 'customer',
-                    select: 'name phone'
-                })
-                .populate({
-                    path: 'table',
-                    select: 'tb_number status'
-                })
-                .populate({
-                    path: 'orderdetail',
-                    populate: {
-                        path: 'products',
-                        select: 'pd_name price image'
-                    }
-                })
-                .populate({
-                    path: 'payment',
-                    select: 'payment_method status'
-                })
-                .sort({ od_date: -1 }); // sắp xếp từ mới đến cũ
+    getPaidOrdersDetail: async (req, res) => {
+    try {
+        const { customerId } = req.body;
 
-            return res.status(200).json({
-                message: 'Danh sách đơn hàng đã thanh toán',
-                total: paidOrders.length,
-                data: paidOrders
-            });
-        } catch (error) {
-            console.error('❌ Lỗi khi lấy đơn hàng đã thanh toán:', error);
-            return res.status(500).json({ message: 'Lỗi server', error: error.message });
-        }
+        const paidOrders = await Order.find({
+            od_status: '3',
+            customer: customerId
+        })
+            .populate({
+                path: 'customer',
+                select: '_id name phone'
+            })
+            .populate({
+                path: 'table',
+                select: 'tb_number status'
+            })
+            .populate({
+                path: 'orderdetail',
+                populate: {
+                    path: 'products',
+                    select: 'pd_name price image'
+                }
+            })
+            .populate({
+                path: 'payment',
+                select: 'payment_method status'
+            })
+            .sort({ od_date: -1 });
+
+        return res.status(200).json({
+            message: 'Danh sách đơn hàng đã thanh toán của khách hàng',
+            total: paidOrders.length,
+            data: paidOrders
+        });
+    } catch (error) {
+        console.error('❌ Lỗi khi lấy đơn hàng đã thanh toán theo khách hàng:', error);
+        return res.status(500).json({ message: 'Lỗi server', error: error.message });
     }
+}
 }
 
 module.exports = orderController;
