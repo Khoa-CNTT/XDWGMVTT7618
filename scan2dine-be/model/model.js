@@ -115,7 +115,7 @@ const customerSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    // default: "1",
+    default: "1",
   },
   cart: {
     type: mongoose.Types.ObjectId,
