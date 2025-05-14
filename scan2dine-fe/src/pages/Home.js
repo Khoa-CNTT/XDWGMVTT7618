@@ -4,6 +4,7 @@ import imgBtnGoiMon from '../assets/img/btngoimon3.jpg';
 import imgBtnDanhGia from '../assets/img/btndanhgia2.jpg';
 import imgBtnGoiNV from '../assets/img/btngoinv.jpg';
 import imgBtnThanhToan from '../assets/img/btnthanhtoan2.jpg';
+import { MdArrowBack } from "react-icons/md";
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../components/PageWrapper';
 import { Footer } from '../components/Footer';
@@ -22,8 +23,9 @@ const Home = ({ direction }) => {
     const [reviewProduct, setReviewProduct] = useState(null);
     const [productsToReview, setProductsToReview] = useState([]);
     const [showConfirmLogout, setShowConfirmLogout] = useState(false);
-    const [completedOrders, setCompletedOrders] = useState([]);
-    const [selectedOrder, setSelectedOrder] = useState(null); // Thêm state này
+    const [paidOrders, setPaidOrders] = useState([]);
+    const [selectedOrder, setSelectedOrder] = useState(null);
+
     const navigate = useNavigate();
 
     //Hàm chuyển hướng đến trang menu
@@ -149,24 +151,30 @@ const Home = ({ direction }) => {
         setIsLoggedIn(false);
         navigate(`/?table=${customer.table}&id=${customer.idTable}`);
     };
+
+    // const fetchPaidOrders = async () => {
+    //     try {
+    //         const res = await api.get('/s2d/order/dathanhtoan');
+    //         // Xử lý dữ liệu trả về ở đây, ví dụ:
+    //         console.log('Paid Orders:', res.data);
+    //         // Hoặc set vào state nếu muốn hiển thị
+    //         // setPaidOrders(res.data.orders);
+    //     } catch (error) {
+    //         console.error('Error fetching paid orders:', error);
+    //     }
+    // };
     useEffect(() => {
-        if (showReviewForm && customer && customer._id) {
-            api.get(`/s2d/order/completed/${customer._id}`)
-                .then(res => {
-                    setCompletedOrders(res.data.orders || []);
-                    // Debug: log the completed orders to check
-                    if (res.data.orders && res.data.orders.length > 0) {
-                        console.log("Completed orders found:", res.data.orders);
-                    } else {
-                        console.log("No completed orders found for this customer.");
-                    }
-                })
-                .catch(() => {
-                    setCompletedOrders([]);
-                    console.log("Error fetching completed orders or none found.");
-                });
+        if (showReviewForm) {
+            api.get('/s2d/order/dathanhtoan')
+                .then(res => setPaidOrders(res.data.data || []))
+                .catch(() => setPaidOrders([]));
         }
-    }, [showReviewForm, customer]);
+    }, [showReviewForm]);
+
+    // Ví dụ: Gọi hàm này khi component mount hoặc khi cần
+    // useEffect(() => {
+    //     fetchPaidOrders();
+    // }, []);
 
     return (
         <PageWrapper direction={direction}>
@@ -269,7 +277,11 @@ const Home = ({ direction }) => {
                                     src={imgBtnDanhGia}
                                     alt="Đánh giá"
                                     className="w-full max-w-[250px] aspect-square rounded-lg shadow-md cursor-pointer hover:scale-105 transition-transform duration-200"
-                                    onClick={() => setShowReviewForm(true)}
+                                    onClick={() => {
+                                        setShowReviewForm(true);
+                                        setSelectedOrder(null); // Reset selected order when opening modal
+                                        setReviewProduct(null); // Reset selected product
+                                    }}
                                 />
                             </div>
                         </div>
@@ -285,24 +297,28 @@ const Home = ({ direction }) => {
                     <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative">
                         <button
                             className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
-                            onClick={() => setShowReviewForm(false)}
+                            onClick={() => {
+                                setShowReviewForm(false);
+                                setSelectedOrder(null);
+                                setReviewProduct(null);
+                            }}
                         >
                             &times;
                         </button>
                         {!selectedOrder ? (
                             <div>
-                                <h3 className="font-bold mb-2">Chọn đơn hàng đã hoàn thành</h3>
-                                {completedOrders.length === 0 ? (
-                                    <div className="text-gray-500 mb-4">Bạn chưa có đơn hàng nào đã hoàn thành.</div>
+                                <h3 className="font-bold mb-2">Chọn đơn hàng đã thanh toán</h3>
+                                {paidOrders.length === 0 ? (
+                                    <div className="text-gray-500 mb-4">Bạn chưa có đơn hàng nào đã thanh toán.</div>
                                 ) : (
                                     <ul>
-                                        {completedOrders.map((order) => (
+                                        {paidOrders.map((order) => (
                                             <li key={order._id} className="mb-2">
                                                 <button
                                                     className="text-primary underline"
                                                     onClick={() => setSelectedOrder(order)}
                                                 >
-                                                    Đơn #{order.orderNumber} - {order.endTime}
+                                                    Đơn #{order._id} - {order.customer?.name} - {order.od_date?.slice(0, 10)}
                                                 </button>
                                             </li>
                                         ))}
@@ -315,6 +331,32 @@ const Home = ({ direction }) => {
                                     Đóng
                                 </button>
                             </div>
+                        ) : !reviewProduct ? (
+                            <div>
+                                <h3 className="font-bold mb-2">Chọn món để đánh giá</h3>
+                                {selectedOrder.orderdetail && selectedOrder.orderdetail.length > 0 ? (
+                                    <ul>
+                                        {selectedOrder.orderdetail.map((item) => (
+                                            <li key={item._id} className="mb-2">
+                                                <button
+                                                    className="text-primary underline"
+                                                    onClick={() => setReviewProduct(item.products)}
+                                                >
+                                                    {item.products.pd_name}
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <div className="text-gray-500 mb-4">Đơn hàng này không có món nào để đánh giá.</div>
+                                )}
+                                <button
+                                    className="mt-4 px-4 py-2 bg-gray-200 rounded"
+                                    onClick={() => setSelectedOrder(null)}
+                                >
+                                    Quay lại
+                                </button>
+                            </div>
                         ) : (
                             <C_ProductReviewForm
                                 product={reviewProduct}
@@ -322,9 +364,9 @@ const Home = ({ direction }) => {
                                 onSuccess={() => {
                                     setShowReviewForm(false);
                                     setReviewProduct(null);
+                                    setSelectedOrder(null);
                                 }}
                                 onCancel={() => {
-                                    setShowReviewForm(false);
                                     setReviewProduct(null);
                                 }}
                             />

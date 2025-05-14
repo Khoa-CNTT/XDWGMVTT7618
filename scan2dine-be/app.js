@@ -65,9 +65,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use(bodyParser.json());
-
-
 app.use('/', indexRouter);
 // khai báo route sử dụng
 app.use('/s2d/customer', customerRoute);
@@ -85,7 +82,6 @@ app.use('/s2d/role',roleRoute);
 app.use('/s2d/orderpayment',zalopay);
 app.use('/s2d/vietqr', vietqrRoutes);
 app.use('/s2d/check-email', emailRoutes);
-
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));

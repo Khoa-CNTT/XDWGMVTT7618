@@ -6,8 +6,10 @@ var router = express.Router();
 router.post('/', orderController.addOrder);
 // GET ORDErr
 router.get('/',orderController.getOrder);
+// Lấy những đơn hàng đã thanh toán
+router.get('/dathanhtoan',orderController.getPaidOrdersDetail);
+
 router.get('/:id',orderController.getAorder);
-router.get('/last-paid', orderController.getLastPaidOrder);
 
 // DELETE ORDER
 router.delete('/:id', orderController.deleteOrder);

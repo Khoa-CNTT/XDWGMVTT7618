@@ -138,7 +138,7 @@ const createOrderFromCartService = async (cartId, tableId, io) => {
     // Lấy lại đơn hàng sau khi populate đầy đủ
     const populatedOrder = await Order.findById(order._id)
         .populate('customer', 'name phone')
-        .populate('table', 'tb_number')
+        .populate('table', 'tb_number status')
         .populate('orderdetail', 'products quantity status')
         .populate('orderdetail.products', 'pd_name price');
 
