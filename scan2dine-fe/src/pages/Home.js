@@ -4,7 +4,6 @@ import imgBtnGoiMon from '../assets/img/btngoimon3.jpg';
 import imgBtnDanhGia from '../assets/img/btndanhgia2.jpg';
 import imgBtnGoiNV from '../assets/img/btngoinv.jpg';
 import imgBtnThanhToan from '../assets/img/btnthanhtoan2.jpg';
-import { MdArrowBack } from "react-icons/md";
 import { useNavigate } from 'react-router-dom';
 import PageWrapper from '../components/PageWrapper';
 import { Footer } from '../components/Footer';
@@ -12,6 +11,7 @@ import CustomerLogin from './FillInfo';
 import ConfirmLogoutModal from '../components/ConfirmLogoutModal';
 import { FaArrowLeft } from 'react-icons/fa';
 import { C_ConfirmCallStaff } from '../components/C_ConfirmCallStaff';
+import C_ProductReviewForm from '../components/C_ProductReviewForm';
 import api from '../server/api';
 
 
@@ -19,10 +19,11 @@ const Home = ({ direction }) => {
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const [showStaffForm, setShowStaffForm] = useState(false);
     const [showReviewForm, setShowReviewForm] = useState(false);
-    const [showPhoneForm, setShowPhoneForm] = useState(false);
-    const [showSettings, setShowSettings] = useState(false);
+    const [reviewProduct, setReviewProduct] = useState(null);
+    const [productsToReview, setProductsToReview] = useState([]);
     const [showConfirmLogout, setShowConfirmLogout] = useState(false);
-
+    const [completedOrders, setCompletedOrders] = useState([]);
+    const [selectedOrder, setSelectedOrder] = useState(null); // Thêm state này
     const navigate = useNavigate();
 
     //Hàm chuyển hướng đến trang menu
@@ -56,8 +57,12 @@ const Home = ({ direction }) => {
         const saved = sessionStorage.getItem("customer");
         if (saved) {
             const parsed = JSON.parse(saved);
-            setCustomer(parsed);
-            setIsLoggedIn(true);
+            if (parsed && (parsed._id || (parsed.name && parsed.phone))) {
+                setCustomer(parsed);
+                setIsLoggedIn(true);
+            } else {
+                navigate("/");
+            }
         } else {
             navigate("/");
         }
@@ -75,10 +80,20 @@ const Home = ({ direction }) => {
 
 
 
-    const handleLoginSuccess = (phone, name) => {
-        setCustomer({ phone, name });
-        setIsLoggedIn(true);
-        sessionStorage.setItem("customer", JSON.stringify({ phone, name }));
+    const handleLoginSuccess = async (customerObj) => {
+        try {
+            // Gọi API lấy thông tin customer đầy đủ (bao gồm _id)
+            const res = await api.get(`/s2d/customer/${customerObj.phone}`);
+            const fullCustomer = res.data;
+            setCustomer(fullCustomer);
+            setIsLoggedIn(true);
+            sessionStorage.setItem("customer", JSON.stringify(fullCustomer));
+        } catch (error) {
+            // Nếu lỗi, fallback về dữ liệu cũ (không khuyến khích)
+            setCustomer(customerObj);
+            setIsLoggedIn(true);
+            sessionStorage.setItem("customer", JSON.stringify(customerObj));
+        }
     };
 
     //gọi nhân viên
@@ -134,7 +149,24 @@ const Home = ({ direction }) => {
         setIsLoggedIn(false);
         navigate(`/?table=${customer.table}&id=${customer.idTable}`);
     };
-
+    useEffect(() => {
+        if (showReviewForm && customer && customer._id) {
+            api.get(`/s2d/order/completed/${customer._id}`)
+                .then(res => {
+                    setCompletedOrders(res.data.orders || []);
+                    // Debug: log the completed orders to check
+                    if (res.data.orders && res.data.orders.length > 0) {
+                        console.log("Completed orders found:", res.data.orders);
+                    } else {
+                        console.log("No completed orders found for this customer.");
+                    }
+                })
+                .catch(() => {
+                    setCompletedOrders([]);
+                    console.log("Error fetching completed orders or none found.");
+                });
+        }
+    }, [showReviewForm, customer]);
 
     return (
         <PageWrapper direction={direction}>
@@ -172,6 +204,15 @@ const Home = ({ direction }) => {
                         <div className="text-sm text-gray-600 text-center font-medium">
                             Bạn hãy thư giãn, món ngon sẽ sớm có mặt tại bàn:
                             <span className="bg-gray-100 px-2 py-1 rounded ml-1 text-primary font-bold">{cus?.table}</span>
+                        </div>
+                        <div className="flex justify-center mt-3">
+                            <button
+                                className="flex items-center gap-2 px-4 py-2 border border-primary text-primary rounded hover:bg-primary hover:text-white transition"
+                                onClick={() => navigate('/orderdetail')}
+                            >
+                                <span role="img" aria-label="order">🧾</span>
+                                Đơn hàng của tôi
+                            </button>
                         </div>
                     </div>
 
@@ -238,6 +279,58 @@ const Home = ({ direction }) => {
                     <Footer></Footer>
 
                 </div >
+            )}
+            {showReviewForm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+                    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative">
+                        <button
+                            className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
+                            onClick={() => setShowReviewForm(false)}
+                        >
+                            &times;
+                        </button>
+                        {!selectedOrder ? (
+                            <div>
+                                <h3 className="font-bold mb-2">Chọn đơn hàng đã hoàn thành</h3>
+                                {completedOrders.length === 0 ? (
+                                    <div className="text-gray-500 mb-4">Bạn chưa có đơn hàng nào đã hoàn thành.</div>
+                                ) : (
+                                    <ul>
+                                        {completedOrders.map((order) => (
+                                            <li key={order._id} className="mb-2">
+                                                <button
+                                                    className="text-primary underline"
+                                                    onClick={() => setSelectedOrder(order)}
+                                                >
+                                                    Đơn #{order.orderNumber} - {order.endTime}
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                                <button
+                                    className="mt-4 px-4 py-2 bg-gray-200 rounded"
+                                    onClick={() => setShowReviewForm(false)}
+                                >
+                                    Đóng
+                                </button>
+                            </div>
+                        ) : (
+                            <C_ProductReviewForm
+                                product={reviewProduct}
+                                customerId={customer._id}
+                                onSuccess={() => {
+                                    setShowReviewForm(false);
+                                    setReviewProduct(null);
+                                }}
+                                onCancel={() => {
+                                    setShowReviewForm(false);
+                                    setReviewProduct(null);
+                                }}
+                            />
+                        )}
+                    </div>
+                </div>
             )}
             {
                 showStaffForm && (

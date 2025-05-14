@@ -40,6 +40,9 @@ const O_CounterStatistics = ({ stallId }) => {
   const [topProductToday, setTopProductToday] = useState(null);
   const [topProductWeek, setTopProductWeek] = useState(null);
   const [topProductMonth, setTopProductMonth] = useState(null);
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [customStats, setCustomStats] = useState(null);
 
   const [filteredData, setFilteredData] = useState({
     total_orders: 0,
@@ -234,9 +237,11 @@ const O_CounterStatistics = ({ stallId }) => {
   };
 
   // Format currency
-  const formatCurrency = (amount) =>
-    amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
-      .replace(/\s₫/, 'đ'); // Thay thế khoảng trắng trước ₫ bằng 'đ'
+  const formatCurrency = (amount) => {
+    if (typeof amount !== 'number' || isNaN(amount)) return '0đ';
+    return amount.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
+      .replace(/\s₫/, 'đ');
+  }
 
   // Prepare chart data
   const chartData = timeFilter === 'month' && monthlyRevenueData.length > 0
@@ -398,6 +403,24 @@ const O_CounterStatistics = ({ stallId }) => {
     doc.save('thong_ke_doanh_thu.pdf');
   };
 
+  const handleCustomRange = async () => {
+    if (!fromDate || !toDate) {
+      setError('Vui lòng chọn đủ ngày bắt đầu và kết thúc!');
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      // You need to implement this API in your backend
+      const res = await fetchOrderStats(stallId, fromDate, toDate);
+      console.log('Custom range API response:', res);
+      setCustomStats(res);
+      setLoading(false);
+    } catch (err) {
+      setError('Không thể lấy dữ liệu cho khoảng ngày này!');
+      setLoading(false);
+    }
+  };
   if (loading) return <div className="p-4 text-center">Đang tải dữ liệu...</div>;
   if (error) return <div className="p-4 text-center text-red-500">Lỗi: {error}</div>;
 
@@ -439,7 +462,100 @@ const O_CounterStatistics = ({ stallId }) => {
             )}
           </button>
         ))}
+        {/* Custom Range Button */}
+        <button
+          onClick={() => {
+            setFromDate('');
+            setToDate('');
+            setCustomStats(null);
+            setError(null);
+            setTimeFilter('custom');
+          }}
+          className={`px-6 py-2.5 rounded-full font-semibold capitalize transition duration-150 ${timeFilter === 'custom'
+            ? 'bg-blue-600 text-white shadow-md'
+            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+        >
+          Tùy chọn ngày
+        </button>
       </div>
+
+      {/* Custom Date Range Picker */}
+      {timeFilter === 'custom' && (
+        <div className="flex flex-col md:flex-row items-center gap-4 mb-8 justify-center">
+          <div>
+            <label className="mr-2 font-medium">Từ ngày:</label>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={e => setFromDate(e.target.value)}
+              className="border rounded px-2 py-1"
+            />
+          </div>
+          <div>
+            <label className="mr-2 font-medium">Đến ngày:</label>
+            <input
+              type="date"
+              value={toDate}
+              onChange={e => setToDate(e.target.value)}
+              className="border rounded px-2 py-1"
+            />
+          </div>
+          <button
+            className="px-4 py-2 bg-primary text-white rounded hover:bg-red-600"
+            onClick={handleCustomRange}
+          >
+            Xem thống kê
+          </button>
+        </div>
+      )}
+
+      {/* Show statistics for custom range if selected */}
+      {timeFilter === 'custom' && customStats && (
+        <div className="mb-8">
+          {console.log('customStats for render:', customStats)}
+          <div className="flex flex-col md:flex-row gap-6 mb-8 justify-center">
+            <div className="flex-1 bg-white border border-blue-200 p-5 rounded-xl shadow-sm flex flex-col items-center">
+              <h3 className="text-lg font-semibold text-blue-700">Tổng đơn hàng</h3>
+              <p className="text-3xl font-bold text-gray-800 mt-2">
+                {
+                  // Chỉ tính tổng đơn hàng trong khoảng fromDate - toDate
+                  customStats.dailyRevenueInMonth
+                    ? customStats.dailyRevenueInMonth
+                      .filter(d => d._id >= fromDate && d._id <= toDate)
+                      .reduce((sum, d) => sum + (d.totalOrders || 0), 0)
+                    : 0
+                }
+              </p>
+            </div>
+            <div className="flex-1 bg-white border border-green-200 p-5 rounded-xl shadow-sm flex flex-col items-center">
+              <h3 className="text-lg font-semibold text-green-700">Tổng doanh thu</h3>
+              <p className="text-3xl font-bold text-gray-800 mt-2">
+                {
+                  // Chỉ tính tổng doanh thu trong khoảng fromDate - toDate
+                  formatCurrency(
+                    customStats.dailyRevenueInMonth
+                      ? customStats.dailyRevenueInMonth
+                        .filter(d => d._id >= fromDate && d._id <= toDate)
+                        .reduce((sum, d) => sum + (d.totalRevenue || 0), 0)
+                      : 0
+                  )
+                }
+              </p>
+            </div>
+            {customStats.topProduct && (
+              <div className="flex-1 bg-gradient-to-br from-yellow-100 to-yellow-50 border-l-4 border-yellow-400 p-5 rounded-xl shadow-lg flex flex-col items-center min-w-[280px] max-w-xs mx-auto">
+                <h3 className="text-lg font-semibold text-yellow-800 flex items-center">
+                  <span className="mr-2">⭐</span> Món bán chạy nhất
+                </h3>
+                <p className="mt-1 text-gray-800 font-medium text-lg">{customStats.topProduct.name}</p>
+                <p className="text-sm text-gray-600 mt-1">Đã bán: {customStats.topProduct.quantitySold} lần</p>
+              </div>
+            )}
+          </div>
+          {/* You can add a chart for customStats if your API returns daily breakdown */}
+        </div>
+      )}
 
       {/* Cards Layout */}
       {timeFilter === 'today' ? (
@@ -463,7 +579,7 @@ const O_CounterStatistics = ({ stallId }) => {
                   <span className="mr-2">⭐</span> Món bán chạy nhất
                 </h3>
                 <p className="mt-1 text-gray-800 font-medium text-lg">{topProductToday.name}</p>
-                <p className="text-sm text-gray-600 mt-1">Đã bán: {topProductToday.quantitySold} món</p>
+                <p className="text-sm text-gray-600 mt-1">Đã bán: {topProductToday.quantitySold} Lần</p>
               </div>
             )}
             {dailyRevenueData.length > 1 && (
@@ -497,11 +613,11 @@ const O_CounterStatistics = ({ stallId }) => {
                 <span className="mr-2">⭐</span> Món bán chạy nhất
               </h3>
               <p className="mt-1 text-gray-800 font-medium text-lg">{topProductWeek.name}</p>
-              <p className="text-sm text-gray-600 mt-1">Đã bán: {topProductWeek.quantitySold} món</p>
+              <p className="text-sm text-gray-600 mt-1">Đã bán: {topProductWeek.quantitySold} lần</p>
             </div>
           )}
         </div>
-      ) : (
+      ) : timeFilter === 'month' ? (
         // For month: all three cards in one row
         <div className="flex flex-col md:flex-row gap-6 mb-8 justify-center">
           <div className="flex-1 bg-white border border-blue-200 p-5 rounded-xl shadow-sm flex flex-col items-center">
@@ -518,14 +634,14 @@ const O_CounterStatistics = ({ stallId }) => {
                 <span className="mr-2">⭐</span> Món bán chạy nhất
               </h3>
               <p className="mt-1 text-gray-800 font-medium text-lg">{topProductMonth.name}</p>
-              <p className="text-sm text-gray-600 mt-1">Đã bán: {topProductMonth.quantitySold} món</p>
+              <p className="text-sm text-gray-600 mt-1">Đã bán: {topProductMonth.quantitySold} lần</p>
             </div>
           )}
         </div>
-      )}
+      ) : null}
 
       {/* Revenue Chart */}
-      {timeFilter !== 'today' && (
+      {(timeFilter === 'week' || timeFilter === 'month') && (
         <div className="bg-gradient-to-br from-purple-50 to-white p-7 rounded-2xl border border-purple-200 shadow-xl w-full max-w-5xl mx-auto">
           <h3 className="text-xl font-semibold text-purple-800 mb-4 flex items-center">
             <span className="mr-2">📈</span> Biểu đồ doanh thu

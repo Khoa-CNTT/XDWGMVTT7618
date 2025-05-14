@@ -104,6 +104,8 @@ const reviewSchema = new mongoose.Schema({
   },
   date: { type: String },
 }, { collection: 'REVIEW' });
+
+//KHÁCH HÀNG
 const customerSchema = new mongoose.Schema({
   name: {
     type: String,

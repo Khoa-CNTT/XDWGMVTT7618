@@ -7,6 +7,7 @@ router.post('/', orderController.addOrder);
 // GET ORDErr
 router.get('/',orderController.getOrder);
 router.get('/:id',orderController.getAorder);
+router.get('/last-paid', orderController.getLastPaidOrder);
 
 // DELETE ORDER
 router.delete('/:id', orderController.deleteOrder);
