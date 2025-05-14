@@ -99,6 +99,7 @@ const customerController = {
         customerId: updatedCustomer._id,
         phone: updatedCustomer.phone,
         name: updatedCustomer.name,
+        status:updatedCustomer.status,
         cartId: updatedCustomer.cart,
         message: 'Thông tin khách hàng đã được cập nhật'
       });
