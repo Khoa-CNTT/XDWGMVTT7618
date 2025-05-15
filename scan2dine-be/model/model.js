@@ -26,7 +26,7 @@ const productSchema = new mongoose.Schema({
   ],
   review: [
     {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'Review'
     }
   ],
@@ -100,6 +100,10 @@ const cartdetailSchema = new mongoose.Schema({
 });
 //ĐÁNH GIÁ
 const reviewSchema = new mongoose.Schema({
+  products: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Customer",
+  },
   customer: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Customer",
