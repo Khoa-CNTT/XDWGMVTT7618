@@ -6,7 +6,6 @@
 var app = require("../app");
 var debug = require("debug")("be-scan2dine:server");
 var http = require("http");
-var { Server } = require("socket.io");
 
 /**
  * Get port from environment and store in Express.
@@ -19,52 +18,7 @@ app.set("port", port);
  */
 var server = http.createServer(app);
 
-/**
- * Integrate Socket.IO
- */
-var io = new Server(server, {
-  cors: {
-    origin: "http://172.28.171.64:3005", //"REACT_APP_URL", // Thay đổi theo nhu cầu
-    methods: ["GET", "POST", "DELETE", "PUT", "PATCH"],
-    credentials: true,
-  },
-});
-app.set("io", io);
 
-// Xử lý sự kiện Socket.IO
-io.on("connection", (socket) => {
-  console.log("Người dùng đã kết nối:", socket.id);
-  socket.emit('test_connect', { message: 'Kiểm tra kết nối' });
-  // Xử lý sự kiện join room
-    socket.on('join', (room) => {
-        socket.join(room);
-        console.log(`✅ Socket ${socket.id} joined room: ${room}`);
-    });
-    socket.on('leave', (room) => {
-        socket.leave(room);
-        console.log(`↩️ Socket ${socket.id} left room: ${room}`);
-    });
-  socket.on("message", (msg) => {
-    try {
-      if (!msg) {
-        console.error("Tin nhắn không hợp lệ:", msg);
-        return;
-      }
-      console.log("Tin nhắn:", msg);
-      io.emit("message", msg);
-    } catch (error) {
-      console.error("Lỗi xử lý tin nhắn:", error);
-    }
-  });
-
-  socket.on("disconnect", () => {
-    console.log("Người dùng đã ngắt kết nối:", socket.id);
-  });
-});
-
-/**
- * Listen on provided port, on all network interfaces.
- */
 server.listen(port, () => {
   console.log("Server is running on port: " + port);
 });

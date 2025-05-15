@@ -65,17 +65,6 @@ const categoryController = {
                 
                 res.status(200).json({ message: 'Delete category successfully' });
             } else{
-                // await Product.updateMany(
-                //     {
-                //         // điều kiện tìm kiếm
-                //         category: req.params.id
-                //     }, {
-                //     $set:{
-                //         category: null
-                //     }
-                // }),
-                // await Category.findByIdAndDelete(req.params.id);
-                
                 res.status(200).json("Không được xóa vì trong danh mục còn sản phẩmphẩm")
             }
 

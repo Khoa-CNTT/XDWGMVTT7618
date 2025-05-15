@@ -24,7 +24,12 @@ const productSchema = new mongoose.Schema({
       ref: "Orderdetail",
     },
   ],
-
+  review: [
+    {
+      type: String,
+      ref: 'Review'
+    }
+  ],
   cartdetail: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "CartDetail"
@@ -85,6 +90,10 @@ const cartdetailSchema = new mongoose.Schema({
   },
   amount: {
     type: Number
+  }, 
+  note:{
+    type: String,
+    default:null
   }
 }, {
   collection: "CARTDETAIL",

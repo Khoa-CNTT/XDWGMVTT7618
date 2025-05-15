@@ -4,13 +4,13 @@ const { increaseCartQuantity, decreaseCartQuantity } = require('../service/cartd
 const cartdetailController = {
   addCartdetail: async (req, res) => {
     try {
-      const { cart, products, quantity } = req.body;
+      const { cart, products, quantity, note} = req.body;
 
       if (!cart || !products) {
         return res.status(400).json({ message: "Thiếu cartID hoặc productsId" });
       }
 
-      const upProduttoCartdetail = await increaseCartQuantity(cart, products, quantity || 1);
+      const upProduttoCartdetail = await increaseCartQuantity(cart, products, quantity || 1, note || null);
 
       // Cập nhật Cart nếu có
       if (cart) {
