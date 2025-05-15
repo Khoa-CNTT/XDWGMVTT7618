@@ -1,6 +1,6 @@
 const { Order, Orderdetail, Product } = require('../model/model');
 
-const updateOrderDetailStatus = async (orderId, orderDetailId, newStatus,io) => {
+const updateOrderDetailStatus = async (orderId, orderDetailId, newStatus) => {
     // Lấy đơn hàng và populate chi tiết đơn hàng
     const order = await Order.findById(orderId).populate('orderdetail');
     if (!order) throw new Error('Order not found');

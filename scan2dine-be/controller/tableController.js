@@ -1,5 +1,4 @@
 const { Order, Table } = require('../model/model');
-const { notifyTableAdded, notifyTableUpdated, notifyTableDeleted } = require('../utils/socketUtils');
 
 const tableController = {
   // Add a new table
@@ -24,18 +23,7 @@ const tableController = {
 
       const savedTable = await newTable.save();
 
-      const io = req.app.get('io');
-      if (!io) {
-        console.error('Socket.IO is not initialized');
-        return res.status(500).json({ message: 'Socket.IO không khả dụng' });
-      }
-
-      notifyTableAdded(io, savedTable._id, {
-        tableId: savedTable._id,
-        tableNumber: savedTable.tb_number,
-        status: savedTable.status,
-        message: 'Bàn mới đã được thêm'
-      });
+      
 
       return res.status(200).json({
         message: 'Thêm bàn thành công',
@@ -81,17 +69,7 @@ const tableController = {
 
       await Table.findByIdAndDelete(req.params.id);
 
-      const io = req.app.get('io');
-      if (!io) {
-        console.error('Socket.IO is not initialized');
-        return res.status(500).json({ message: 'Socket.IO không khả dụng' });
-      }
-
-      notifyTableDeleted(io, table._id, {
-        tableId: table._id,
-        tableNumber: table.tb_number,
-        message: 'Bàn đã bị xóa'
-      });
+      
 
       return res.status(200).json({
         message: 'Xóa bàn thành công',
@@ -178,20 +156,6 @@ updatetable: async (req, res) => {
             { $set: { status: status || table.status, order: order || table.order } },
             { new: true }
         );
-
-        const io = req.app.get('io');
-        if (!io) {
-            console.error('Socket.IO is not initialized');
-            return res.status(500).json({ message: 'Socket.IO không khả dụng' });
-        }
-
-        // Phát sự kiện table_updated đến tất cả client đang tham gia room của bàn
-        notifyTableUpdated(io, updatedTable._id, {
-            tableId: updatedTable._id,
-            tableNumber: updatedTable.tb_number,
-            status: updatedTable.status,
-            message: 'Thông tin bàn đã được cập nhật'
-        });
 
         return res.status(200).json({
             message: 'Cập nhật bàn thành công',
@@ -287,18 +251,6 @@ updatetable: async (req, res) => {
       }
 
       await Table.findByIdAndDelete(req.params.id);
-
-      const io = req.app.get('io');
-      if (!io) {
-        console.error('Socket.IO is not initialized');
-        return res.status(500).json({ message: 'Socket.IO không khả dụng' });
-      }
-
-      notifyTableDeleted(io, table._id, {
-        tableId: table._id,
-        tableNumber: table.tb_number,
-        message: 'Bàn đã bị xóa'
-      });
 
       return res.status(200).json({
         message: 'Xóa bàn thành công',

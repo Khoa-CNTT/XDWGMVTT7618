@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { FaUtensils, FaMinus, FaPlus, FaTrash } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { registerSocketListeners, cleanupSocketListeners } from '../services/socketListeners';
 
 export const E_ItemOrderDetail = ({
     item,
@@ -130,39 +129,7 @@ export const E_ItemOrderDetail = ({
         }
     }, []);
 
-    // Đăng ký socket listeners
-    useEffect(() => {
-        if (!item || !item.id) return;
-
-        registerSocketListeners({
-            customer: { orderId: item.orderId }, // Giả định item có orderId, điều chỉnh nếu khác
-            OrderDetailChanged: (data) => {
-                if (data && typeof data === 'object' && data.orderId === item.orderId) {
-                    switch (data.action) {
-                        case 'updated':
-                            if (data.item && data.item.id === item.id) {
-                                // Cập nhật số lượng hoặc trạng thái từ server
-                                toast.info('Chi tiết món đã được cập nhật!');
-                            }
-                            break;
-                        case 'deleted':
-                            if (data.itemId === item.id) {
-                                toast.info('Món đã bị xóa khỏi đơn hàng!');
-                                // Có thể gọi onDeleteItem từ cha để đồng bộ
-                            }
-                            break;
-                        default:
-                            break;
-                    }
-                }
-            },
-        });
-
-        return () => {
-            cleanupSocketListeners();
-        };
-    }, [item]);
-
+ 
     return (
         <div className="border-b border-gray-100 pb-3">
             <div

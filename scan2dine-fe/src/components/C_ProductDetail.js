@@ -4,7 +4,6 @@ import FlyItem from './C_FlyItem';
 import { toast } from 'react-toastify';
 import debounce from 'lodash/debounce';
 import api from '../server/api';
-import { registerSocketListeners, cleanupSocketListeners } from '../services/socketListeners';
 import { useNavigate } from 'react-router-dom';
 
 function ProductDetail({ product, onClose, fetchCart, setShowDetail }) {
@@ -88,38 +87,6 @@ function ProductDetail({ product, onClose, fetchCart, setShowDetail }) {
         }
     }, [flyingItems]);
 
-    // Đăng ký socket listeners
-    useEffect(() => {
-        if (!customer || !customer.cart) {
-            return;
-        }
-
-        registerSocketListeners({
-            customer: { cart: customer.cart },
-            CartDetailAdded: (data) => {
-                if (data.cartId === customer.cart) {
-                    fetchCart();
-                    debouncedToast('Đã thêm món mới vào giỏ hàng!', 'success');
-                }
-            },
-            CartDetailUpdated: (data) => {
-                if (data.cartId === customer.cart) {
-                    fetchCart();
-                    debouncedToast('Chi tiết giỏ hàng đã được cập nhật!', 'info');
-                }
-            },
-            CartDetailDeleted: (data) => {
-                if (data.cartId === customer.cart) {
-                    fetchCart();
-                    debouncedToast('Đã xóa món khỏi giỏ hàng!', 'info');
-                }
-            },
-        });
-
-        return () => {
-            cleanupSocketListeners();
-        };
-    }, [customer, fetchCart, debouncedToast]);
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">

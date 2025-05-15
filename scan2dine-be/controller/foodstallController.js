@@ -56,13 +56,6 @@ const foodstallController = {
           },
         });
       }
-      const io = req.app.get('io');
-      notifyStallAdded(io, saveStall._id, {
-        stall: saveStall._id,
-        name: saveStall.stall_name, // Giả sử trường trong schema Foodstall là stall_name
-        user: req.body.user,
-        message: 'Quầy hàng mới đã được thêm',
-      });
       return res.status(200).json(saveStall); // Trả về Foodstall vừa tạo
     } catch (error) {
       console.error(error);
@@ -181,12 +174,6 @@ const foodstallController = {
       if (!updatedStall) {
         return res.status(404).json({ message: "Không tìm thấy quầy hàng." });
       }
-      const io = req.app.get('io');
-      notifyStallUpdated(io, updatedStall._id, {
-        stall: updatedStall._id,
-        stall_name: updatedStall.stall_name, // Giả sử trường trong schema Foodstall là stall_name
-        message: 'Thông tin quầy hàng đã được cập nhật',
-      });
       res.status(200).json({
         message: "Cập nhật quầy hàng thành công!",
         foodstall: updatedStall,

@@ -3,7 +3,6 @@ import { FaArrowLeft, FaMinus, FaPlus, FaStore, FaChevronDown, FaChevronUp } fro
 import { useNavigate } from 'react-router-dom';
 import api from '../server/api';
 import ConfirmModal from './ConfirmModal';
-import { registerSocketListeners, cleanupSocketListeners } from '../services/socketListeners';
 
 
 const CartDetails = () => {
@@ -25,31 +24,6 @@ const CartDetails = () => {
     fetchCartItems();
   }, []);
 
-  useEffect(() => {
-    if (customer) {
-      registerSocketListeners({
-        customer,
-        TableUpdated: (data) => {
-          console.log('Table updated:', data);
-        },
-        CartUpdated: () => {
-          fetchCartItems();
-        },
-        OrderCreated: (data) => {
-          setOrderResult({ order: data });
-          setShowUnderstand(true);
-        },
-        OrderUpdated: (data) => {
-          setOrderResult({ order: data });
-          setShowUnderstand(true);
-        },
-      });
-    }
-
-    return () => {
-      cleanupSocketListeners();
-    };
-  }, [customer]);
   const fetchCartItems = async () => {
     try {
       const [cartDetailRes, foodstallRes] = await Promise.all([
