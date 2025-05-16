@@ -26,10 +26,12 @@ const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
 
     const validate = () => {
         const newErrors = {};
-        if (!formData.pd_name.trim()) newErrors.pd_name = 'Vui lòng nhập Tên món ăn';
+        // Tên món ăn: 2-50 ký tự, cho phép ký tự đặc biệt, số, chữ
+        if (!formData.price.trim()) newErrors.pd_name = 'Vui lòng nhập tên món ăn';
         if (!formData.price.trim()) newErrors.price = 'Vui lòng nhập Giá';
         if (!formData.category) newErrors.category = 'Vui lòng chọn Danh mục';
         if (!formData.image) newErrors.image = 'Vui lòng chọn hình ảnh';
+
         return newErrors;
     };
 
@@ -113,9 +115,22 @@ const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
                                         type="text"
                                         className="w-full px-4 py-2 border rounded-lg"
                                         value={formData.pd_name}
-                                        onChange={(e) => setFormData({ ...formData, pd_name: e.target.value })}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            // Only allow update if <= 50 characters
+                                            if (value.trim().length <= 50) {
+                                                setFormData({ ...formData, pd_name: value });
+                                                if (value.trim().length < 2 && value.trim().length > 0) {
+                                                    setErrors(prev => ({ ...prev, pd_name: 'Tên món ăn phải từ 2 đến 50 ký tự' }));
+                                                } else {
+                                                    setErrors(prev => ({ ...prev, pd_name: '' }));
+                                                }
+                                            } else {
+                                                setErrors(prev => ({ ...prev, pd_name: 'Tên món ăn phải từ 2 đến 50 ký tự' }));
+                                            }
+                                        }}
                                     />
-                                    {isSubmitted && errors.pd_name && (
+                                    {errors.pd_name && (
                                         <p className="text-primary text-sm mt-1">{errors.pd_name}</p>
                                     )}
                                 </div>
@@ -208,8 +223,20 @@ const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
                                         className="w-full px-4 py-2 border rounded-lg"
                                         rows="4"
                                         value={formData.description}
-                                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            // Only allow update if <= 150 characters
+                                            if (value.length <= 150) {
+                                                setFormData({ ...formData, description: value });
+                                                setErrors(prev => ({ ...prev, description: '' }));
+                                            } else {
+                                                setErrors(prev => ({ ...prev, description: 'Mô tả tối đa 150 ký tự' }));
+                                            }
+                                        }}
                                     />
+                                    {errors.description && (
+                                        <p className="text-primary text-sm mt-1">{errors.description}</p>
+                                    )}
                                 </div>
                             </div>
                         </div>
