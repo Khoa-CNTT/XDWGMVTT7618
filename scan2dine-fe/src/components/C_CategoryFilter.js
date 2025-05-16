@@ -3,7 +3,6 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import debounce from 'lodash/debounce';
 import api from '../server/api';
-import { registerSocketListeners, cleanupSocketListeners } from '../services/socketListeners';
 
 export const CategoryFilter = ({ selectedCategory, onSelect }) => {
     const [categoryList, setCategoryList] = useState([]);
@@ -36,57 +35,6 @@ export const CategoryFilter = ({ selectedCategory, onSelect }) => {
         fetchCategories();
     }, [fetchCategories]);
 
-    // Đăng ký socket listeners để cập nhật danh mục thời gian thực
-    useEffect(() => {
-        registerSocketListeners({
-            customer: {}, // Không cần thông tin customer cụ thể vì các sự kiện danh mục là broadcast
-            CategoryAdded: (data) => {
-                if (data && data._id && data.cate_name) {
-                    setCategoryList((prev) => {
-                        // Kiểm tra xem danh mục đã tồn tại chưa để tránh trùng lặp
-                        if (prev.some((category) => category._id === data._id)) {
-                            return prev;
-                        }
-                        return [...prev, data];
-                    });
-                    debouncedToast('Đã thêm danh mục mới!', 'success');
-                } else {
-                    fetchCategories(); // Fallback nếu dữ liệu không đầy đủ
-                }
-            },
-            CategoryUpdated: (data) => {
-                if (data && data._id && data.cate_name) {
-                    setCategoryList((prev) =>
-                        prev.map((category) =>
-                            category._id === data._id ? { ...category, cate_name: data.cate_name } : category
-                        )
-                    );
-                    debouncedToast('Danh mục đã được cập nhật!', 'info');
-                } else {
-                    fetchCategories();
-                }
-            },
-            CategoryDeleted: (data) => {
-                if (data && data._id) {
-                    setCategoryList((prev) => {
-                        const updatedList = prev.filter((category) => category._id !== data._id);
-                        // Nếu danh mục đang chọn bị xóa, tự động chuyển về "Tất cả"
-                        if (selectedCategory === data._id) {
-                            onSelect('all');
-                        }
-                        return updatedList;
-                    });
-                    debouncedToast('Danh mục đã bị xóa!', 'info');
-                } else {
-                    fetchCategories();
-                }
-            },
-        });
-
-        return () => {
-            cleanupSocketListeners();
-        };
-    }, [selectedCategory, onSelect, fetchCategories, debouncedToast]);
 
     return (
         <div className="flex overflow-x-auto gap-4 p-4 bg-white scroll-smooth md:scrollbar-thin md:scrollbar-thumb-gray-300">

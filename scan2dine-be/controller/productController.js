@@ -14,7 +14,7 @@ const productController = {
             console.log("Request file:", req.file);
 
             // Kiểm tra nếu các giá trị bắt buộc không được cung cấp
-            const { pd_name, price, description, category, stall_id } = req.body;
+            const { pd_name, price, description, category, stall_id} = req.body;
             if (!pd_name || !price || !category || !stall_id) {
                 return res.status(400).json({ message: 'Missing required fields: pd_name, price, category, or stall_id.' });
             }

@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Footer } from '../components/Footer';
 import ConfirmModal from '../components/ConfirmModal'
-import { registerSocketListeners, cleanupSocketListeners } from '../services/socketListeners';
 
 export const EmployeePage = () => {
     const [tables, setTables] = useState([]);
@@ -39,33 +38,6 @@ export const EmployeePage = () => {
         }
     }, [searchTerm, tables]);
 
-useEffect(() => {
-    registerSocketListeners({
-        TableUpdated: (data) => {
-            console.log('Dữ liệu nhận được từ sự kiện TableUpdated:', data);
-            if (data && data.tableId) {
-                setTables((prevTables) =>
-                    prevTables.map((table) =>
-                        table._id === data.tableId
-                            ? { ...table, status: data.status, tableNumber: data.tableNumber }
-                            : table
-                    )
-                );
-                toast.info(data.message || 'Trạng thái bàn đã được cập nhật!');
-            }
-        },
-        OrderCreated: (data) => {
-            console.log('📦 Đã nhận được sự kiện order_created:', data);
-            toast.success(`Đơn hàng mới đã được tạo cho bàn số ${data.tableNumber || 'n/a'}`);
-            // Nếu cần cập nhật lại danh sách bàn hoặc trạng thái bàn
-            fetchTables();
-        },
-    });
-
-    return () => {
-        cleanupSocketListeners(); // Cleanup khi component bị unmount
-    };
-}, []);
 
 
 

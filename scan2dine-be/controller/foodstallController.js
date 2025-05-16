@@ -56,13 +56,6 @@ const foodstallController = {
           },
         });
       }
-      const io = req.app.get('io');
-      notifyStallAdded(io, saveStall._id, {
-        stall: saveStall._id,
-        name: saveStall.stall_name, // Giả sử trường trong schema Foodstall là stall_name
-        user: req.body.user,
-        message: 'Quầy hàng mới đã được thêm',
-      });
       return res.status(200).json(saveStall); // Trả về Foodstall vừa tạo
     } catch (error) {
       console.error(error);
@@ -89,43 +82,6 @@ const foodstallController = {
       res.status(500).json({ error: error.message });
     }
   },
-
-  // deleteFoodstall: async (stallId) => {
-  //   try {
-  //     // Tìm foodstall cần xóa
-  //     const foodstall = await Foodstall.findById(stallId);
-  //     if (!foodstall) {
-  //       return { message: "Foodstall not found" };
-  //     }
-
-  //     // Tìm các sản phẩm liên quan đến foodstall này
-  //     const productsToDelete = await Product.find({ stall_id: stallId });
-  //     if (productsToDelete.length > 0) {
-  //       // Xóa các sản phẩm liên quan
-  //       await Product.deleteMany({ stall_id: stallId });
-
-  //       // Cập nhật Category để loại bỏ sản phẩm đã xóa khỏi danh sách của Category
-  //       await Category.updateMany(
-  //         { products: { $in: productsToDelete.map((p) => p._id) } },
-  //         { $pull: { products: { $in: productsToDelete.map((p) => p._id) } } }
-  //       );
-  //     }
-
-  //     // Xóa foodstall
-  //     await foodstall.deleteOne();
-  //     const io = req.app.get('io');
-  //     notifyStallDeleted(io, deleteStall._id, {
-  //       stall: deleteStall._id,
-  //       stall_name: deleteStall.stall_name, // Giả sử trường trong schema Foodstall là stall_name
-  //       message: 'Quầy hàng và các sản phẩm liên quan đã bị xóa',
-  //     });
-  //     return { message: "Foodstall and related products deleted successfully" };
-  //   } catch (error) {
-  //     console.error("Error in deleteFoodstall:", error);
-  //     return { error: error.message || error };
-  //   }
-  // },
-
   deleteFoodstall: async (req, res) => {
     try {
       // Tìm foodstall cần xóa
@@ -181,12 +137,6 @@ const foodstallController = {
       if (!updatedStall) {
         return res.status(404).json({ message: "Không tìm thấy quầy hàng." });
       }
-      const io = req.app.get('io');
-      notifyStallUpdated(io, updatedStall._id, {
-        stall: updatedStall._id,
-        stall_name: updatedStall.stall_name, // Giả sử trường trong schema Foodstall là stall_name
-        message: 'Thông tin quầy hàng đã được cập nhật',
-      });
       res.status(200).json({
         message: "Cập nhật quầy hàng thành công!",
         foodstall: updatedStall,

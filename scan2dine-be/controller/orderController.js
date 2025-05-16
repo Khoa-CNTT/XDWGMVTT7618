@@ -1,6 +1,5 @@
 const { Order, Customer, Table, Orderdetail } = require('../model/model');
 const { confirmAllPendingOrderDetails } = require('../service/orderService');
-const { notifyOrderAdded, notifyOrderUpdated, notifyOrderDeleted, notifyOrderDetailRemoved, notifyOrderConfirmed } = require('../utils/socketUtils');
 
 const orderController = {
     // ADD ORDER
@@ -22,13 +21,7 @@ const orderController = {
                     $push: { order: saveOrder._id }
                 });
             }
-            const io = req.app.get('io');
-            notifyOrderAdded(io, saveOrder._id, {
-                orderId: saveOrder._id,
-                customerId: req.body.customer,
-                tableId: req.body.table,
-                message: 'Đơn hàng mới đã được thêm',
-            });
+            
             return res.status(200).json(saveOrder);
         } catch (error) {
             console.error("Error in addOrder:", error);
@@ -126,13 +119,7 @@ const orderController = {
             const updateOrder = await Order.findByIdAndUpdate(req.params.id, {
                 $set: req.body
             }, { new: true });
-            const io = req.app.get('io');
-            notifyOrderUpdated(io, updateOrder._id, {
-                orderId: updateOrder._id,
-                customerId: updateOrder.customer,
-                tableId: updateOrder.table,
-                message: 'Đơn hàng đã được cập nhật',
-            });
+            
             return res.status(200).json({ message: "Update order successfully", updateOrder });
         } catch (error) {
             console.error("Error in DELETEREVIEW:", error);
@@ -159,13 +146,7 @@ const orderController = {
                     order: deleteOrder._id
                 }
             });
-            const io = req.app.get('io');
-            notifyOrderDeleted(io, deleteOrder._id, {
-                orderId: deleteOrder._id,
-                customerId: deleteOrder.customer,
-                tableId: deleteOrder.table,
-                message: 'Đơn hàng đã bị xóa',
-            });
+            
             return res.status(200).json({ message: "Delete order successfully", deleteOrder });
         } catch (error) {
             console.error("Error in DELETEREVIEW:", error);
@@ -196,14 +177,7 @@ const orderController = {
                     path: 'orderdetail',
                     populate: { path: 'products', select: 'pd_name price' }
                 });
-            const io = req.app.get('io');
-            notifyOrderConfirmed(io, updatedOrder._id, {
-                orderId: updatedOrder._id,
-                customerId: updatedOrder.customer._id,
-                tableId: updatedOrder.table._id,
-                status: updatedOrder.od_status,
-                message: 'Đơn hàng đã được xác nhận',
-            });
+           
             // Trả về thông tin chi tiết đã được cập nhật
             res.status(200).json({
                 message: 'Xác nhận món thành công',
@@ -256,13 +230,7 @@ const orderController = {
                     $pull: { order: order._id },
                     $set: { status: '1' }
                 });
-                const io = req.app.get('io');
-                notifyOrderDeleted(io, order._id, {
-                    orderId: order._id,
-                    customerId: order.customer,
-                    tableId: order.table,
-                    message: 'Đơn hàng và tất cả OrderDetail "Chờ xác nhận" đã bị xóa',
-                });
+                
                 return res.status(200).json({ message: 'Đã xóa toàn bộ đơn hàng và OrderDetail "Chờ xác nhận (1)" .' });
             } else {
                 // Trường hợp: có cả "Xác nhận" → Chỉ xóa các OrderDetail "Chờ xác nhận"
@@ -280,12 +248,7 @@ const orderController = {
                 await Table.findByIdAndUpdate(order.table, {
                     $set: { status: '2' }
                 });
-                const io = req.app.get('io');
-                notifyOrderDetailRemoved(io, order._id, {
-                    orderId: order._id,
-                    removedOrderDetailIds: orderdetailIDs,
-                    message: 'Các OrderDetail "Chờ xác nhận" đã bị xóa',
-                });
+                
                 return res.status(200).json({ message: 'Đã xóa các OrderDetail "Chờ xác nhận (1)".', removed: orderdetailIDs });
             }
 

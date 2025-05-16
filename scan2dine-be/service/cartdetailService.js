@@ -2,7 +2,7 @@
 const {CartDetail, Cart} = require('../model/model');
 
 // Hàm tăng số lượng
-const increaseCartQuantity = async (cartID, productID, quantity = 1) => {
+const increaseCartQuantity = async (cartID, productID, quantity = 1, note) => {
     let cartDetailItem = await CartDetail.findOne({ cart: cartID, products: productID });
     console.log(cartDetailItem);
     if (cartDetailItem) {
@@ -14,7 +14,8 @@ const increaseCartQuantity = async (cartID, productID, quantity = 1) => {
         const newItem = new CartDetail({
             cart:cartID,
             products: productID,
-            quantity: quantity
+            quantity: quantity, 
+            note: note
         });
         await newItem.save();
         return { updated: false, detail: newItem };
@@ -64,14 +65,13 @@ const calculateCartdetail = async (cartDetailID) => {
 
 };
 // (Tùy chọn) Hàm hỗ trợ phát Socket.IO từ service (nếu cần)
-const emitCartDetailUpdate = async (io, cartID, event, data) => {
-    if (io && cartID) {
-        io.to(`cart_${cartID}`).emit(event, data);
-    }
-}; 
+// const emitCartDetailUpdate = async (io, cartID, event, data) => {
+//     if (io && cartID) {
+//         io.to(`cart_${cartID}`).emit(event, data);
+//     }
+// }; 
 module.exports = {
     increaseCartQuantity,
     decreaseCartQuantity,
     calculateCartdetail,
-    emitCartDetailUpdate
 };

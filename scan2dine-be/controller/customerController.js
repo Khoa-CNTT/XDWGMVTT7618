@@ -1,6 +1,5 @@
 const { Customer, Cart, Order } = require('../model/model');
 const { creatCart } = require('../service/cartService');
-const { notifyCustomerAdded, notifyCustomerUpdated, notifyCustomerDeleted } = require('../utils/socketUtils');
 
 const customerController = {
   // Add a customer
@@ -21,12 +20,6 @@ const customerController = {
       }
 
       const newCustomer = new Customer(req.body);
-      const io = req.app.get('io');
-      if (!io) {
-        console.error('Socket.IO is not initialized');
-        return res.status(500).json({ message: 'Socket.IO not available' });
-      }
-
       const cart = await creatCart(null, io);
       newCustomer.cart = cart._id;
       const savedCustomer = await newCustomer.save();
@@ -35,15 +28,6 @@ const customerController = {
       await Cart.findByIdAndUpdate(cart._id, {
         customer: savedCustomer._id
       });
-
-      notifyCustomerAdded(io, savedCustomer._id, {
-        customerId: savedCustomer._id,
-        phone: savedCustomer.phone,
-        name: savedCustomer.name,
-        cartId: cart._id,
-        message: 'Khách hàng mới đã được thêm'
-      });
-
       return res.status(200).json(savedCustomer);
     } catch (error) {
       console.error('Error in addCustomer:', error);
@@ -61,65 +45,6 @@ const customerController = {
       return res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
-// updateCustomer: async (req, res) => {
-//   try {
-//     console.log('➡️ Nhận dữ liệu body:', req.body); // Debug
-//     const customerId = req.params.id;
-
-//     // Tìm khách hàng
-//     const customer = await Customer.findById(customerId);
-//     if (!customer) {
-//       return res.status(404).json({ message: 'Customer not found' });
-//     }
-
-//     // Nếu cart thay đổi thì cập nhật lại liên kết
-//     if (req.body.cart && req.body.cart !== customer.cart?.toString()) {
-//       // Gỡ cart cũ (nếu có)
-//       if (customer.cart) {
-//         await Cart.findByIdAndUpdate(customer.cart, { $unset: { customer: '' } });
-//       }
-
-//       // Gắn cart mới
-//       await Cart.findByIdAndUpdate(req.body.cart, { customer: customer._id });
-//     }
-
-//     // Cập nhật dữ liệu khách hàng
-//     const updatedCustomer = await Customer.findByIdAndUpdate(
-//       customerId,
-//       { $set: req.body },
-//       { new: true, runValidators: true }
-//     );
-
-//     if (!updatedCustomer) {
-//       return res.status(500).json({ message: 'Không thể cập nhật khách hàng' });
-//     }
-
-//     // Gửi socket nếu có
-//     const io = req.app.get('io');
-//     if (io) {
-//       notifyCustomerUpdated(io, updatedCustomer._id, {
-//         customerId: updatedCustomer._id,
-//         phone: updatedCustomer.phone,
-//         name: updatedCustomer.name,
-//         cartId: updatedCustomer.cart,
-//         status: updatedCustomer.status,
-//         message: 'Thông tin khách hàng đã được cập nhật'
-//       });
-//     } else {
-//       console.warn('⚠️ Socket.IO chưa được khởi tạo');
-//     }
-
-//     return res.status(200).json({
-//       message: 'Customer updated successfully',
-//       customer: updatedCustomer
-//     });
-
-//   } catch (error) {
-//     console.error('❌ Lỗi trong updateCustomer:', error);
-//     return res.status(500).json({ message: 'Server error', error: error.message });
-//   }
-// },
-
   // Update a customer
   updateCustomer: async (req, res) => {
     try {
@@ -146,21 +71,6 @@ const customerController = {
         { new: true,runValidators: true }
       );
 
-      const io = req.app.get('io');
-      if (!io) {
-        console.error('Socket.IO is not initialized');
-        return res.status(500).json({ message: 'Socket.IO not available' });
-      }
-
-      notifyCustomerUpdated(io, updatedCustomer._id, {
-        customerId: updatedCustomer._id,
-        phone: updatedCustomer.phone,
-        name: updatedCustomer.name,
-        // status: updatedCustomer.status,
-        status:updatedCustomer.status,
-        cartId: updatedCustomer.cart,
-        message: 'Thông tin khách hàng đã được cập nhật'
-      });
 
       return res.status(200).json({
         message: 'Customer updated successfully',
@@ -188,19 +98,6 @@ const customerController = {
       }
 
       await Customer.findByIdAndDelete(req.params.id);
-
-      const io = req.app.get('io');
-      if (!io) {
-        console.error('Socket.IO is not initialized');
-        return res.status(500).json({ message: 'Socket.IO not available' });
-      }
-
-      notifyCustomerDeleted(io, customer._id, {
-        customerId: customer._id,
-        phone: customer.phone,
-        name: customer.name,
-        message: 'Khách hàng đã bị xóa'
-      });
 
       return res.status(200).json({ message: 'Customer deleted successfully' });
     } catch (error) {

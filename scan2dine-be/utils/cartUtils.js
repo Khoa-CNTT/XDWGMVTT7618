@@ -1,7 +1,6 @@
 const { Cart, CartDetail, Product } = require('../model/model');
-const { notifyCartDetailsDeleted } = require('./socketUtils');
 
-const deleteCartDetailsByCartId = async (cartId, io) => {
+const deleteCartDetailsByCartId = async (cartId) => {
     try {
         const cart = await Cart.findById(cartId);
 
@@ -32,13 +31,6 @@ const deleteCartDetailsByCartId = async (cartId, io) => {
         });
 
         // Thông báo qua socket nếu có io
-        if (io) {
-            notifyCartDetailsDeleted(io, cartId, {
-                cartId,
-                deletedCartDetailIds: cartDetailIds,
-                message: 'Tất cả chi tiết giỏ hàng đã được xóa',
-            });
-        }
         return cartDetailIds;
 
     } catch (error) {

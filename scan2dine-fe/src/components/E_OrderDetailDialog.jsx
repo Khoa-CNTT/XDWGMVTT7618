@@ -3,7 +3,6 @@ import { FaUtensils, FaClock, FaCheckCircle, FaPrint, FaCheck, FaTimes, FaSpinne
 import { toast } from 'react-toastify';
 import api from '../server/api';
 import { E_ItemOrderDetail } from './E_ItemOrderDetail';
-import { registerSocketListeners, cleanupSocketListeners } from '../services/socketListeners';
 import debounce from 'lodash/debounce'; // Dùng lodash để debounce thông báo
 
 const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
@@ -61,105 +60,6 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
             }, 500);
         }
     }, [isOpen, tableId, fetchInfoOrder]);
-
-    // Đăng ký socket listeners
-    useEffect(() => {
-        if (!isOpen || !tableId) return;
-
-        const customer = {
-            idTable: tableId,
-            orderId: tableInfo?.orderId,
-        };
-
-        registerSocketListeners({
-            customer,
-            TableUpdated: (data) => {
-                // Cập nhật trực tiếp nếu dữ liệu từ socket đủ
-                if (data.tableStatus) {
-                    setTableInfo((prev) => ({ ...prev, tableStatus: data.tableStatus }));
-                    fetchTables(); // Cập nhật danh sách bàn
-                    debouncedToast('Thông tin bàn đã được cập nhật!');
-                } else {
-                    fetchInfoOrder(); // Fallback nếu dữ liệu không đủ
-                }
-            },
-            CartUpdated: (data) => {
-                fetchInfoOrder(); // Cập nhật toàn bộ nếu cần
-                debouncedToast('Giỏ hàng đã được cập nhật!');
-            },
-            OrderCreated: (orderData) => {
-                if (orderData.tableId === tableId) {
-                    fetchInfoOrder();
-                    debouncedToast('Đơn hàng mới đã được tạo!', 'success');
-                }
-            },
-            OrderUpdated: (orderData) => {
-                if (orderData.orderId === tableInfo?.orderId) {
-                    // Cập nhật trực tiếp nếu có dữ liệu từ socket
-                    if (orderData.products) {
-                        setOrderItems(orderData.products);
-                        setTableInfo((prev) => ({ ...prev, ...orderData }));
-                        debouncedToast('Đơn hàng đã được cập nhật!');
-                    } else {
-                        fetchInfoOrder();
-                    }
-                }
-            },
-            OrderDetailAdded: (data) => {
-                // Cập nhật trực tiếp danh sách món
-                if (data.item) {
-                    setOrderItems((prev) => [...prev, data.item]);
-                    debouncedToast('Đã thêm món mới vào đơn hàng!');
-                } else {
-                    fetchInfoOrder();
-                }
-            },
-            OrderDetailUpdated: (data) => {
-                // Cập nhật trực tiếp món
-                if (data.item) {
-                    setOrderItems((prev) =>
-                        prev.map((item) => (item.id === data.item.id ? { ...item, ...data.item } : item))
-                    );
-                    debouncedToast('Chi tiết đơn hàng đã được cập nhật!');
-                } else {
-                    fetchInfoOrder();
-                }
-            },
-            OrderDetailDeleted: (data) => {
-                // Xóa trực tiếp món
-                if (data.itemId) {
-                    setOrderItems((prev) => prev.filter((item) => item.id !== data.itemId));
-                    debouncedToast('Đã xóa món khỏi đơn hàng!');
-                } else {
-                    fetchInfoOrder();
-                }
-            },
-            OrderDetailQuantityDecreased: (data) => {
-                // Cập nhật số lượng trực tiếp
-                if (data.itemId && data.quantity) {
-                    setOrderItems((prev) =>
-                        prev.map((item) =>
-                            item.id === data.itemId ? { ...item, quantity: data.quantity } : item
-                        )
-                    );
-                    debouncedToast('Số lượng món đã được giảm!');
-                } else {
-                    fetchInfoOrder();
-                }
-            },
-            OrderConfirmed: (data) => {
-                if (data.orderId === tableInfo?.orderId) {
-                    setTableInfo((prev) => ({ ...prev, od_status: '3' }));
-                    fetchTables();
-                    debouncedToast('Đơn hàng đã được xác nhận!', 'success');
-                }
-            },
-        });
-
-        return () => {
-            cleanupSocketListeners();
-        };
-    }, [isOpen, tableId, tableInfo?.orderId, fetchInfoOrder, fetchTables, debouncedToast]);
 
     // Cập nhật số lượng sản phẩm
     const handleUpdateQuantity = async (itemId, newQuantity) => {

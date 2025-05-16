@@ -1,5 +1,4 @@
 const { Orderdetail, Order, Product } = require('../model/model');
-const { notifyOrderDetailChanged, notifyOrderTotalUpdated } = require('../utils/socketUtils');  // Import socket emitters
 // Hàm tăng số lượng
 const increaseOrderQuantity = async (io, orderID, productID, quantity = 1, note = '') => {
     let orderDetailItem = await Orderdetail.findOne({ order: orderID, products: productID });
@@ -12,11 +11,8 @@ const increaseOrderQuantity = async (io, orderID, productID, quantity = 1, note 
         }
         await orderDetailItem.save();
 
-        // Gửi thông báo qua socket khi tăng số lượng
-        notifyOrderDetailChanged(io, orderID, 'updated', { orderDetail: orderDetailItem });
-
         // Cập nhật tổng đơn hàng
-        notifyOrderTotalUpdated(io, orderID, { total: await calculateOrderTotal(orderID) });
+        await calculateOrderTotal(orderID);
 
         return { updated: true, detail: orderDetailItem };
     } else {
@@ -29,11 +25,8 @@ const increaseOrderQuantity = async (io, orderID, productID, quantity = 1, note 
         });
         await newItem.save();
 
-        // Gửi thông báo qua socket khi thêm sản phẩm mới
-        notifyOrderDetailChanged(io, orderID, 'added', { orderDetail: newItem });
-
         // Cập nhật tổng đơn hàng
-        notifyOrderTotalUpdated(io, orderID, { total: await calculateOrderTotal(orderID) });
+        await calculateOrderTotal(orderID);
 
         return { updated: false, detail: newItem };
     }
@@ -52,13 +45,9 @@ const decreaseOrderQuantity = async (io, order, products, quantity = 1) => {
         orderDetailItem.quantity = Math.max(orderDetailItem.quantity - quantity, 0);
         await orderDetailItem.save();
 
-        // Gửi thông báo qua socket khi giảm số lượng
-        notifyOrderDetailChanged(io, order, 'updated', { orderDetail: orderDetailItem });
-
         // Cập nhật tổng đơn hàng
-        notifyOrderTotalUpdated(io, order, { total: await calculateOrderTotal(order) });
+        await calculateOrderTotal(order);
     }
-
     return orderDetailItem;
 };
 
