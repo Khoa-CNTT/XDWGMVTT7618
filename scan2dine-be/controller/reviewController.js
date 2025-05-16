@@ -1,5 +1,4 @@
 
-const { Customer, Product, Review } = require('../model/model');
 const { Customer, Product, Review, Order } = require('../model/model');
 const reviewController = {
     // add reivew
@@ -146,12 +145,7 @@ getReviewbyOrder: async (req, res) => {
     } catch (error) {
         return res.status(500).json({ message: "Server error", error: error.message });
     }
-}
-
-}
-
-
-
+},
     getReviewByCustomerId: async (req, res) => {
         const { orderId } = req.body;
 
@@ -200,4 +194,5 @@ getReviewbyOrder: async (req, res) => {
             res.status(500).json({ message: 'Lỗi khi lấy thông tin sản phẩm và đánh giá.' });
         }
     }
+}
 module.exports = reviewController;
