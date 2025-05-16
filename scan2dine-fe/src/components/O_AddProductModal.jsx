@@ -1,66 +1,83 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaTimes, FaUpload } from 'react-icons/fa';
 
 const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
-
     const initialFormState = {
         pd_name: '',
         price: '',
         description: '',
-        category: categories.length > 0 ? categories[0]._id : '',
-        image: null
+        category: '',
+        image: null,
+        imagePreview: null,
     };
+
     const [formData, setFormData] = useState(initialFormState);
-    // Thêm state để theo dõi lỗi hình ảnh
-    const [imageError, setImageError] = useState('');
-    // Thêm state để kiểm tra xem form đã được submit chưa
+    const [errors, setErrors] = useState({});
     const [isSubmitted, setIsSubmitted] = useState(false);
-    // Thêm state để theo dõi trạng thái tải
     const [loading, setLoading] = useState(false);
-    // Thêm state để hiển thị thông báo thành công
     const [successMessage, setSuccessMessage] = useState('');
+
+    useEffect(() => {
+        // Đặt category mặc định khi categories được truyền vào
+        if (categories && categories.length > 0 && !formData.category) {
+            setFormData((prev) => ({ ...prev, category: categories[0]._id }));
+        }
+    }, [categories]);
+
+    const validate = () => {
+        const newErrors = {};
+        if (!formData.pd_name.trim()) newErrors.pd_name = 'Vui lòng nhập Tên món ăn';
+        if (!formData.price.trim()) newErrors.price = 'Vui lòng nhập Giá';
+        if (!formData.category) newErrors.category = 'Vui lòng chọn Danh mục';
+        if (!formData.image) newErrors.image = 'Vui lòng chọn hình ảnh';
+        return newErrors;
+    };
+
     const handleImageChange = (e) => {
         const file = e.target.files[0];
         if (file) {
             setFormData({
                 ...formData,
                 image: file,
-                imagePreview: URL.createObjectURL(file)
+                imagePreview: URL.createObjectURL(file),
             });
-            setImageError(''); // Xóa thông báo lỗi khi đã chọn hình
+            setErrors((prev) => ({ ...prev, image: '' }));
         }
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        setLoading(true); // Start loading
+        setIsSubmitted(true);
+
+        const validationErrors = validate();
+        setErrors(validationErrors);
+
+        if (Object.keys(validationErrors).length > 0) return;
+
+        setLoading(true);
+
         const form = new FormData();
         form.append('pd_name', formData.pd_name);
         form.append('price', formData.price);
         form.append('description', formData.description);
         form.append('category', formData.category);
-        if (formData.image) {
-            form.append('image', formData.image);
-        }
-
-        console.log('FormData in O_AddProductModal:');
-        for (let pair of form.entries()) {
-            console.log(`${pair[0]}: ${pair[1]}`);
-        }
+        form.append('image', formData.image);
 
         onSave(form);
+
         setSuccessMessage('Thêm thành công!');
-        setFormData({ pd_name: '', price: '', description: '', category: '', image: null });
+        setFormData(initialFormState);
         setTimeout(() => {
             setSuccessMessage('');
-            setLoading(false); // Stop loading after success message disappears
+            setLoading(false);
         }, 2000);
     };
 
-    // Reset trạng thái khi modal đóng
     const handleClose = () => {
-        setImageError('');
+        setFormData(initialFormState);
+        setErrors({});
         setIsSubmitted(false);
+        setSuccessMessage('');
         onClose();
     };
 
@@ -76,6 +93,7 @@ const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
                             <FaTimes className="w-6 h-6" />
                         </button>
                     </div>
+
                     {successMessage && (
                         <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[9999] transition-all duration-300">
                             <div className="bg-green-500 text-white px-6 py-3 rounded shadow-lg font-semibold min-w-[220px] text-center">
@@ -89,60 +107,62 @@ const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
                             <div className="space-y-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Tên món ăn
-                                        <span className="text-red-500"> (*)</span>
+                                        Tên món ăn <span className="text-primary"> (*)</span>
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full px-4 py-2 border rounded-lg"
                                         value={formData.pd_name}
                                         onChange={(e) => setFormData({ ...formData, pd_name: e.target.value })}
-                                        required
                                     />
+                                    {isSubmitted && errors.pd_name && (
+                                        <p className="text-primary text-sm mt-1">{errors.pd_name}</p>
+                                    )}
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Giá (VNĐ)
-                                        <span className="text-red-500"> (*)</span>
+                                        Giá (VNĐ) <span className="text-primary"> (*)</span>
                                     </label>
                                     <input
                                         type="number"
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full px-4 py-2 border rounded-lg"
                                         value={formData.price}
                                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                        required
                                     />
+                                    {isSubmitted && errors.price && (
+                                        <p className="text-primary text-sm mt-1">{errors.price}</p>
+                                    )}
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Danh mục
-                                        <span className="text-red-500"> (*)</span>
+                                        Danh mục <span className="text-primary"> (*)</span>
                                     </label>
                                     <select
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full px-4 py-2 border rounded-lg"
                                         value={formData.category}
                                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                        required
                                     >
                                         <option value="">Chọn danh mục</option>
-                                        {categories.map(category => (
+                                        {categories.map((category) => (
                                             <option key={category._id} value={category._id}>
                                                 {category.cate_name}
                                             </option>
                                         ))}
                                     </select>
+                                    {isSubmitted && errors.category && (
+                                        <p className="text-primary text-sm mt-1">{errors.category}</p>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="space-y-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Hình ảnh món ăn
-                                        <span className="text-red-500"> (*)</span>
+                                        Hình ảnh món ăn <span className="text-primary"> (*)</span>
                                     </label>
-                                    <div className={`border-2 border-dashed rounded-lg p-4 text-center ${isSubmitted && !formData.image ? 'border-red-500' : ''}`}>
+                                    <div className={`border-2 border-dashed rounded-lg p-4 text-center ${isSubmitted && errors.image ? 'border-red-500' : ''}`}>
                                         {formData.imagePreview ? (
                                             <div className="relative">
                                                 <div className="h-48 w-48 mx-auto overflow-hidden flex items-center justify-center">
@@ -154,14 +174,8 @@ const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
                                                 </div>
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        setFormData({ ...formData, image: null, imagePreview: null });
-                                                        // Chỉ hiển thị lỗi nếu form đã được submit
-                                                        if (isSubmitted) {
-                                                            setImageError('Vui lòng chọn hình ảnh cho món ăn');
-                                                        }
-                                                    }}
-                                                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                    onClick={() => setFormData({ ...formData, image: null, imagePreview: null })}
+                                                    className="absolute top-0 right-0 bg-primary text-white rounded-full p-1"
                                                 >
                                                     <FaTimes className="w-4 h-4" />
                                                 </button>
@@ -181,8 +195,8 @@ const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
                                             </label>
                                         )}
                                     </div>
-                                    {isSubmitted && imageError && (
-                                        <p className="text-red-500 text-sm mt-1">{imageError}</p>
+                                    {isSubmitted && errors.image && (
+                                        <p className="text-primary text-sm mt-1">{errors.image}</p>
                                     )}
                                 </div>
 
@@ -191,7 +205,7 @@ const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
                                         Mô tả
                                     </label>
                                     <textarea
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full px-4 py-2 border rounded-lg"
                                         rows="4"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -202,7 +216,7 @@ const O_AddProductModal = ({ isOpen, onClose, categories, onSave }) => {
 
                         <div className="flex justify-between items-center pt-4">
                             <div className="text-sm text-gray-500">
-                                <span className="text-red-500">(*)</span> Bắt buộc
+                                <span className="text-primary">(*)</span> Bắt buộc
                             </div>
                             <div className="flex space-x-4">
                                 <button

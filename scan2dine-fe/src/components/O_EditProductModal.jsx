@@ -2,38 +2,49 @@ import React, { useState, useEffect } from 'react';
 import { FaTimes, FaUpload } from 'react-icons/fa';
 
 const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) => {
-    const [formData, setFormData] = useState({
+    const initialFormState = {
         pd_name: '',
         price: '',
         description: '',
         category: '',
         image: null,
         imagePreview: null
-    });
-    // Thêm state để theo dõi lỗi hình ảnh và trạng thái submit
-    const [imageError, setImageError] = useState('');
+    };
+
+    const [formData, setFormData] = useState(initialFormState);
+    const [errors, setErrors] = useState({});
     const [isSubmitted, setIsSubmitted] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
 
     useEffect(() => {
         if (product) {
             setFormData({
-                pd_name: !product.pd_name || product.pd_name === 'undefined' ? '' : product.pd_name,
-                price: !product.price || product.price === 'undefined' ? '' : product.price,
-                description: !product.description || product.description === 'undefined' ? '' : product.description,
+                pd_name: product.pd_name || '',
+                price: product.price || '',
+                description: product.description || '',
                 category:
                     typeof product.category === 'object'
                         ? (product.category?._id ?? '')
-                        : (!product.category || product.category === 'undefined' ? '' : product.category),
+                        : product.category || '',
                 image: null,
                 imagePreview: product.image && product.image !== 'undefined'
                     ? `${process.env.REACT_APP_API_URL}${product.image}`
                     : null,
             });
-            // Reset các state khi product thay đổi
-            setImageError('');
+            setErrors({});
             setIsSubmitted(false);
         }
     }, [product]);
+
+    const validate = () => {
+        const newErrors = {};
+        if (!formData.pd_name.trim()) newErrors.pd_name = 'Vui lòng nhập Tên món ăn';
+        if (!formData.price.toString().trim()) newErrors.price = 'Vui lòng nhập Giá';
+        if (!formData.category) newErrors.category = 'Vui lòng chọn Danh mục';
+        if (!formData.image && !formData.imagePreview) newErrors.image = 'Vui lòng chọn hình ảnh';
+        return newErrors;
+    };
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -43,48 +54,47 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                 image: file,
                 imagePreview: URL.createObjectURL(file)
             });
-            setImageError(''); // Xóa thông báo lỗi khi đã chọn hình
+            setErrors((prev) => ({ ...prev, image: '' }));
         }
     };
 
     const handleSubmit = (e) => {
         e.preventDefault();
-        setIsSubmitted(true); // Đánh dấu form đã được submit
+        setIsSubmitted(true);
 
-        // Kiểm tra dữ liệu trước khi gửi
-        if (!formData.pd_name || !formData.price || !formData.category) {
-            alert("Vui lòng điền đầy đủ tên món, giá và danh mục.");
-            return;
-        }
-        
-        // Kiểm tra hình ảnh - nếu không có hình ảnh mới và không có hình ảnh cũ
-        if (!formData.image && !formData.imagePreview) {
-            setImageError("Vui lòng chọn hình ảnh cho món ăn");
-            return;
-        }
+        const validationErrors = validate();
+        setErrors(validationErrors);
+        if (Object.keys(validationErrors).length > 0) return;
+
+        setLoading(true);
 
         const formDataToSend = new FormData();
-        formDataToSend.append('pd_name', formData.pd_name || '');
-        formDataToSend.append('price', formData.price || '');
-        formDataToSend.append('description', formData.description || '');
-        formDataToSend.append('category', formData.category || '');
-
-        // Chỉ thêm ảnh nếu người dùng chọn ảnh mới
+        formDataToSend.append('pd_name', formData.pd_name);
+        formDataToSend.append('price', formData.price);
+        formDataToSend.append('description', formData.description);
+        formDataToSend.append('category', formData.category);
         if (formData.image) {
             formDataToSend.append('image', formData.image);
         }
 
         if (product?._id) {
             onSave(product._id, formDataToSend);
+            setSuccessMessage('Cập nhật thành công!');
+            setTimeout(() => {
+                setSuccessMessage('');
+                setLoading(false);
+                handleClose();
+            }, 2000);
         } else {
-            console.error("❌ Không tìm thấy ID sản phẩm để cập nhật.");
+            console.error("Không có ID sản phẩm.");
         }
     };
 
-    // Hàm xử lý đóng modal và reset trạng thái
     const handleClose = () => {
-        setImageError('');
+        setFormData(initialFormState);
+        setErrors({});
         setIsSubmitted(false);
+        setSuccessMessage('');
         onClose();
     };
 
@@ -101,65 +111,75 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                         </button>
                     </div>
 
+                    {successMessage && (
+                        <div className="fixed top-5 left-1/2 transform -translate-x-1/2 z-[9999] transition-all duration-300">
+                            <div className="bg-green-500 text-white px-6 py-3 rounded shadow-lg font-semibold min-w-[220px] text-center">
+                                {successMessage}
+                            </div>
+                        </div>
+                    )}
+
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid grid-cols-2 gap-6">
                             <div className="space-y-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Tên món ăn
-                                        <span className="text-red-500"> (*)</span>
+                                        Tên món ăn <span className="text-primary">(*)</span>
                                     </label>
                                     <input
                                         type="text"
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full px-4 py-2 border rounded-lg"
                                         value={formData.pd_name}
                                         onChange={(e) => setFormData({ ...formData, pd_name: e.target.value })}
-                                        required
                                     />
+                                    {isSubmitted && errors.pd_name && (
+                                        <p className="text-primary text-sm mt-1">{errors.pd_name}</p>
+                                    )}
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Giá (VNĐ)
-                                        <span className="text-red-500"> (*)</span>
+                                        Giá (VNĐ) <span className="text-primary">(*)</span>
                                     </label>
                                     <input
                                         type="number"
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-                                        value={formData.price ?? ''}
+                                        className="w-full px-4 py-2 border rounded-lg"
+                                        value={formData.price}
                                         onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                                        required
                                     />
+                                    {isSubmitted && errors.price && (
+                                        <p className="text-primary text-sm mt-1">{errors.price}</p>
+                                    )}
                                 </div>
 
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Danh mục
-                                        <span className="text-red-500"> (*)</span>
+                                        Danh mục <span className="text-primary">(*)</span>
                                     </label>
                                     <select
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full px-4 py-2 border rounded-lg"
                                         value={formData.category}
                                         onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                        required
                                     >
                                         <option value="">Chọn danh mục</option>
-                                        {categories.map(category => (
+                                        {categories.map((category) => (
                                             <option key={category._id} value={category._id}>
                                                 {category.cate_name}
                                             </option>
                                         ))}
                                     </select>
+                                    {isSubmitted && errors.category && (
+                                        <p className="text-primary text-sm mt-1">{errors.category}</p>
+                                    )}
                                 </div>
                             </div>
 
                             <div className="space-y-6">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                                        Hình ảnh món ăn
-                                        <span className="text-red-500"> (*)</span>
+                                        Hình ảnh món ăn <span className="text-primary">(*)</span>
                                     </label>
-                                    <div className={`border-2 border-dashed rounded-lg p-4 text-center ${isSubmitted && !formData.imagePreview ? 'border-red-500' : ''}`}>
+                                    <div className={`border-2 border-dashed rounded-lg p-4 text-center ${isSubmitted && errors.image ? 'border-red-500' : ''}`}>
                                         {formData.imagePreview ? (
                                             <div className="relative">
                                                 <div className="h-48 w-48 mx-auto overflow-hidden flex items-center justify-center">
@@ -171,13 +191,8 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                                 </div>
                                                 <button
                                                     type="button"
-                                                    onClick={() => {
-                                                        setFormData({ ...formData, image: null, imagePreview: null });
-                                                        if (isSubmitted) {
-                                                            setImageError('Vui lòng chọn hình ảnh cho món ăn');
-                                                        }
-                                                    }}
-                                                    className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1"
+                                                    onClick={() => setFormData({ ...formData, image: null, imagePreview: null })}
+                                                    className="absolute top-0 right-0 bg-primary text-white rounded-full p-1"
                                                 >
                                                     <FaTimes className="w-4 h-4" />
                                                 </button>
@@ -186,7 +201,7 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                             <label className="cursor-pointer">
                                                 <div className="flex flex-col items-center h-48 w-48 mx-auto justify-center border border-dashed border-gray-300 rounded-lg">
                                                     <FaUpload className="w-12 h-12 text-gray-400" />
-                                                    <span className="mt-2 text-sm text-gray-500">Click để thay đổi ảnh</span>
+                                                    <span className="mt-2 text-sm text-gray-500">Click để tải ảnh lên</span>
                                                 </div>
                                                 <input
                                                     type="file"
@@ -197,8 +212,8 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                             </label>
                                         )}
                                     </div>
-                                    {isSubmitted && imageError && (
-                                        <p className="text-red-500 text-sm mt-1">{imageError}</p>
+                                    {isSubmitted && errors.image && (
+                                        <p className="text-primary text-sm mt-1">{errors.image}</p>
                                     )}
                                 </div>
 
@@ -207,7 +222,7 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                         Mô tả
                                     </label>
                                     <textarea
-                                        className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                                        className="w-full px-4 py-2 border rounded-lg"
                                         rows="4"
                                         value={formData.description}
                                         onChange={(e) => setFormData({ ...formData, description: e.target.value })}
@@ -218,7 +233,7 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
 
                         <div className="flex justify-between items-center pt-4">
                             <div className="text-sm text-gray-500">
-                                <span className="text-red-500">(*)</span> Bắt buộc
+                                <span className="text-primary">(*)</span> Bắt buộc
                             </div>
                             <div className="flex space-x-4">
                                 <button
@@ -230,9 +245,10 @@ const O_EditProductModal = ({ isOpen, onClose, product, categories, onSave }) =>
                                 </button>
                                 <button
                                     type="submit"
-                                    className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-red-600"
+                                    className={`px-6 py-2 bg-primary text-white rounded-lg hover:bg-red-600 ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                    disabled={loading}
                                 >
-                                    Lưu thay đổi
+                                    {loading ? 'Đang cập nhật...' : 'Cập nhật'}
                                 </button>
                             </div>
                         </div>

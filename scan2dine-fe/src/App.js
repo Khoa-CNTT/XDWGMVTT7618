@@ -14,6 +14,7 @@ import CartDetail from './components/C_CartDetail';
 import OrderDetail from './components/C_OrderDetail';
 import CustomerRoute from './components/C_CustomerRoute';
 import { Owner } from './pages/Owner';
+import ReviewProduct from './components/C_ReviewProduct';
 
 function App() {
   const location = useLocation();
@@ -27,6 +28,7 @@ function App() {
 
         <Route path="/home" element={<CustomerRoute><Home direction={direction} /></CustomerRoute>} />
         <Route path="/menu" element={<CustomerRoute><Menu direction={direction} /></CustomerRoute>} />
+        <Route path="/review" element={<CustomerRoute><ReviewProduct direction={direction} /></CustomerRoute>} />
         {/* <Route path="/cart" element={<CustomerRoute><Cart direction={direction} /></CustomerRoute>} /> */}
         <Route path="/cartdetail" element={<CustomerRoute><CartDetail direction={direction} /></CustomerRoute>} />
         <Route path='/orderdetail' element={<CustomerRoute><OrderDetail direction={direction} /></CustomerRoute>} />

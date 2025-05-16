@@ -1,10 +1,11 @@
 // Menu.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import MenuItem from '../components/C_MenuItem';
 import PageWrapper from '../components/PageWrapper';
 import api from '../server/api';
 import CartBar from '../components/C_Carbar';
 import { FaArrowLeft } from 'react-icons/fa';
+import { PiScanBold } from "react-icons/pi";
 import { CategoryFilter } from '../components/C_CategoryFilter';
 import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
@@ -18,6 +19,7 @@ export const Menu = ({ direction }) => {
     const [totalPrice, setTotalPrice] = useState(0);
     const [selectedCategory, setSelectedCategory] = useState('all');
     const navigate = useNavigate();
+    const fileInputRef = useRef(null);
 
     //Lấy dữ liệu của người dùng hiện tại
     const customer = JSON.parse(sessionStorage.getItem("customer"));
@@ -172,8 +174,19 @@ export const Menu = ({ direction }) => {
         return cartItem ? cartItem.quantity : 0;
     };
 
+    const handleCameraClick = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
 
-
+    const handleImageChange = (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            // Xử lý file ảnh tại đây (ví dụ: gửi lên server, nhận diện món ăn, ...)
+            console.log('Ảnh đã chọn:', file);
+        }
+    };
     return (
         <PageWrapper direction={direction}>
             <div className='min-h-screen bg-gray-50 flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl overflow-hidden'>
@@ -187,8 +200,22 @@ export const Menu = ({ direction }) => {
                         <input
                             type="text"
                             placeholder="Bạn đang cần tìm món gì?"
-                            className="flex-1 bg-gray-100 p-2 rounded-lg"
+                            className="flex-1 bg-gray-100 p-2 rounded-full"
                             onChange={(e) => setSearchTerm(e.target.value.trim())}
+                        />
+                        <PiScanBold
+                            size={30}
+                            className="text-gray-200 hover:text-white cursor-pointer ml-2"
+                            onClick={handleCameraClick}
+                        />
+                        {/* Input file ẩn để mở camera */}
+                        <input
+                            type="file"
+                            accept="image/*"
+                            capture="environment"
+                            ref={fileInputRef}
+                            style={{ display: 'none' }}
+                            onChange={handleImageChange}
                         />
                     </div>
                 </div>
