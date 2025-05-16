@@ -6,6 +6,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 
 const CustomerLogin = ({ onSuccess }) => {
     const [phone, setPhone] = useState("");
+    const [_id, setId] = useState("");
     const [name, setName] = useState("");
     const [message, setMessage] = useState("");
     const [isExisting, setIsExisting] = useState(false);
@@ -31,6 +32,7 @@ const CustomerLogin = ({ onSuccess }) => {
         try {
             const res = await api.post("/s2d/customer/check-phone", { phone });
             setName(res.data.customer.name);
+            setId(res.data.customer._id);
             setCustomerCart(res.data.customer.cart);
             setIsExisting(true);
             setMessage(`Chào mừng trở lại, ${res.data.customer.name}!`);
@@ -91,7 +93,7 @@ const CustomerLogin = ({ onSuccess }) => {
 
         // Kiểm tra số điện thoại nếu tồn tại
         if (isExisting) {
-            sessionStorage.setItem("customer", JSON.stringify({ phone, name, table, idTable, cart: customerCart }));
+            sessionStorage.setItem("customer", JSON.stringify({_id, phone, name, table, idTable, cart: customerCart }));
             onSuccess?.(phone, name);
             navigate("/home");
             return;
@@ -100,7 +102,7 @@ const CustomerLogin = ({ onSuccess }) => {
         try {
             // Gửi yêu cầu đăng ký mới
             const res = await api.post("/s2d/customer/", { phone, name });
-            sessionStorage.setItem("customer", JSON.stringify({ phone, name, table, idTable, cart: res.data.cart }));
+            sessionStorage.setItem("customer", JSON.stringify({ _id, phone, name, table, idTable, cart: res.data.cart }));
             setMessage(`Đăng ký thành công! Xin chào ${res.data.name}`);
             setIsExisting(true);
             onSuccess?.(phone, name);

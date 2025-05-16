@@ -12,19 +12,18 @@ import CustomerLogin from './FillInfo';
 import ConfirmLogoutModal from '../components/ConfirmLogoutModal';
 import { FaArrowLeft } from 'react-icons/fa';
 import { C_ConfirmCallStaff } from '../components/C_ConfirmCallStaff';
-import C_ProductReviewForm from '../components/C_ProductReviewForm';
+import { C_ReviewProduct } from '../components/C_ReviewProduct';
 import api from '../server/api';
+import { AiOutlineBell } from "react-icons/ai";
 
 
 const Home = ({ direction }) => {
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const [showStaffForm, setShowStaffForm] = useState(false);
     const [showReviewForm, setShowReviewForm] = useState(false);
-    const [reviewProduct, setReviewProduct] = useState(null);
     const [productsToReview, setProductsToReview] = useState([]);
     const [showConfirmLogout, setShowConfirmLogout] = useState(false);
     const [paidOrders, setPaidOrders] = useState([]);
-    const [selectedOrder, setSelectedOrder] = useState(null);
 
     const navigate = useNavigate();
 
@@ -87,6 +86,7 @@ const Home = ({ direction }) => {
             // Gọi API lấy thông tin customer đầy đủ (bao gồm _id)
             const res = await api.get(`/s2d/customer/${customerObj.phone}`);
             const fullCustomer = res.data;
+            console.log('Full Customer:', fullCustomer);
             setCustomer(fullCustomer);
             setIsLoggedIn(true);
             sessionStorage.setItem("customer", JSON.stringify(fullCustomer));
@@ -152,30 +152,20 @@ const Home = ({ direction }) => {
         navigate(`/?table=${customer.table}&id=${customer.idTable}`);
     };
 
-    // const fetchPaidOrders = async () => {
-    //     try {
-    //         const res = await api.get('/s2d/order/dathanhtoan');
-    //         // Xử lý dữ liệu trả về ở đây, ví dụ:
-    //         console.log('Paid Orders:', res.data);
-    //         // Hoặc set vào state nếu muốn hiển thị
-    //         // setPaidOrders(res.data.orders);
-    //     } catch (error) {
-    //         console.error('Error fetching paid orders:', error);
-    //     }
-    // };
-    useEffect(() => {
-        if (showReviewForm) {
-            api.get('/s2d/order/dathanhtoan')
-                .then(res => setPaidOrders(res.data.data || []))
-                .catch(() => setPaidOrders([]));
+    const fetchPaidOrders = async (customerId) => {
+        try {
+            const response = await api.post('/s2d/order/dathanhtoan', { customerId });
+            console.log('API Response:', response.data); // Kiểm tra dữ liệu trả về
+            if (response.data && response.data.data) {
+                setPaidOrders(response.data.data); // Cập nhật danh sách món để đánh giá
+            } else {
+                setPaidOrders([]);
+            }
+        } catch (error) {
+            console.error('Error fetching paid orders:', error);
+            setPaidOrders([]);
         }
-    }, [showReviewForm]);
-
-    // Ví dụ: Gọi hàm này khi component mount hoặc khi cần
-    // useEffect(() => {
-    //     fetchPaidOrders();
-    // }, []);
-
+    };
     return (
         <PageWrapper direction={direction}>
             {!isLoggedIn && (
@@ -186,11 +176,21 @@ const Home = ({ direction }) => {
                 <div className="min-h-screen bg-gray-50 flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl overflow-hidden">
 
                     {/* Kính chào quý khách */}
-                    <div className="w-full bg-primary text-white text-center py-3 font-bold text-lg relative">
-
-                        <FaArrowLeft size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-white text-2xl hover:text-gray-800 cursor-pointer"
-                            onClick={() => setShowConfirmLogout(true)} />
-                        Kính chào quý khách
+                    <div className="w-full bg-primary text-white py-3 font-bold text-lg relative flex items-center justify-between px-4">
+                        <FaArrowLeft
+                            size={20}
+                            className="text-white text-2xl hover:text-gray-800 cursor-pointer"
+                            onClick={() => setShowConfirmLogout(true)}
+                        />
+                        <span className="mx-auto">Kính chào quý khách</span>
+                        <button
+                            className="flex items-center gap-1 px-2 py-1 border border-white text-white rounded text-sm font-semibold hover:bg-white hover:text-primary transition"
+                            onClick={() => navigate('/orderdetail')}
+                            style={{ minWidth: 0, height: 32 }}
+                        >
+                            <AiOutlineBell size={16} />
+                            Đơn hàng
+                        </button>
                     </div>
 
                     {/* Thông tin quán */}
@@ -214,13 +214,7 @@ const Home = ({ direction }) => {
                             <span className="bg-gray-100 px-2 py-1 rounded ml-1 text-primary font-bold">{cus?.table}</span>
                         </div>
                         <div className="flex justify-center mt-3">
-                            <button
-                                className="flex items-center gap-2 px-4 py-2 border border-primary text-primary rounded hover:bg-primary hover:text-white transition"
-                                onClick={() => navigate('/orderdetail')}
-                            >
-                                <span role="img" aria-label="order">🧾</span>
-                                Đơn hàng của tôi
-                            </button>
+
                         </div>
                     </div>
 
@@ -277,10 +271,9 @@ const Home = ({ direction }) => {
                                     src={imgBtnDanhGia}
                                     alt="Đánh giá"
                                     className="w-full max-w-[250px] aspect-square rounded-lg shadow-md cursor-pointer hover:scale-105 transition-transform duration-200"
-                                    onClick={() => {
-                                        setShowReviewForm(true);
-                                        setSelectedOrder(null); // Reset selected order when opening modal
-                                        setReviewProduct(null); // Reset selected product
+                                    onClick={async () => {
+                                        await fetchPaidOrders(customer._id);
+                                        navigate('/review', { state: { orders: paidOrders } });
                                     }}
                                 />
                             </div>
@@ -292,88 +285,7 @@ const Home = ({ direction }) => {
 
                 </div >
             )}
-            {showReviewForm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
-                <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg relative">
-                    <button
-                        className="absolute top-2 right-2 text-gray-500 hover:text-red-500"
-                        onClick={() => {
-                            setShowReviewForm(false);
-                            setSelectedOrder(null);
-                            setReviewProduct(null);
-                        }}
-                    >
-                        &times;
-                    </button>
-                    {!selectedOrder ? (
-                        <div>
-                            <h3 className="font-bold mb-2">Chọn đơn hàng đã thanh toán</h3>
-                            {paidOrders.length === 0 ? (
-                                <div className="text-gray-500 mb-4">Bạn chưa có đơn hàng nào đã thanh toán.</div>
-                            ) : (
-                                <ul>
-                                    {paidOrders.map((order) => (
-                                        <li key={order._id} className="mb-2">
-                                            <button
-                                                className="text-primary underline"
-                                                onClick={() => setSelectedOrder(order)}
-                                            >
-                                                Đơn #{order._id} - {order.customer?.name} - {order.od_date?.slice(0, 10)}
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                            <button
-                                className="mt-4 px-4 py-2 bg-gray-200 rounded"
-                                onClick={() => setShowReviewForm(false)}
-                            >
-                                Đóng
-                            </button>
-                        </div>
-                    ) : !reviewProduct ? (
-                        <div>
-                            <h3 className="font-bold mb-2">Chọn món để đánh giá</h3>
-                            {selectedOrder.orderdetail && selectedOrder.orderdetail.length > 0 ? (
-                                <ul>
-                                    {selectedOrder.orderdetail.map((item) => (
-                                        <li key={item._id} className="mb-2">
-                                            <button
-                                                className="text-primary underline"
-                                                onClick={() => setReviewProduct(item.products)}
-                                            >
-                                                {item.products.pd_name}
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <div className="text-gray-500 mb-4">Đơn hàng này không có món nào để đánh giá.</div>
-                            )}
-                            <button
-                                className="mt-4 px-4 py-2 bg-gray-200 rounded"
-                                onClick={() => setSelectedOrder(null)}
-                            >
-                                Quay lại
-                            </button>
-                        </div>
-                    ) : (
-                        <C_ProductReviewForm
-                            product={reviewProduct}
-                            customerId={customer._id}
-                            onSuccess={() => {
-                                setShowReviewForm(false);
-                                setReviewProduct(null);
-                                setSelectedOrder(null);
-                            }}
-                            onCancel={() => {
-                                setReviewProduct(null);
-                            }}
-                        />
-                    )}
-                </div>
-            </div>
-)}
+
             {
                 showStaffForm && (
                     <C_ConfirmCallStaff

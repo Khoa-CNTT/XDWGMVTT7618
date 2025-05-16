@@ -170,7 +170,7 @@ const OrderDetail = () => {
     return (
         <div className="min-h-screen bg-white flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl">
             <div className="bg-primary text-white p-4 relative">
-                <button onClick={() => navigate(-1)} className="absolute left-4 top-1/2 -translate-y-1/2">
+                <button onClick={() => navigate('/home')} className="absolute left-4 top-1/2 -translate-y-1/2">
                     <FaArrowLeft size={20} />
                 </button>
                 <h1 className="text-xl font-semibold text-center">Đơn hàng của tôi</h1>
