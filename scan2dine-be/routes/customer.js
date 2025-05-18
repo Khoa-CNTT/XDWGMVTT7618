@@ -11,6 +11,9 @@ router.get("/", customerController.getAllCustomer);
 router.get("/static", customerController.getCustomerStatistics)
 // UPDATE CUSTOMER
 router.patch('/:id', customerController.updateCustomer);
+// UPDATE STATUS
+// router.patch('/status/:id', customerController.updateCustomerStatus);
+
 //DELETE CUSTOMER
 router.delete('/:id', customerController.deleteCustomer);
 //Check Phone
