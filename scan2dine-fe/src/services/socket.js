@@ -1,11 +1,36 @@
-import { io } from 'socket.io-client';
+// sockets/socket.js
+let io = null;
 
-//sử dungj biến môi trường
-const SOCKET_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+const initSocket = (server) => {
+  const { Server } = require('socket.io');
+  io = new Server(server, {
+    cors: {
+      origin: '*',
+      methods: ['GET', 'POST']
+    }
+  });
 
-const socket = io(SOCKET_URL, {
-    transports: ['websocket'], // Tùy chọn: đảm bảo dùng WebSocket thay vì polling
-    withCredentials: true,
-});
-console.log('Khởi tạo socket với URL:', SOCKET_URL); // Thêm log
-export default socket;
+  io.on('connection', (socket) => {
+    console.log(`✅ Client connected: ${socket.id}`);
+
+    socket.on('joinTableRoom', ({ tableId }) => {
+      if (tableId) {
+        socket.join(`table-${tableId}`);
+        console.log(`👥 Socket ${socket.id} joined table-${tableId}`);
+      }
+    });
+
+    socket.on('disconnect', () => {
+      console.log(`❌ Client disconnected: ${socket.id}`);
+    });
+  });
+
+  return io;
+};
+
+const getIO = () => {
+  if (!io) throw new Error("⚠️ Socket.IO not initialized");
+  return io;
+};
+
+module.exports = { initSocket, getIO };

@@ -88,7 +88,8 @@ const cartController = {
     },
     createOrderFromCart: async (req, res) => {
         try {
-            const { cart, table } = req.body;
+            const { cart, table } = req.body;y
+            
             const result = await createOrderFromCartService(cart, table);
             res.status(201).json(result);
         } catch (error) {

@@ -147,7 +147,7 @@ getReviewbyOrder: async (req, res) => {
     }
 },
     getReviewByCustomerId: async (req, res) => {
-        const { orderId } = req.body;
+        const { orderId } = req.params;
 
         try {
             const order = await Order.findById(orderId)

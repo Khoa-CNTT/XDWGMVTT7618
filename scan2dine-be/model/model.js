@@ -145,6 +145,12 @@ const customerSchema = new mongoose.Schema({
       ref: "Payment",
     },
   ],
+  status: {
+    type: String,
+    // enum: ['Khách hàng mới', 'Khách hàng thân thiết'],  // danh sách các trạng thái hợp lệ
+    enum: ['1', '2'],  // danh sách các trạng thái hợp lệ
+    default: "1"
+  }
 }, { collection: 'CUSTOMER' });
 //ĐƠN HÀNG
 const orderSchema = new mongoose.Schema({
