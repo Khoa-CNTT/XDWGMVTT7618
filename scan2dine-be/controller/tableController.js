@@ -178,6 +178,7 @@ const tableController = {
 
       return res.status(200).json({
         tableNumber: table.tb_number,
+        idTable: table._id || '',
         orders: ordersDetails
       });
     } catch (error) {

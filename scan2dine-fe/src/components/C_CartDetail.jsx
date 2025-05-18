@@ -18,7 +18,6 @@ const CartDetails = () => {
   const [isListenerRegistered, setIsListenerRegistered] = useState(false);
 
   const customer = JSON.parse(sessionStorage.getItem('customer'));
-  console.log('Customer:', customer); // Log để kiểm tra
 
   useEffect(() => {
     fetchCartItems();
@@ -99,13 +98,20 @@ const CartDetails = () => {
         cart: customer.cart,
         table: customer.idTable,
       });
+      console.log('tt res', res);
+
       //xem xét
-      // sessionStorage.setItem('user', JSON.stringify(user));
+      const InfoOrder = {
+        idTable: res.data.order.table._id,
+        idOrder: res.data.order._id
+
+      }
+      sessionStorage.setItem('infoOrder', JSON.stringify(InfoOrder));
 
       await api.patch(`/s2d/table/${customer.idTable}`, { status: '3' });
 
       // Cập nhật trạng thái bàn ngay trong giao diện (chắc chắn đã cập nhật thành công)
-      setOrderResult(res.data);
+      // setOrderResult(res.data);
       setShowUnderstand(true);
 
       // Có thể thêm logic để cập nhật trạng thái bàn trong UI ngay lập tức nếu cần
@@ -119,8 +125,7 @@ const CartDetails = () => {
 
   const handleUnderstand = () => {
     setShowUnderstand(false);
-
-    navigate('/orderdetail', { state: { orderData: orderResult } });
+    navigate('/orderdetail');
   };
 
   const handleDelete = (item) => {
