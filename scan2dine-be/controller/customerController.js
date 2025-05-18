@@ -20,7 +20,7 @@ const customerController = {
       }
 
       const newCustomer = new Customer(req.body);
-      const cart = await creatCart(null, io);
+      const cart = await creatCart(null);
       newCustomer.cart = cart._id;
       const savedCustomer = await newCustomer.save();
 

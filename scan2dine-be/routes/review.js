@@ -12,4 +12,7 @@ router.get('/', reviewController.getReviewbyOrder);
 router.delete('/:id', reviewController.deleteReview);
 // UPDATE REVIEW
 router.patch('/:id', reviewController.updateReview);
+//
+router.post('/danhgia', reviewController.getReviewByCustomerId);
+// 
 module.exports = router;

@@ -1,5 +1,5 @@
-const { Customer, Product, Review } = require('../model/model');
 
+const { Customer, Product, Review, Order } = require('../model/model');
 const reviewController = {
     // add reivew
     addReview: async (req, res) => {
@@ -7,7 +7,8 @@ const reviewController = {
             const newReview = new Review(req.body);
             const saveReview = await newReview.save();
             if (req.body.products) {
-                const productID = await Product.findById(req.body.products)
+                const productID = await Product.findById(req.body.product)
+
                 await productID.updateOne({
                     $push: {
                         review: saveReview._id
@@ -120,6 +121,7 @@ const reviewController = {
             res.status(500).json({ message: "Server error", error: error.message || error });
         }
     },
+
 getReviewbyOrder: async (req, res) => {
     try {
         const { order, products } = req.body;
@@ -143,9 +145,54 @@ getReviewbyOrder: async (req, res) => {
     } catch (error) {
         return res.status(500).json({ message: "Server error", error: error.message });
     }
+},
+    getReviewByCustomerId: async (req, res) => {
+        const { orderId } = req.body;
+
+        try {
+            const order = await Order.findById(orderId)
+                .populate({
+                    path: 'orderdetail',
+                    populate: {
+                        path: 'products',
+                        model: 'Product',
+                        populate: {
+                            path: 'review',
+                            model: 'Review',
+                            populate: {
+                                path: 'customer',
+                                model: 'Customer', // nếu muốn hiện tên khách đánh giá
+                                select: 'name'
+                            }
+                        }
+                    }
+                });
+
+            if (!order) {
+                return res.status(404).json({ message: 'Không tìm thấy đơn hàng.' });
+            }
+
+            const result = order.orderdetail.map(detail => {
+                const product = detail.products;
+                return {
+                    _id: product._id,
+                    pd_name: product.pd_name,
+                    description: product.description,
+                    price: product.price,
+                    image: product.image,
+                    reviews: product.review.map(r => ({
+                        content: r.content,
+                        date: r.date,
+                        customerName: r.customer?.name || 'Ẩn danh'
+                    }))
+                };
+            });
+
+            res.status(200).json(result);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: 'Lỗi khi lấy thông tin sản phẩm và đánh giá.' });
+        }
+    }
 }
-
-}
-
-
 module.exports = reviewController;
