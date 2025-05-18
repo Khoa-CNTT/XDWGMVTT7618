@@ -26,7 +26,8 @@ const OrderDetail = () => {
         totalItems: 0,
     });
     const [showPaymentForm, setShowPaymentForm] = useState(false);
-    const cancelCallPayment = () => {
+    const cancelCallPayment = async () => {
+        await api.patch(`/s2d/table/${orderData.order.table?._id}`, { status: '2' });
         setShowPaymentForm(false);
     };
 
@@ -113,9 +114,7 @@ const OrderDetail = () => {
         }
 
         try {
-            await api.patch(`/s2d/order/${orderData.order._id}`, { od_status: '5' });
             await api.patch(`/s2d/table/${orderData.order.table?._id}`, { status: '5' });
-            fetchOrderDetails(orderData);
             debouncedToast('Yêu cầu thanh toán đã được gửi thành công!', 'success');
         } catch (error) {
             console.error('Lỗi khi yêu cầu thanh toán:', error);
@@ -259,7 +258,12 @@ const OrderDetail = () => {
                                 Yêu cầu thêm món
                             </button>
                             <button
-                                onClick={handlePayment}
+                                onClick={() => {
+                                    setShowPaymentForm(true);
+                                    handlePayment();
+
+                                }
+                                }
                                 className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-full font-medium"
                             >
                                 Yêu cầu thanh toán
