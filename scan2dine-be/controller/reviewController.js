@@ -4,9 +4,10 @@ const reviewController = {
     // add reivew
     addReview: async (req, res) => {
         try {
+            console.log("Review payload:", req.body);
             const newReview = new Review(req.body);
             const saveReview = await newReview.save();
-            if (req.body.products) {
+            if (req.body.product) {
                 const productID = await Product.findById(req.body.product)
 
                 await productID.updateOne({
@@ -34,7 +35,7 @@ const reviewController = {
         try {
             const review = await Review.find().populate([
                 { path: "customer", select: "name" },
-                { path: "products", select: "pd_name" }
+                { path: "product", select: "pd_name" }
             ]);
             res.status(200).json(review)
         } catch (error) {
@@ -50,7 +51,7 @@ const reviewController = {
                 return res.status(404).json({ message: "Review not found" });
             }
             // xoa review khoi product
-            await Product.findByIdAndUpdate(deleteReview.products,
+            await Product.findByIdAndUpdate(deleteReview.product,
                 {
                     $pull: {
                         review: deleteReview._id
@@ -95,8 +96,8 @@ const reviewController = {
                 }
             };
             // UPDATE PRODUCT 
-            if (req.body.products && req.body.products !== reviewID.products?.toString()) {
-                if (reviewID.products) {
+            if (req.body.product && req.body.product !== reviewID.product?.toString()) {
+                if (reviewID.product) {
                     // xoa
                     await Product.findByIdAndUpdate(reviewID.products, {
                         $pull: {
@@ -122,33 +123,35 @@ const reviewController = {
         }
     },
 
-getReviewbyOrder: async (req, res) => {
-    try {
-        const { order, products } = req.body;
+    getReviewbyOrder: async (req, res) => {
+        try {
+            const { order, products } = req.body;
 
-        if (!order) {
-            return res.status(400).json({ message: "id_order is required in body" });
+            if (!order) {
+                return res.status(400).json({ message: "id_order is required in body" });
+            }
+
+            // Tìm review theo trường "order"
+            const getReview = await Review.findOne({ order: order })
+                .select('products customer content');
+
+            if (!getReview) {
+                return res.status(404).json({ message: "No review found for this order" });
+            }
+
+            return res.status(200).json({
+                message: "Review by order",
+                review: getReview
+            });
+        } catch (error) {
+            return res.status(500).json({ message: "Server error", error: error.message });
         }
-
-        // Tìm review theo trường "order"
-        const getReview = await Review.findOne({ order: order })
-            .select('products customer content');
-
-        if (!getReview) {
-            return res.status(404).json({ message: "No review found for this order" });
-        }
-
-        return res.status(200).json({
-            message: "Review by order",
-            review: getReview
-        });
-    } catch (error) {
-        return res.status(500).json({ message: "Server error", error: error.message });
-    }
-},
+    },
     getReviewByCustomerId: async (req, res) => {
-        const { orderId } = req.body;
-
+        const { orderId, customerId } = req.body;
+        if (!orderId || !customerId) {
+            return res.status(400).json({ message: "orderId và customerId là bắt buộc" });
+        }
         try {
             const order = await Order.findById(orderId)
                 .populate({
@@ -161,7 +164,7 @@ getReviewbyOrder: async (req, res) => {
                             model: 'Review',
                             populate: {
                                 path: 'customer',
-                                model: 'Customer', // nếu muốn hiện tên khách đánh giá
+                                model: 'Customer',
                                 select: 'name'
                             }
                         }
@@ -174,15 +177,23 @@ getReviewbyOrder: async (req, res) => {
 
             const result = order.orderdetail.map(detail => {
                 const product = detail.products;
+                // Lọc review chỉ của khách hàng hiện tại và đúng orderId
+                const customerReviews = (product.review || []).filter(r =>
+                    r.customer && r.customer._id && r.customer._id.toString() === customerId
+                    && r.order && r.order.toString() === orderId
+                );
+                console.log('Product:', product.pd_name, 'CustomerReviews:', customerReviews);
                 return {
                     _id: product._id,
                     pd_name: product.pd_name,
                     description: product.description,
                     price: product.price,
                     image: product.image,
-                    reviews: product.review.map(r => ({
+                    reviews: customerReviews.map(r => ({
+                        _id: r._id,
                         content: r.content,
                         date: r.date,
+                        rating: r.rating,
                         customerName: r.customer?.name || 'Ẩn danh'
                     }))
                 };

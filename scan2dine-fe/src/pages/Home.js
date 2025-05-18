@@ -167,20 +167,6 @@ const Home = () => {
         navigate(`/?table=${customer.table}&id=${customer.idTable}`);
     };
 
-    const fetchPaidOrders = async (customerId) => {
-        try {
-            const response = await api.post('/s2d/order/dathanhtoan', { customerId });
-            console.log('API Response:', response.data); // Kiểm tra dữ liệu trả về
-            if (response.data && response.data.data) {
-                setPaidOrders(response.data.data); // Cập nhật danh sách món để đánh giá
-            } else {
-                setPaidOrders([]);
-            }
-        } catch (error) {
-            console.error('Error fetching paid orders:', error);
-            setPaidOrders([]);
-        }
-    };
     return (
         <div>
             {!isLoggedIn && (
@@ -286,10 +272,7 @@ const Home = () => {
                                     src={imgBtnDanhGia}
                                     alt="Đánh giá"
                                     className="w-full max-w-[250px] aspect-square rounded-lg shadow-md cursor-pointer hover:scale-105 transition-transform duration-200"
-                                    onClick={async () => {
-                                        await fetchPaidOrders(customer._id);
-                                        navigate('/review', { state: { orders: paidOrders } });
-                                    }}
+                                    onClick={() => navigate('/review')}
                                 />
                             </div>
                         </div>
