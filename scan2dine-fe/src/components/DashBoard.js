@@ -40,7 +40,7 @@ export default function Dashboard() {
     const fetchData = async () => {
         const [res, res2] = await Promise.all([
             api.get('/s2d/foodstall/thongke'),
-            api.get('/s2d/foodstall/thongke'),
+            api.get('/s2d/foodstall/thongkeCustomer'),
         ]);
         console.log('data', res2.data);
         setData(res.data)
@@ -58,7 +58,9 @@ export default function Dashboard() {
     };
     // Dữ liệu thống kê mẫu
     const stats = [
-        { id: 1, title: "Khách hàng", value: (data2.totalCustomers), icon: FaUsers, change: "+5%", color: "bg-blue-500" },
+        {
+            id: 1, title: "Khách hàng", value: (data2.customerCount), icon: FaUsers, change: "+5%", color: "bg-blue-500"
+        },
         { id: 2, title: "Doanh thu", value: formatCurrency(data?.totalRevenue || 0), icon: FaDollarSign, change: "+12%", color: "bg-green-500" },
         { id: 3, title: "Đơn hàng", value: (data.totalOrders), icon: FaShoppingCart, change: "-2%", color: "bg-purple-500" },
     ];
@@ -84,7 +86,7 @@ export default function Dashboard() {
             </div>
 
             {/* Thống kê */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
                 {stats.map((stat) => (
                     <div key={stat.id} className="bg-white rounded-lg shadow p-6 flex items-center">
                         <div className={`${stat.color} rounded-full p-3 mr-4 text-white`}>

@@ -1,7 +1,6 @@
 // Menu.jsx
 import React, { useEffect, useState, useRef } from 'react';
 import MenuItem from '../components/C_MenuItem';
-import PageWrapper from '../components/PageWrapper';
 import api from '../server/api';
 import CartBar from '../components/C_Carbar';
 import { FaArrowLeft } from 'react-icons/fa';
@@ -11,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
 
 
-export const Menu = ({ direction }) => {
+export const Menu = () => {
     const [cart, setCart] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [menuItems, setMenuItems] = useState([]);
@@ -188,7 +187,7 @@ export const Menu = ({ direction }) => {
         }
     };
     return (
-        <PageWrapper direction={direction}>
+        <div>
             <div className='min-h-screen bg-gray-50 flex flex-col w-full sm:max-w-[800px] mx-auto shadow-2xl overflow-hidden'>
                 <div className='flex flex-col'>
                     <div className="flex items-center p-4 gap-4 bg-primary">
@@ -255,7 +254,7 @@ export const Menu = ({ direction }) => {
 
                 )}
             </div>
-        </PageWrapper>
+        </div>
     );
 };
 

@@ -26,12 +26,11 @@ const OrderDetail = () => {
         totalItems: 0,
     });
     const [showPaymentForm, setShowPaymentForm] = useState(false);
-    const cancelCallPayment = () => {
-        setShowPaymentForm(false);
-    };
+    const InfoOrder = JSON.parse(sessionStorage.getItem('infoOrder'));
 
-    const location = useLocation();
-    const orderData = location.state?.orderData;
+
+    // const location = useLocation();
+    // const orderData = location.state?.orderData;
 
     // Debounce thông báo để tránh spam
     const debouncedToast = useCallback(
@@ -41,18 +40,19 @@ const OrderDetail = () => {
         []
     );
 
-    const fetchOrderDetails = useCallback(async (orderData) => {
-        if (!orderData?.order?._id) {
-            setError('Không có dữ liệu đơn hàng.');
-            setLoading(false);
-            return;
-        }
+    useEffect(() => {
+        fetchOrderDetails();
+    }, []);
+
+
+    const fetchOrderDetails = useCallback(async () => {
+
 
         try {
             setLoading(true);
             setError(null);
 
-            const { data: orderRes } = await api.get(`/s2d/order/${orderData.order._id}`);
+            const { data: orderRes } = await api.get(`/s2d/order/${InfoOrder.idOrder}`);
             if (!orderRes) throw new Error('Không tìm thấy đơn hàng');
 
             const { data: products } = await api.get('/s2d/product');
@@ -96,7 +96,7 @@ const OrderDetail = () => {
 
         } catch (error) {
             console.error('Lỗi khi lấy chi tiết đơn hàng:', error);
-            setError('Không thể tải chi tiết đơn hàng. Vui lòng thử lại sau.');
+            setError('Chưa có đơn hàng nào cho bàn này.');
         } finally {
             setLoading(false);
         }
@@ -107,21 +107,20 @@ const OrderDetail = () => {
     }, [navigate]);
 
     const handlePayment = useCallback(async () => {
-        if (!orderData?.order?._id) {
-            debouncedToast('Không tìm thấy đơn hàng để thanh toán!', 'error');
-            return;
-        }
+
 
         try {
-            await api.patch(`/s2d/order/${orderData.order._id}`, { od_status: '5' });
-            await api.patch(`/s2d/table/${orderData.order.table?._id}`, { status: '5' });
-            fetchOrderDetails(orderData);
+            await api.patch(`/s2d/table/${InfoOrder.idTable}`, { status: '5' });
             debouncedToast('Yêu cầu thanh toán đã được gửi thành công!', 'success');
         } catch (error) {
             console.error('Lỗi khi yêu cầu thanh toán:', error);
             debouncedToast('Yêu cầu thanh toán thất bại!', 'error');
         }
-    }, [orderData, debouncedToast, fetchOrderDetails]);
+    }, [debouncedToast, fetchOrderDetails]);
+    const cancelCallPayment = async () => {
+        await api.patch(`/s2d/table/${InfoOrder.idTable}`, { status: '2' });
+        setShowPaymentForm(false);
+    };
 
     const renderStatusBadge = useCallback((status) => {
         let bgColor = 'bg-gray-200 text-gray-700';
@@ -162,9 +161,6 @@ const OrderDetail = () => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     }, []);
 
-    useEffect(() => {
-        fetchOrderDetails(orderData);
-    }, [orderData, fetchOrderDetails]);
 
 
     return (
@@ -259,7 +255,12 @@ const OrderDetail = () => {
                                 Yêu cầu thêm món
                             </button>
                             <button
-                                onClick={handlePayment}
+                                onClick={() => {
+                                    setShowPaymentForm(true);
+                                    handlePayment();
+
+                                }
+                                }
                                 className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-full font-medium"
                             >
                                 Yêu cầu thanh toán
@@ -275,7 +276,7 @@ const OrderDetail = () => {
                     title="Đã gửi yêu cầu thanh toán"
                     message="Nhân viên đang đến bạn hãy chờ một lát ..."
                     onConfirm={() => setShowPaymentForm(false)}
-                    onCancel={() => cancelCallPayment(orderData.order.table._id)}
+                    onCancel={() => cancelCallPayment(InfoOrder.idTable)}
                 />
             )
 
