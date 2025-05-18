@@ -22,6 +22,7 @@ const Home = () => {
     const [productsToReview, setProductsToReview] = useState([]);
     const [showConfirmLogout, setShowConfirmLogout] = useState(false);
     const [paidOrders, setPaidOrders] = useState([]);
+    const [idOrder, setIdOrder] = useState('');
 
     const navigate = useNavigate();
 
@@ -45,6 +46,7 @@ const Home = () => {
             }
         };
 
+        fetchOrderInTable();
         updateGreeting(); // Cập nhật greeting khi component mount
 
         const intervalId = setInterval(updateGreeting, 60000); // Cập nhật mỗi phút
@@ -66,6 +68,21 @@ const Home = () => {
             navigate("/");
         }
     }, []);
+
+    const fetchOrderInTable = async () => {
+        try {
+            const res = await api.get(`/s2d/table/current/${cus?.idTable}`)
+
+            const infoOrder = {
+                idTable: res.data.idTable,
+                idOrder: res.data.orders[0].orderId
+            }
+            sessionStorage.setItem('infoOrder', JSON.stringify(infoOrder));
+            // setIdOrder(res.data.orders[0].orderId)
+        } catch (error) {
+
+        }
+    }
 
 
     //tên khách hàng hiển thị tại lời chào
