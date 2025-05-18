@@ -4,9 +4,7 @@ import imgBtnGoiMon from '../assets/img/btngoimon3.jpg';
 import imgBtnDanhGia from '../assets/img/btndanhgia2.jpg';
 import imgBtnGoiNV from '../assets/img/btngoinv.jpg';
 import imgBtnThanhToan from '../assets/img/btnthanhtoan2.jpg';
-import { MdArrowBack } from "react-icons/md";
 import { useNavigate } from 'react-router-dom';
-import PageWrapper from '../components/PageWrapper';
 import { Footer } from '../components/Footer';
 import CustomerLogin from './FillInfo';
 import ConfirmLogoutModal from '../components/ConfirmLogoutModal';
@@ -14,16 +12,17 @@ import { FaArrowLeft } from 'react-icons/fa';
 import { C_ConfirmCallStaff } from '../components/C_ConfirmCallStaff';
 import { C_ReviewProduct } from '../components/C_ReviewProduct';
 import api from '../server/api';
-import { AiOutlineBell } from "react-icons/ai";
+import { BiDish } from "react-icons/bi";
 
 
-const Home = ({ direction }) => {
+const Home = () => {
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const [showStaffForm, setShowStaffForm] = useState(false);
     const [showReviewForm, setShowReviewForm] = useState(false);
     const [productsToReview, setProductsToReview] = useState([]);
     const [showConfirmLogout, setShowConfirmLogout] = useState(false);
     const [paidOrders, setPaidOrders] = useState([]);
+    const [idOrder, setIdOrder] = useState('');
 
     const navigate = useNavigate();
 
@@ -47,6 +46,7 @@ const Home = ({ direction }) => {
             }
         };
 
+        fetchOrderInTable();
         updateGreeting(); // Cập nhật greeting khi component mount
 
         const intervalId = setInterval(updateGreeting, 60000); // Cập nhật mỗi phút
@@ -68,6 +68,21 @@ const Home = ({ direction }) => {
             navigate("/");
         }
     }, []);
+
+    const fetchOrderInTable = async () => {
+        try {
+            const res = await api.get(`/s2d/table/current/${cus?.idTable}`)
+
+            const infoOrder = {
+                idTable: res.data.idTable,
+                idOrder: res.data.orders[0].orderId
+            }
+            sessionStorage.setItem('infoOrder', JSON.stringify(infoOrder));
+            // setIdOrder(res.data.orders[0].orderId)
+        } catch (error) {
+
+        }
+    }
 
 
     //tên khách hàng hiển thị tại lời chào
@@ -152,22 +167,8 @@ const Home = ({ direction }) => {
         navigate(`/?table=${customer.table}&id=${customer.idTable}`);
     };
 
-    const fetchPaidOrders = async (customerId) => {
-        try {
-            const response = await api.post('/s2d/order/dathanhtoan', { customerId });
-            console.log('API Response:', response.data); // Kiểm tra dữ liệu trả về
-            if (response.data && response.data.data) {
-                setPaidOrders(response.data.data); // Cập nhật danh sách món để đánh giá
-            } else {
-                setPaidOrders([]);
-            }
-        } catch (error) {
-            console.error('Error fetching paid orders:', error);
-            setPaidOrders([]);
-        }
-    };
     return (
-        <PageWrapper direction={direction}>
+        <div>
             {!isLoggedIn && (
                 <CustomerLogin onSuccess={handleLoginSuccess} />
             )}
@@ -188,7 +189,7 @@ const Home = ({ direction }) => {
                             onClick={() => navigate('/orderdetail')}
                             style={{ minWidth: 0, height: 32 }}
                         >
-                            <AiOutlineBell size={16} />
+                            <BiDish size={16} />
                             Đơn hàng
                         </button>
                     </div>
@@ -207,9 +208,9 @@ const Home = ({ direction }) => {
                     {/* Lời chào */}
                     <div className="p-4 mt-4" >
                         <div className="flex justify-center items-center mb-2">
-                            <span className="text-center">{greeting} <span className="text-primary font-bold">{name}</span></span>
+                            <span className="text-center font-bold text-base">{greeting} <span className="text-primary font-bold">{name}</span></span>
                         </div>
-                        <div className="text-sm text-gray-600 text-center font-medium">
+                        <div className="text-base text-gray-600 text-center font-medium">
                             Bạn hãy thư giãn, món ngon sẽ sớm có mặt tại bàn:
                             <span className="bg-gray-100 px-2 py-1 rounded ml-1 text-primary font-bold">{cus?.table}</span>
                         </div>
@@ -271,10 +272,7 @@ const Home = ({ direction }) => {
                                     src={imgBtnDanhGia}
                                     alt="Đánh giá"
                                     className="w-full max-w-[250px] aspect-square rounded-lg shadow-md cursor-pointer hover:scale-105 transition-transform duration-200"
-                                    onClick={async () => {
-                                        await fetchPaidOrders(customer._id);
-                                        navigate('/review', { state: { orders: paidOrders } });
-                                    }}
+                                    onClick={() => navigate('/review')}
                                 />
                             </div>
                         </div>
@@ -319,8 +317,7 @@ const Home = ({ direction }) => {
                 />
             )}
 
-        </PageWrapper>
-
+        </div>
     )
 }
 

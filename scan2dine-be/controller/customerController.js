@@ -81,7 +81,43 @@ const customerController = {
       return res.status(500).json({ message: 'Server error', error: error.message });
     }
   },
+  // quyền làm
+// updateCustomerStatus : async (req, res) => {
+//   try {
+//     const customerId = req.params.id;
 
+//     // Kiểm tra khách hàng có tồn tại không
+//     const existingCustomer = await Customer.findById(customerId);
+//     if (!existingCustomer) {
+//       return res.status(404).json({ message: "Không tìm thấy khách hàng." });
+//     }
+
+//     // Lấy dữ liệu cần cập nhật từ request body
+//     const updatedData = {};
+//     const allowedFields = ["name", "phone", "cart", "status"];
+
+//     allowedFields.forEach((field) => {
+//       if (req.body[field] !== undefined) {
+//         updatedData[field] = req.body[field];
+//       }
+//     });
+
+//     // Cập nhật dữ liệu
+//     const updatedCustomer = await Customer.findByIdAndUpdate(
+//       customerId,
+//       { $set: updatedData },
+//       { new: true }
+//     );
+
+//     res.status(200).json({
+//       message: "Cập nhật thông tin khách hàng thành công.",
+//       customer: updatedCustomer,
+//     });
+//   } catch (error) {
+//     console.error("Lỗi cập nhật khách hàng:", error);
+//     res.status(500).json({ message: "Đã xảy ra lỗi khi cập nhật khách hàng." });
+//   }
+// },
   // Delete a customer
   deleteCustomer: async (req, res) => {
     try {

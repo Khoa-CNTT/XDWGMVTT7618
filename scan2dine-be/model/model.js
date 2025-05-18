@@ -108,6 +108,7 @@ const reviewSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Customer",
   },
+  order: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
   stall: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Stall",
@@ -115,6 +116,7 @@ const reviewSchema = new mongoose.Schema({
   content: {
     type: String,
   },
+  rating: { type: Number, required: true, min: 1, max: 5 },
   date: { type: String },
 }, { collection: 'REVIEW' });
 
@@ -128,6 +130,10 @@ const customerSchema = new mongoose.Schema({
     type: String,
     // required: true
   },
+  // status: {
+  //   type: String,
+  //   // required: true
+  // },
   cart: {
     type: mongoose.Types.ObjectId,
     // liên kết với bảng cart
