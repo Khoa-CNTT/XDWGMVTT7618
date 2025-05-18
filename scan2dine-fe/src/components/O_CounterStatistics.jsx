@@ -9,8 +9,6 @@ import {
   CategoryScale,
   LinearScale,
   BarElement,
-  PointElement,    // Thêm dòng này
-  LineElement,     // Thêm dòng này
   Title,
   Tooltip,
   Legend
@@ -21,8 +19,6 @@ ChartJS.register(
   CategoryScale,
   LinearScale,
   BarElement,
-  PointElement,    // Thêm dòng này
-  LineElement,     // Thêm dòng này
   Title,
   Tooltip,
   Legend
