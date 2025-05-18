@@ -13,17 +13,17 @@ import { C_ConfirmCallStaff } from '../components/C_ConfirmCallStaff';
 import { C_ReviewProduct } from '../components/C_ReviewProduct';
 import api from '../server/api';
 import { BiDish } from "react-icons/bi";
+import { useContext } from "react";
+import { AppContext } from "../components/AppContext";
 
 
 const Home = () => {
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const [showStaffForm, setShowStaffForm] = useState(false);
-    const [showReviewForm, setShowReviewForm] = useState(false);
-    const [productsToReview, setProductsToReview] = useState([]);
     const [showConfirmLogout, setShowConfirmLogout] = useState(false);
-    const [paidOrders, setPaidOrders] = useState([]);
-    const [idOrder, setIdOrder] = useState('');
 
+    //Hàm chạy fetchTable của nhân viên
+    const { triggerEmployeeRefresh } = useContext(AppContext);
     const navigate = useNavigate();
 
     //Hàm chuyển hướng đến trang menu
@@ -78,7 +78,6 @@ const Home = () => {
                 idOrder: res.data.orders[0].orderId
             }
             sessionStorage.setItem('infoOrder', JSON.stringify(infoOrder));
-            // setIdOrder(res.data.orders[0].orderId)
         } catch (error) {
 
         }
@@ -119,7 +118,7 @@ const Home = () => {
             await api.patch(`/s2d/table/${idTable}`, {
                 status: '4',
             })
-
+            localStorage.setItem('employee-refresh', Date.now());
         } catch (error) {
 
         }
@@ -129,7 +128,7 @@ const Home = () => {
             await api.patch(`/s2d/table/${idTable}`, {
                 status: '5',
             })
-
+            localStorage.setItem('employee-refresh', Date.now());
         } catch (error) {
 
         }
@@ -141,7 +140,7 @@ const Home = () => {
             await api.patch(`/s2d/table/${idTable}`, {
                 status: '2',
             })
-            setShowStaffForm(false)
+            localStorage.setItem('employee-refresh', Date.now()); setShowStaffForm(false)
 
         } catch (error) {
 
@@ -153,7 +152,7 @@ const Home = () => {
             await api.patch(`/s2d/table/${idTable}`, {
                 status: '2',
             })
-            setShowPaymentForm(false)
+            localStorage.setItem('employee-refresh', Date.now()); setShowPaymentForm(false)
         } catch (error) {
 
         }
@@ -259,8 +258,9 @@ const Home = () => {
                                     alt="Gọi nhân viên"
                                     className="w-full max-w-[250px] aspect-square rounded-lg shadow-md cursor-pointer hover:scale-105 transition-transform duration-200"
                                     onClick={() => {
+                                        callStaff(customer.idTable);
+
                                         setShowStaffForm(true);
-                                        callStaff(customer.idTable)
                                     }}
 
                                 />
