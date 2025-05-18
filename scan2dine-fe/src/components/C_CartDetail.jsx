@@ -99,6 +99,9 @@ const CartDetails = () => {
         cart: customer.cart,
         table: customer.idTable,
       });
+      //xem xét
+      // sessionStorage.setItem('user', JSON.stringify(user));
+
       await api.patch(`/s2d/table/${customer.idTable}`, { status: '3' });
 
       // Cập nhật trạng thái bàn ngay trong giao diện (chắc chắn đã cập nhật thành công)
@@ -107,7 +110,7 @@ const CartDetails = () => {
 
       // Có thể thêm logic để cập nhật trạng thái bàn trong UI ngay lập tức nếu cần
       // Ví dụ, bạn có thể tự động fetch lại trạng thái bàn mới nhất
-      fetchCartItems();
+      // fetchCartItems();
     } catch (error) {
       console.error('Error confirming order:', error);
     }
@@ -116,6 +119,7 @@ const CartDetails = () => {
 
   const handleUnderstand = () => {
     setShowUnderstand(false);
+
     navigate('/orderdetail', { state: { orderData: orderResult } });
   };
 
