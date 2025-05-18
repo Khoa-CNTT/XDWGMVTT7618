@@ -24,9 +24,11 @@ export const C_OrderDetailItem = ({ item, renderStatusBadge }) => {
 
             <div className="flex-1">
                 <div className="flex justify-between">
-                    <h4 className="font-medium">{item.name}</h4>
+                    <h4 className="font-medium ">{item.name}</h4>
                     <span className="font-semibold text-primary">{formatPrice(item.price)}</span>
                 </div>
+
+
 
                 <div className="flex justify-between items-center mt-2">
                     <div className="flex items-center">

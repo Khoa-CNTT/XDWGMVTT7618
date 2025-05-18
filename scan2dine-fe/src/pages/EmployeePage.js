@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { FaArrowLeft, FaUser, FaMapPin, FaSearch, FaSignOutAlt } from 'react-icons/fa';
 import { TableItem } from '../components/E_TableItem';
 import api from '../server/api';
@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { Footer } from '../components/Footer';
 import ConfirmModal from '../components/ConfirmModal'
+import { AppContext } from "../components/AppContext";
 
 export const EmployeePage = () => {
     const [tables, setTables] = useState([]);
@@ -16,12 +17,21 @@ export const EmployeePage = () => {
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const navigate = useNavigate();
 
+    //hàm chạy hổ trợ chạy fetchttable khi khách hàng bấm
+    const { employeeRefreshFlag } = useContext(AppContext);
     // Get user from localStorage
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const userName = user.name || 'Nhân viên';
 
     useEffect(() => {
-        fetchTables();
+        const handleStorage = (event) => {
+            if (event.key === 'employee-refresh') {
+                fetchTables(); // 👈 Gọi hàm load danh sách bàn lại
+            }
+        };
+
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
     }, []);
 
     // Filter tables when search term changes
@@ -42,7 +52,7 @@ export const EmployeePage = () => {
 
 
     const fetchTables = async () => {
-        setLoading(true);
+        // setLoading(true);
         setError(null);
         try {
             const response = await api.get('/s2d/table');

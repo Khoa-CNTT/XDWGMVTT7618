@@ -7,8 +7,7 @@ import api from '../server/api';
 import { Footer } from './Footer';
 import { C_OrderDetailItem } from './C_OrderDetailItem';
 import { C_ConfirmCallStaff } from './C_ConfirmCallStaff';
-// hoặc nếu default export:
-// import C_ConfirmCallStaff from './C_ConfirmCallStaff';
+
 
 const OrderDetail = () => {
     const navigate = useNavigate();
@@ -28,9 +27,6 @@ const OrderDetail = () => {
     const [showPaymentForm, setShowPaymentForm] = useState(false);
     const InfoOrder = JSON.parse(sessionStorage.getItem('infoOrder'));
 
-
-    // const location = useLocation();
-    // const orderData = location.state?.orderData;
 
     // Debounce thông báo để tránh spam
     const debouncedToast = useCallback(
