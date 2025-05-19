@@ -775,29 +775,29 @@ const foodstallController = {
       } else {
         return res.status(400).json({ message: "Thiếu stall_id" });
       }
-  
+
       const currentDate = new Date();
-  
+
       // ===== MỐC THỜI GIAN =====
       const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const lastDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
       lastDayOfMonth.setHours(23, 59, 59, 999);
-  
+
       const firstDayOfToday = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
       firstDayOfToday.setHours(0, 0, 0, 0);
       const lastDayOfToday = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
       lastDayOfToday.setHours(23, 59, 59, 999);
-  
+
       const firstDayOfWeek = new Date(currentDate);
       const dayOfWeek = currentDate.getDay();
       const diffToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
       firstDayOfWeek.setDate(currentDate.getDate() + diffToMonday);
       firstDayOfWeek.setHours(0, 0, 0, 0);
-  
+
       const lastDayOfWeek = new Date(firstDayOfWeek);
       lastDayOfWeek.setDate(firstDayOfWeek.getDate() + 6);
       lastDayOfWeek.setHours(23, 59, 59, 999);
-  
+
       // ===== BEST SELLER FOR TODAY =====
       const bestProductTodayArr = await Orderdetail.aggregate([
         {
@@ -837,7 +837,7 @@ const foodstallController = {
         { $limit: 1 }
       ]);
       const topProductToday = bestProductTodayArr[0] || null;
-  
+
       // ===== BEST SELLER FOR THIS WEEK =====
       const bestProductWeekArr = await Orderdetail.aggregate([
         {
@@ -877,7 +877,7 @@ const foodstallController = {
         { $limit: 1 }
       ]);
       const topProductWeek = bestProductWeekArr[0] || null;
-  
+
       // ===== BEST SELLER FOR THIS MONTH =====
       const bestProductMonthArr = await Orderdetail.aggregate([
         {
@@ -917,7 +917,7 @@ const foodstallController = {
         { $limit: 1 }
       ]);
       const topProductMonth = bestProductMonthArr[0] || null;
-  
+
       // ===== HÀM DÙNG CHUNG: Thống kê tổng đơn và doanh thu =====
       const getStats = async (startDate, endDate) => {
         const data = await Orderdetail.aggregate([
@@ -957,11 +957,11 @@ const foodstallController = {
         const totalRevenue = data.reduce((sum, o) => sum + (o.total || 0), 0);
         return { totalOrders, totalRevenue };
       };
-  
+
       const dayStats = await getStats(firstDayOfToday, lastDayOfToday);
       const weekStats = await getStats(firstDayOfWeek, lastDayOfWeek);
       const monthStats = await getStats(firstDayOfMonth, lastDayOfMonth);
-  
+
       // ===== DOANH THU THEO NGÀY TRONG THÁNG =====
       const dailyRevenueInMonth = await Orderdetail.aggregate([
         {
@@ -1006,7 +1006,7 @@ const foodstallController = {
         },
         { $sort: { _id: 1 } }
       ]);
-  
+
       // ===== DOANH THU THEO THÁNG TRONG NĂM =====
       const monthlyRevenueInYear = await Orderdetail.aggregate([
         {
@@ -1054,7 +1054,7 @@ const foodstallController = {
         },
         { $sort: { month: 1 } }
       ]);
-  
+
       // ===== DOANH THU THEO TUẦN TRONG NĂM =====
       const weeklyRevenueInYear = await Orderdetail.aggregate([
         {
@@ -1106,7 +1106,7 @@ const foodstallController = {
         },
         { $sort: { year: 1, week: 1 } }
       ]);
-  
+
       // ===== TRẢ VỀ KẾT QUẢ =====
       return res.status(200).json({
         dayStats,
@@ -1119,29 +1119,29 @@ const foodstallController = {
         topProductWeek,
         topProductMonth
       });
-  
+
     } catch (err) {
       console.error(err);
       return res.status(500).json({ message: "Có lỗi khi thống kê." });
     }
   },
-  
+
 
   getInputMonthYear: async (req, res) => {
     try {
       const { month, year } = req.body;
-  
+
       // Kiểm tra hợp lệ
       if (!month || !year) {
         return res.status(400).json({ message: "Thiếu tháng hoặc năm." });
       }
-  
+
       // Tính ngày đầu và cuối tháng
       const firstDay = new Date(year, month - 1, 1, 0, 0, 0, 0);
       const lastDay = new Date(year, month, 0, 23, 59, 59, 999);
-  
+
       console.log(`Thống kê tháng ${month}/${year}: từ ${firstDay.toLocaleString()} đến ${lastDay.toLocaleString()}`);
-  
+
       // Thống kê sản phẩm bán chạy
       const bestProducts = await Orderdetail.aggregate([
         {
@@ -1187,249 +1187,251 @@ const foodstallController = {
         { $sort: { quantitySold: -1 } },
         { $limit: 5 }
       ]);
-  
+
       // Tổng doanh thu
       const totalRevenue = bestProducts.reduce((sum, p) => sum + (p.total || 0), 0);
-  
+
       return res.status(200).json({
         month: parseInt(month),
         year: parseInt(year),
         totalRevenue,
         bestProducts
       });
-  
+
     } catch (err) {
       console.error(err);
       return res.status(500).json({ message: "Có lỗi khi thống kê." });
     }
   },
-// thống kê cho hiếu
-getStatisticByDateRange : async (req, res) => {
-  try {
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1); // đầu tháng
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1); // đầu tháng tiếp theo
+  // thống kê cho hiếu
+  getStatisticByDateRange: async (req, res) => {
+    try {
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1); // đầu tháng
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1); // đầu tháng tiếp theo
 
-    const result = await Order.aggregate([
-      {
-        $match: {
-          od_date: {
-            $gte: startOfMonth,
-            $lt: endOfMonth
+      const result = await Order.aggregate([
+        {
+          $match: {
+            od_date: {
+              $gte: startOfMonth,
+              $lt: endOfMonth
+            }
+          }
+        },
+        {
+          $group: {
+            _id: "$customer"
+          }
+        },
+        {
+          $count: "customerCount"
+        }
+      ]);
+
+      const count = result.length > 0 ? result[0].customerCount : 0;
+
+      res.status(200).json({ customerCount: count });
+    } catch (error) {
+      console.error("Lỗi thống kê khách hàng trong tháng:", error);
+      res.status(500).json({ message: "Lỗi server" });
+    }
+  },
+  getRevenueByStallInRange: async (req, res) => {
+    try {
+      const { from, to } = req.body;
+      console.log('kết quả nhận đc', from, to);
+
+      if (!from || !to) {
+        return res.status(400).json({ message: "Thiếu ngày bắt đầu hoặc kết thúc" });
+      }
+
+      const start = new Date(from);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(to);
+      end.setHours(23, 59, 59, 999);
+
+      const result = await Order.aggregate([
+        {
+          $match: {
+            od_date: { $gte: start, $lte: end },
+            od_status: "3"
+          }
+        },
+        {
+          $lookup: {
+            from: "ORDERDETAIL",
+            localField: "orderdetail",
+            foreignField: "_id",
+            as: "details"
+          }
+        },
+        { $unwind: "$details" },
+        {
+          $lookup: {
+            from: "PRODUCT",
+            localField: "details.products",
+            foreignField: "_id",
+            as: "product"
+          }
+        },
+        { $unwind: "$product" },
+        {
+          $group: {
+            _id: "$product.stall_id",
+            totalRevenue: { $sum: "$details.total" }
+          }
+        },
+        {
+          $lookup: {
+            from: "FOODSTALL",
+            localField: "_id",
+            foreignField: "_id",
+            as: "stall"
+          }
+        },
+        { $unwind: "$stall" },
+        {
+          $lookup: {
+            from: "USER",
+            localField: "stall.user",
+            foreignField: "_id",
+            as: "owner"
+          }
+        },
+        {
+          $lookup: {
+            from: "PRODUCT",
+            localField: "_id",
+            foreignField: "stall_id",
+            as: "products"
+          }
+        },
+        {
+          $project: {
+            _id: 1,
+            totalRevenue: 1,
+            stall_name: "$stall.stall_name",
+            location: "$stall.location",
+            owner_name: { $arrayElemAt: ["$owner.full_name", 0] },
+            totalProducts: { $size: "$products" }
           }
         }
-      },
-      {
-        $group: {
-          _id: "$customer"
-        }
-      },
-      {
-        $count: "customerCount"
+      ]);
+
+      res.json(result);
+    } catch (err) {
+      console.error("Lỗi lấy doanh thu:", err);
+      res.status(500).json({ message: "Server error" });
+    }
+  },
+  // thống kê các loại 
+  getStatistics113: async (req, res) => {
+    try {
+      const { type, filter, value } = req.body;
+
+      let startDate, endDate;
+      const now = new Date();
+
+      if (filter === "year") {
+        const year = value.year;
+        startDate = new Date(year, 0, 1);
+        endDate = new Date(year + 1, 0, 1);
+      } else if (filter === "month") {
+        const { year, month } = value;
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 1);
+      } else if (filter === "range") {
+        startDate = new Date(value.startDate);
+        endDate = new Date(value.endDate);
+      } else {
+        return res.status(400).json({ message: "Loại filter không hợp lệ!" });
       }
-    ]);
 
-    const count = result.length > 0 ? result[0].customerCount : 0;
+      if (type === "stall") {
+        const stalls = await Foodstall.find().populate("user").populate("products");
+        const orders = await Order.find({
+          od_date: { $gte: startDate, $lt: endDate }
+        }).populate({
+          path: "orderdetail",
+          populate: { path: "products", model: "Product" }
+        });
 
-    res.status(200).json({ customerCount: count });
-  } catch (error) {
-    console.error("Lỗi thống kê khách hàng trong tháng:", error);
-    res.status(500).json({ message: "Lỗi server" });
-  }
-},
-getRevenueByStallInRange: async (req, res) => {
-  try {
-    const { from, to } = req.body;
-    if (!from || !to) {
-      return res.status(400).json({ message: "Thiếu ngày bắt đầu hoặc kết thúc" });
-    }
+        const result = stalls.map(stall => {
+          const revenue = orders.reduce((sum, order) => {
+            const details = order.orderdetail.filter(od => od.products?.stall_id?.toString() === stall._id.toString());
+            return sum + details.reduce((s, d) => s + (d.total || 0), 0);
+          }, 0);
 
-    const start = new Date(from);
-    start.setHours(0, 0, 0, 0);
-    const end = new Date(to);
-    end.setHours(23, 59, 59, 999);
-
-    const result = await Order.aggregate([
-      {
-        $match: {
-          od_date: { $gte: start, $lte: end },
-          od_status: "3"
-        }
-      },
-      {
-        $lookup: {
-          from: "ORDERDETAIL",
-          localField: "orderdetail",
-          foreignField: "_id",
-          as: "details"
-        }
-      },
-      { $unwind: "$details" },
-      {
-        $lookup: {
-          from: "PRODUCT",
-          localField: "details.products",
-          foreignField: "_id",
-          as: "product"
-        }
-      },
-      { $unwind: "$product" },
-      {
-        $group: {
-          _id: "$product.stall_id",
-          totalRevenue: { $sum: "$details.total" }
-        }
-      },
-      {
-        $lookup: {
-          from: "FOODSTALL",
-          localField: "_id",
-          foreignField: "_id",
-          as: "stall"
-        }
-      },
-      { $unwind: "$stall" },
-      {
-        $lookup: {
-          from: "USER",
-          localField: "stall.user",
-          foreignField: "_id",
-          as: "owner"
-        }
-      },
-      {
-        $lookup: {
-          from: "PRODUCT",
-          localField: "_id",
-          foreignField: "stall_id",
-          as: "products"
-        }
-      },
-      {
-        $project: {
-          _id: 1,
-          totalRevenue: 1,
-          stall_name: "$stall.stall_name",
-          location: "$stall.location",
-          owner_name: { $arrayElemAt: ["$owner.full_name", 0] },
-          totalProducts: { $size: "$products" }
-        }
-      }
-    ]);
-
-    res.json(result);
-  } catch (err) {
-    console.error("Lỗi lấy doanh thu:", err);
-    res.status(500).json({ message: "Server error" });
-  }
-},
-// thống kê các loại 
-getStatistics113 : async (req, res) => {
-  try {
-    const { type, filter, value } = req.body;
-
-    let startDate, endDate;
-    const now = new Date();
-
-    if (filter === "year") {
-      const year = value.year;
-      startDate = new Date(year, 0, 1);
-      endDate = new Date(year + 1, 0, 1);
-    } else if (filter === "month") {
-      const { year, month } = value;
-      startDate = new Date(year, month - 1, 1);
-      endDate = new Date(year, month, 1);
-    } else if (filter === "range") {
-      startDate = new Date(value.startDate);
-      endDate = new Date(value.endDate);
-    } else {
-      return res.status(400).json({ message: "Loại filter không hợp lệ!" });
-    }
-
-    if (type === "stall") {
-      const stalls = await Foodstall.find().populate("user").populate("products");
-      const orders = await Order.find({
-        od_date: { $gte: startDate, $lt: endDate }
-      }).populate({
-        path: "orderdetail",
-        populate: { path: "products", model: "Product" }
-      });
-
-      const result = stalls.map(stall => {
-        const revenue = orders.reduce((sum, order) => {
-          const details = order.orderdetail.filter(od => od.products?.stall_id?.toString() === stall._id.toString());
-          return sum + details.reduce((s, d) => s + (d.total || 0), 0);
-        }, 0);
-
-        return {
-          stall_id: stall._id,
-          stall_name: stall.stall_name,
-          owner_name: stall.user?.full_name || "Chưa gán",
-          number_of_products: stall.products.length,
-          total_revenue: revenue
-        };
-      });
-
-      return res.json(result);
-    }
-
-    if (type === "order") {
-      const orders = await Order.find({
-        od_date: { $gte: startDate, $lt: endDate }
-      })
-        .populate("customer")
-        .populate("table")
-        .populate("orderdetail");
-
-      const result = orders.map(order => ({
-        order_id: order._id,
-        table_number: order.table?.tb_number || "N/A",
-        customer_name: order.customer?.name || "Ẩn danh",
-        phone: order.customer?.phone || "Không có",
-        order_date: order.od_date,
-        total_items: order.orderdetail.length,
-        total_amount: order.total_amount || 0
-      }));
-
-      return res.json(result);
-    }
-
-    if (type === "product") {
-      const details = await Orderdetail.find({
-        createdAt: { $gte: startDate, $lt: endDate }
-      }).populate("products");
-
-      const productStats = {};
-
-      details.forEach(detail => {
-        const product = detail.products;
-        if (!product) return;
-
-        const id = product._id.toString();
-        if (!productStats[id]) {
-          productStats[id] = {
-            product_id: product._id,
-            product_name: product.pd_name,
-            image: product.image,
-            price: product.price,
-            call_count: 0,
-            revenue: 0
+          return {
+            stall_id: stall._id,
+            stall_name: stall.stall_name,
+            owner_name: stall.user?.full_name || "Chưa gán",
+            number_of_products: stall.products.length,
+            total_revenue: revenue
           };
-        }
+        });
 
-        productStats[id].call_count += detail.quantity;
-        productStats[id].revenue += detail.total || 0;
-      });
+        return res.json(result);
+      }
 
-      return res.json(Object.values(productStats));
+      if (type === "order") {
+        const orders = await Order.find({
+          od_date: { $gte: startDate, $lt: endDate }
+        })
+          .populate("customer")
+          .populate("table")
+          .populate("orderdetail");
+
+        const result = orders.map(order => ({
+          order_id: order._id,
+          table_number: order.table?.tb_number || "N/A",
+          customer_name: order.customer?.name || "Ẩn danh",
+          phone: order.customer?.phone || "Không có",
+          order_date: order.od_date,
+          total_items: order.orderdetail.length,
+          total_amount: order.total_amount || 0
+        }));
+
+        return res.json(result);
+      }
+
+      if (type === "product") {
+        const details = await Orderdetail.find({
+          createdAt: { $gte: startDate, $lt: endDate }
+        }).populate("products");
+
+        const productStats = {};
+
+        details.forEach(detail => {
+          const product = detail.products;
+          if (!product) return;
+
+          const id = product._id.toString();
+          if (!productStats[id]) {
+            productStats[id] = {
+              product_id: product._id,
+              product_name: product.pd_name,
+              image: product.image,
+              price: product.price,
+              call_count: 0,
+              revenue: 0
+            };
+          }
+
+          productStats[id].call_count += detail.quantity;
+          productStats[id].revenue += detail.total || 0;
+        });
+
+        return res.json(Object.values(productStats));
+      }
+
+      res.status(400).json({ message: "Loại thống kê không hợp lệ!" });
+
+    } catch (err) {
+      console.error("Thống kê lỗi:", err);
+      res.status(500).json({ message: "Lỗi máy chủ nội bộ!" });
     }
-
-    res.status(400).json({ message: "Loại thống kê không hợp lệ!" });
-
-  } catch (err) {
-    console.error("Thống kê lỗi:", err);
-    res.status(500).json({ message: "Lỗi máy chủ nội bộ!" });
   }
-}
 }
 module.exports = foodstallController;
