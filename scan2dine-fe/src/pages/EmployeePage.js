@@ -17,22 +17,31 @@ export const EmployeePage = () => {
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
     const navigate = useNavigate();
 
-    //hàm chạy hổ trợ chạy fetchttable khi khách hàng bấm
-    const { employeeRefreshFlag } = useContext(AppContext);
+
     // Get user from localStorage
     const user = JSON.parse(localStorage.getItem('user') || '{}');
     const userName = user.name || 'Nhân viên';
 
     useEffect(() => {
+        fetchTables();
         const handleStorage = (event) => {
             if (event.key === 'employee-refresh') {
-                fetchTables(); // 👈 Gọi hàm load danh sách bàn lại
+                fetchTables();
             }
         };
 
         window.addEventListener('storage', handleStorage);
         return () => window.removeEventListener('storage', handleStorage);
     }, []);
+    // useEffect(() => {
+    //     fetchTables();
+
+    //     const interval = setInterval(() => {
+    //         fetchTables();
+    //     }, 1000); // mỗi 5 giây
+
+    //     return () => clearInterval(interval);
+    // }, []);
 
     // Filter tables when search term changes
     useEffect(() => {

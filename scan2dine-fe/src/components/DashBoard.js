@@ -13,6 +13,8 @@ import {
     AreaChart,
     Area,
     ResponsiveContainer,
+    BarChart, Bar,
+    Rectangle
 } from 'recharts';
 
 import {
@@ -32,22 +34,37 @@ export default function Dashboard() {
 
     const [data, setData] = useState({});
     const [data2, setData2] = useState({});
+    const [data3, setData3] = useState({});
+    const today = new Date();
+    const fromDate = new Date(today.getFullYear(), today.getMonth(), 1); // ngày 1 tháng hiện tại
+
+    const formatDate = (date) => {
+        return date.toISOString().split('T')[0]; // Trả về "2025-04-30"
+    };
+
 
 
     useEffect(() => {
         fetchData();
     }, []);
     const fetchData = async () => {
-        const [res, res2] = await Promise.all([
+        const [res, res2, res3] = await Promise.all([
             api.get('/s2d/foodstall/thongke'),
             api.get('/s2d/foodstall/thongkeCustomer'),
+            api.post('/s2d/foodstall/thongkequay', {
+
+                from: formatDate(fromDate),
+                to: formatDate(today)
+
+            }),
+
         ]);
-        console.log('data', res2.data);
+        console.log('data', res3.data);
         setData(res.data)
         setData2(res2.data)
+        setData3(res3.data)
 
     }
-
 
     // 
     const formatCurrency = (value) => {
@@ -56,6 +73,50 @@ export default function Dashboard() {
             currency: 'VND',
         }).format(value);
     };
+    const zdata = [
+        {
+            name: 'Page A',
+            uv: 4000,
+            pv: 2400,
+            amt: 2400,
+        },
+        {
+            name: 'Page B',
+            uv: 3000,
+            pv: 1398,
+            amt: 2210,
+        },
+        {
+            name: 'Page C',
+            uv: 2000,
+            pv: 9800,
+            amt: 2290,
+        },
+        {
+            name: 'Page D',
+            uv: 2780,
+            pv: 3908,
+            amt: 2000,
+        },
+        {
+            name: 'Page E',
+            uv: 1890,
+            pv: 4800,
+            amt: 2181,
+        },
+        {
+            name: 'Page F',
+            uv: 2390,
+            pv: 3800,
+            amt: 2500,
+        },
+        {
+            name: 'Page G',
+            uv: 3490,
+            pv: 4300,
+            amt: 2100,
+        },
+    ];
     // Dữ liệu thống kê mẫu
     const stats = [
         {
@@ -152,9 +213,29 @@ export default function Dashboard() {
                             <FaChartPie size={18} />
                         </div>
                     </div>
-                    <div className="flex justify-center items-center h-64">
+                    <ResponsiveContainer width="100%" height={300}>
+                        <BarChart
+                            width={500}
+                            height={300}
+                            data={data3}
+                            margin={{
+                                top: 5,
+                                right: 30,
+                                left: 20,
+                                bottom: 5,
+                            }}
+                        >
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="stall_name" />
+                            <YAxis />
+                            <Tooltip />
+                            <Legend />
+                            <Bar dataKey="totalRevenue" fill="#82ca9d" activeBar={<Rectangle fill="gold" stroke="purple" />} />
+                        </BarChart>
+                    </ResponsiveContainer>
+
+                    {/* <div className="flex justify-center items-center h-64">
                         <div className="relative w-48 h-48">
-                            {/* Đây là biểu đồ tròn đơn giản */}
                             <div className="absolute inset-0 rounded-full border-8 border-blue-500" style={{ clipPath: 'polygon(0 0, 100% 0, 100% 100%, 0 100%)' }}></div>
                             <div className="absolute inset-0 rounded-full border-8 border-green-500" style={{ clipPath: 'polygon(50% 50%, 100% 50%, 100% 100%, 50% 100%)' }}></div>
                             <div className="absolute inset-0 rounded-full border-8 border-yellow-500" style={{ clipPath: 'polygon(50% 50%, 50% 0, 100% 0, 100% 50%)' }}></div>
@@ -163,8 +244,8 @@ export default function Dashboard() {
                                 <div className="bg-white rounded-full w-24 h-24"></div>
                             </div>
                         </div>
-                    </div>
-                    <div className="flex justify-center mt-4 space-x-4">
+                    </div> */}
+                    {/* <div className="flex justify-center mt-4 space-x-4">
                         <div className="flex items-center">
                             <div className="w-3 h-3 bg-blue-500 rounded-full mr-2"></div>
                             <span className="text-sm text-gray-600">Sản phẩm A (40%)</span>
@@ -181,7 +262,7 @@ export default function Dashboard() {
                             <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
                             <span className="text-sm text-gray-600">Khác (15%)</span>
                         </div>
-                    </div>
+                    </div> */}
                 </div>
             </div>
 
