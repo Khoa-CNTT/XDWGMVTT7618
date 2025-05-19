@@ -54,10 +54,6 @@ const foodstallsSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Review",
   },
-  user: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
-  },
 }, { collection: 'FOODSTALL' });
 
 const cartSchema = new mongoose.Schema({
