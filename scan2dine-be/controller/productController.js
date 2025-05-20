@@ -1,6 +1,6 @@
 const { json } = require('express');
 const mongoose = require("mongoose");  // Khai báo mongoose duy nhất
-const { Product, Category, Foodstall } = require('../model/model');
+const { Product, Category, Foodstall, Orderdetail,Order } = require('../model/model');
 const fs = require('fs');
 const path = require('path');
 
@@ -184,7 +184,7 @@ try {
         message: "Không thể xóa sản phẩm vì đang tồn tại trong đơn hàng chưa hoàn thành"
       });
     }
-    
+
     // Tiến hành xóa sản phẩm
       const deletedProduct = await Product.findByIdAndDelete(productId);
 
@@ -197,14 +197,14 @@ try {
           }
     });
       }
-    
+
       // Gỡ sản phẩm khỏi category
       await Category.findByIdAndUpdate(deletedProduct.category, {
         $pull: { products: productId }
       });
-    
+
       res.status(200).json({ message: "Xóa sản phẩm thành công" });
-    
+
     } catch (error) {
       console.error("Lỗi khi xóa sản phẩm:", error);
       res.status(500).json({ error: error.message });
