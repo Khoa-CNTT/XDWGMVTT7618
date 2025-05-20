@@ -70,112 +70,146 @@ const productController = {
     },
 
 
-    updateProduct: async (req, res) => {
-        try {
-            const productId = req.params.id;
-            const updatedData = req.body;
-            // Kiểm tra xem sản phẩm có tồn tại không
-            const oldProduct = await Product.findById(productId);
-            if (!oldProduct) {
-                return res.status(404).json({ message: "Product not found" });
-            }
-            // kiểm tra xem sản phẩm có tồn tại trong orderdetail không
-            if (oldProduct.orderdetail && oldProduct.orderdetail.length > 0) {
-                return res.status(400).json({ message: "Cannot update product with existing order details" });
-            }
+  updateProduct: async (req, res) => {
+    try {
+      const productId = req.params.id;
+      const updatedData = req.body;
 
-            // Nếu có file ảnh mới
-            if (req.file) {
-                if (oldProduct.image) {
-                    const oldImagePath = path.join(__dirname, '../public', oldProduct.image);
-                    fs.unlink(oldImagePath, (err) => {
-                        if (err) console.error("Không thể xóa ảnh cũ:", err.message);
-                    });
-                }
-                updatedData.image = '/image/' + req.file.filename;
-            }
+      // Kiểm tra sản phẩm có tồn tại không
+      const oldProduct = await Product.findById(productId);
+      if (!oldProduct) {
+        return res.status(404).json({ message: "Product not found" });
+      }
 
-            // Nếu category thay đổi
-            if (updatedData.category && oldProduct.category?.toString() !== updatedData.category.toString()) {
-                await Category.findByIdAndUpdate(oldProduct.category, {
-                    $pull: { products: productId }
-                });
-                await Category.findByIdAndUpdate(updatedData.category, {
-                    $push: { products: productId }
-                });
-            }
+      // Kiểm tra sản phẩm có nằm trong các OrderDetail của đơn hàng chưa hoàn thành không
+      const orderDetailIds = oldProduct.orderdetail;
+      const orderDetails = await Orderdetail.find({
+        _id: { $in: orderDetailIds },
+      }).populate("order");
 
-            // Nếu stall_id thay đổi
-            if (updatedData.stall_id && oldProduct.stall_id?.toString() !== updatedData.stall_id.toString()) {
-                if (!mongoose.Types.ObjectId.isValid(updatedData.stall_id)) {
-                    return res.status(400).json({ message: "Invalid stall_id" });
-                }
+      const hasPendingOrder = orderDetails.some((detail) => {
+        return detail.order && detail.order.status !== "3";
+      });
 
-                await Foodstall.findByIdAndUpdate(oldProduct.stall_id, {
-                    $pull: { products: productId }
-                });
+      if (hasPendingOrder) {
+        return res.status(400).json({
+          message:
+            "Không thể cập nhật sản phẩm vì đang tồn tại trong đơn hàng chưa hoàn thành",
+        });
+      }
 
-                await Foodstall.findByIdAndUpdate(updatedData.stall_id, {
-                    $push: { products: productId }
-                });
-            }
-
-            const updatedProduct = await Product.findByIdAndUpdate(
-                productId,
-                updatedData,
-                { new: true }
-            );
-
-            res.status(200).json(updatedProduct);
-        } catch (error) {
-            console.error("Lỗi khi cập nhật sản phẩm:", error.message);
-            res.status(500).json({ error: error.message });
+      // Nếu có file ảnh mới
+      if (req.file) {
+        if (oldProduct.image) {
+          const oldImagePath = path.join(
+            __dirname,
+            "../public",
+            oldProduct.image
+          );
+          fs.unlink(oldImagePath, (err) => {
+            if (err) console.error("Không thể xóa ảnh cũ:", err.message);
+          });
         }
-    },
+        updatedData.image = "/image/" + req.file.filename;
+      }
 
+      // Nếu category thay đổi
+      if (
+        updatedData.category &&
+        oldProduct.category?.toString() !== updatedData.category.toString()
+      ) {
+        await Category.findByIdAndUpdate(oldProduct.category, {
+          $pull: { products: productId },
+        });
+        await Category.findByIdAndUpdate(updatedData.category, {
+          $push: { products: productId },
+        });
+      }
 
-
-
-    // ------------------------------------
-    // DELETE PRODUCT 
-    deleteProduct: async (req, res) => {
-        try {
-            const productId = req.params.id;
-            const product = await Product.findById(productId);
-
-            if (!product) {
-                return res.status(404).json({ message: "Product not found" });
-            }
-
-            // Kiểm tra nếu sản phẩm đã có orderdetail thì không cho xóa
-            if (product.orderdetail && product.orderdetail.length > 0) {
-                return res.status(303).json({ message: "Cannot delete product with existing order details" });
-            }
-
-            const deletedProduct = await Product.findByIdAndDelete(productId);
-
-            //  Xóa ảnh trong thư mục nếu có
-            if (deletedProduct.image) {
-                const imagePath = path.join(__dirname, '../public', deletedProduct.image);
-                fs.unlink(imagePath, (err) => {
-                    if (err) {
-                        console.error("Không thể xóa ảnh:", err.message);
-                    }
-                });
-            }
-
-            //  Gỡ khỏi category
-            await Category.findByIdAndUpdate(deletedProduct.category, {
-                $pull: { products: productId }
-            });
-
-            res.status(200).json({ message: "Product deleted successfully" });
-        } catch (error) {
-            res.status(500).json({ error: error.message });
+      // Nếu stall_id thay đổi
+      if (
+        updatedData.stall_id &&
+        oldProduct.stall_id?.toString() !== updatedData.stall_id.toString()
+      ) {
+        if (!mongoose.Types.ObjectId.isValid(updatedData.stall_id)) {
+          return res.status(400).json({ message: "Invalid stall_id" });
         }
-    },
 
-    filterProductsByPrice: async (req, res) => {
+        await Foodstall.findByIdAndUpdate(oldProduct.stall_id, {
+          $pull: { products: productId },
+        });
+
+        await Foodstall.findByIdAndUpdate(updatedData.stall_id, {
+          $push: { products: productId },
+        });
+      }
+
+      // Cập nhật sản phẩm
+      const updatedProduct = await Product.findByIdAndUpdate(
+        productId,
+        updatedData,
+        { new: true }
+      );
+
+      res.status(200).json(updatedProduct);
+    } catch (error) {
+      console.error("Lỗi khi cập nhật sản phẩm:", error.message);
+      res.status(500).json({ error: error.message });
+    }
+  },
+
+  // ------------------------------------
+  // DELETE PRODUCT
+  deleteProduct: async (req, res) => {
+try {
+    const productId = req.params.id;
+    const product = await Product.findById(productId);
+
+    if (!product) {
+      return res.status(404).json({ message: "Sản phẩm không tồn tại" });
+    }
+
+    // Tìm tất cả orderdetails có liên quan, và populate order để kiểm tra trạng thái
+    const orderDetails = await Orderdetail.find({
+      _id: { $in: product.orderdetail }
+    }).populate("order");
+
+    // Kiểm tra xem có order nào chưa hoàn thành (status !== 3) không
+    const hasUnfinishedOrders = orderDetails.some(detail => {
+      return detail.order && detail.order.status !== 3 && detail.order.status !== '3';
+    });
+
+    if (hasUnfinishedOrders) {
+      return res.status(400).json({
+        message: "Không thể xóa sản phẩm vì đang tồn tại trong đơn hàng chưa hoàn thành"
+      });
+    }
+    
+    // Tiến hành xóa sản phẩm
+      const deletedProduct = await Product.findByIdAndDelete(productId);
+
+      // Xóa ảnh nếu có
+    if (deletedProduct.image) {
+        const imagePath = path.join(__dirname, '../public', deletedProduct.image);
+        fs.unlink(imagePath, (err) => {
+          if (err) {
+            console.error("Không thể xóa ảnh:", err.message);
+          }
+    });
+      }
+    
+      // Gỡ sản phẩm khỏi category
+      await Category.findByIdAndUpdate(deletedProduct.category, {
+        $pull: { products: productId }
+      });
+    
+      res.status(200).json({ message: "Xóa sản phẩm thành công" });
+    
+    } catch (error) {
+      console.error("Lỗi khi xóa sản phẩm:", error);
+      res.status(500).json({ error: error.message });
+    }
+    },    filterProductsByPrice: async (req, res) => {
         try {
             const { min, max } = req.body;
             const query = {};
