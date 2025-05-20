@@ -8,6 +8,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import UserManagementSystem from '../components/A_UserManagementSystem';
 import CustomerManagement from '../components/A_CustomerManagement';
 import { A_StatisticCounter } from '../components/A_StatisticCounter';
+import { A_StatisticDish } from '../components/A_StatisticDish';
 export const AdminPage = () => {
 
     // Trạng thái để theo dõi trang đang được hiển thị
@@ -21,7 +22,10 @@ export const AdminPage = () => {
             '/admin/dashboard': 'tổng quan hệ thống',
             '/admin/tables-management': 'quản lý bàn',
             '/admin/users-management': 'quản lý người dùng',
-            '/admin/customers-management': 'quản lý khách hàng'
+            '/admin/customers-management': 'quản lý khách hàng',
+            '/admin/statistic-counter': 'thống kê theo các quầy',
+            '/admin/statistic-dish': 'thống kê theo món ăn',
+            '/admin/statistic-revenue': 'thống kê doanh thu',
         };
 
         const currentPath = location.pathname;
@@ -48,6 +52,8 @@ export const AdminPage = () => {
                         <Route path="users-management" element={<UserManagementSystem />} />
                         <Route path="customers-management" element={<CustomerManagement />} />
                         <Route path="statistic-counter" element={<A_StatisticCounter />} />
+                        <Route path="statistic-dish" element={<A_StatisticDish />} />
+
 
                     </Routes>
                 </main>

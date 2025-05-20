@@ -64,7 +64,7 @@ export const Owner = () => {
     setCurrentView('dashboard');
     localStorage.setItem('ownerCurrentView', 'dashboard');
   };
-  
+
   return (
     <div className="min-h-screen flex flex-col">
       {/* Sidebar */}
@@ -75,7 +75,7 @@ export const Owner = () => {
             <div>SCAN<span className='text-primary'>2</span>DINE</div>
           </div>
         </div>
-        
+
         <div className="p-4 border-b border-gray-700">
           <div className="text-sm uppercase font-semibold text-gray-400 mb-2">TỔNG QUAN</div>
           <button
@@ -88,7 +88,7 @@ export const Owner = () => {
             <FaHome className="mr-2" /> Thống kê tổng quan
           </button>
         </div>
-        
+
         <div className="p-4">
           <div className="text-sm uppercase font-semibold text-gray-400 mb-2">QUẢN LÝ</div>
           <div className="space-y-2">
@@ -130,7 +130,7 @@ export const Owner = () => {
           <div className='text-center'>
             <span className="font-bold text-lg text-primary">Xin chào, {stallName}!</span>
           </div>
-        </header> 
+        </header>
 
         {/* Content Area */}
         <div className="flex-grow p-6 bg-gray-100">
@@ -150,7 +150,7 @@ export const Owner = () => {
             />
           )}
         </div>
-        
+
         <Footer />
       </div>
     </div>
