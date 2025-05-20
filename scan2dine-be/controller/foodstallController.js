@@ -1332,8 +1332,6 @@ const foodstallController = {
     const { type, filter, value } = req.body;
 
     let startDate, endDate;
-    const now = new Date();
-
     if (filter === "year") {
       const year = value.year;
       startDate = new Date(year, 0, 1);
@@ -1349,8 +1347,15 @@ const foodstallController = {
       return res.status(400).json({ message: "Loại filter không hợp lệ!" });
     }
 
+    // ===== Thống kê theo QUẦY =====
     if (type === "stall") {
-      const stalls = await Foodstall.find().populate("user").populate("products");
+      const stalls = await Foodstall.find()
+        .populate("products")
+        .populate({
+          path: "user",
+          model: "User"
+        });
+
       const orders = await Order.find({
         od_date: { $gte: startDate, $lt: endDate }
       }).populate({
@@ -1376,7 +1381,9 @@ const foodstallController = {
         return {
           stall_id: stall._id,
           stall_name: stall.stall_name,
-          owner_name: stall.user?.full_name || "Chưa gán",
+          owner_name: Array.isArray(stall.user) && stall.user.length > 0
+            ? stall.user[0].full_name
+            : "Chưa gán",
           number_of_products: stall.products.length,
           total_orders: totalOrders,
           total_revenue: revenue
@@ -1386,6 +1393,7 @@ const foodstallController = {
       return res.json(result);
     }
 
+    // ===== Thống kê theo ĐƠN HÀNG =====
     if (type === "order") {
       const orders = await Order.find({
         od_date: { $gte: startDate, $lt: endDate }
@@ -1407,16 +1415,30 @@ const foodstallController = {
       return res.json(result);
     }
 
+    // ===== Thống kê theo MÓN ĂN =====
     if (type === "product") {
       const details = await Orderdetail.find({
         createdAt: { $gte: startDate, $lt: endDate }
-      }).populate("products");
+      }).populate({
+        path: "products",
+        populate: {
+          path: "stall_id",
+          model: "Stall",
+          populate: {
+            path: "user",
+            model: "User"
+          }
+        }
+      });
 
       const productStats = {};
 
       details.forEach(detail => {
         const product = detail.products;
         if (!product) return;
+
+        const stall = product.stall_id;
+        const owner = Array.isArray(stall?.user) ? stall.user[0] : null;
 
         const id = product._id.toString();
         if (!productStats[id]) {
@@ -1426,7 +1448,9 @@ const foodstallController = {
             image: product.image,
             price: product.price,
             call_count: 0,
-            revenue: 0
+            revenue: 0,
+            stall_name: stall?.stall_name || "Không rõ",
+            owner_name: owner?.full_name || "Chưa gán"
           };
         }
 
@@ -1437,11 +1461,11 @@ const foodstallController = {
       return res.json(Object.values(productStats));
     }
 
-    res.status(400).json({ message: "Loại thống kê không hợp lệ!" });
+    return res.status(400).json({ message: "Loại thống kê không hợp lệ!" });
 
   } catch (err) {
-    console.error("Thống kê lỗi:", err);
-    res.status(500).json({ message: "Lỗi máy chủ nội bộ!" });
+    console.error("Lỗi thống kê:", err);
+    return res.status(500).json({ message: "Lỗi máy chủ nội bộ!" });
   }
 }
 }
