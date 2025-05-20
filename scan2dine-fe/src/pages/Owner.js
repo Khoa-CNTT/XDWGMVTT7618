@@ -65,6 +65,7 @@ export const Owner = () => {
     localStorage.setItem('ownerCurrentView', 'dashboard');
   };
 
+
   const handleConfirmStallName = async () => {
     // Tìm lại đúng quầy của user (user là mảng)
     const foundStall = foodstalls.find(stall =>
@@ -92,6 +93,7 @@ export const Owner = () => {
       alert('Không tìm thấy quầy hoặc tên quầy không hợp lệ!');
     }
   };
+
 
   return (
     <div className="min-h-screen flex flex-col">
