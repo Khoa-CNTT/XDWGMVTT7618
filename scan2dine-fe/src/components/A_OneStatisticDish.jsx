@@ -1,6 +1,6 @@
 import React from 'react'
 
-export const A_OneStatisticCounter = ({ data, index }) => {
+export const A_OneStatisticDish = ({ data, index }) => {
     const formatPrice = (amount) => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
     };
@@ -10,21 +10,21 @@ export const A_OneStatisticCounter = ({ data, index }) => {
             <td className="py-3 px-4">{index + 1}</td>
 
             {/*  Tên quầy    */}
-            <td className="py-3 px-4 ">{data.stall_name}</td>
+            <td className="py-3 px-4 ">{data.product_name}</td>
 
             {/* tên chủ quầy */}
-            <td className="py-3 px-4 ">{data.owner_name}</td>
+            <td className="py-3 px-4 ">{data.stall_name}</td>
 
             {/* Tổng số món */}
-            <td className="py-3 px-4">{data.number_of_products}</td>
+            <td className="py-3 px-4">{data.call_count}</td>
 
             {/* tổng số đơn */}
-            <td className="py-3 px-4">{data.total_orders}</td>
+            <td className="py-3 px-4">{data.price}</td>
             {/* doanh thu */}
-            <td className="py-3 px-4">{formatPrice(data.total_revenue)}</td>
+            <td className="py-3 px-4">{formatPrice(data.revenue)}</td>
 
             {/* chiết khẩu */}
-            <td className="py-3 px-4">{formatPrice(data.total_revenue * 15 / 100)}</td>
+            <td className="py-3 px-4">{formatPrice(data.revenue * 15 / 100)}</td>
 
         </tr>
     )

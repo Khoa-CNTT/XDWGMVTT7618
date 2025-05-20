@@ -20,15 +20,13 @@ import {
     PieChart, Pie, Legend, Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
 import api from '../server/api';
-import { A_OneStatisticCounter } from './A_OneStatisticCounter';
-export const A_StatisticCounter = () => {
+import { A_OneStatisticDish } from './A_OneStatisticDish';
+export const A_StatisticDish = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortField, setSortField] = useState('id');
     const [sortDirection, setSortDirection] = useState('asc');
 
     const [isChart, setIsChart] = useState(true);
-
-    const [showAlertDate, setShowAlertDate] = useState(false);
 
     const [data, setData] = useState([]);
 
@@ -46,6 +44,14 @@ export const A_StatisticCounter = () => {
     const [confirmedFromDate, setConfirmedFromDate] = useState(getToday());
     const [confirmedToDate, setConfirmedToDate] = useState(getToday());
 
+    const data01 = [
+        { name: 'Group A', value: 400 },
+        { name: 'Group B', value: 300 },
+        { name: 'Group C', value: 300 },
+        { name: 'Group D', value: 200 },
+        { name: 'Group E', value: 278 },
+        { name: 'Group F', value: 189 },
+    ];
 
     //Lấy dữ liệu từ data User
     useEffect(() => {
@@ -56,14 +62,14 @@ export const A_StatisticCounter = () => {
     const fetchDataStatisticCounter = async () => {
         try {
             const getData = await api.post('/s2d/foodstall/thongkeall', {
-                type: "stall",
+                type: "product",
                 filter: "range",
                 value: {
                     startDate: fromDate,
                     endDate: toDate
                 }
             });
-            console.log('Dữ liệu get data', getData.data);
+            console.log('Dữ liệu get data product', getData.data);
             setData(getData.data);
         } catch (error) {
             console.error('Lỗi khi tải danh mục sản phẩm:', error);
@@ -96,13 +102,14 @@ export const A_StatisticCounter = () => {
         return 0;
     });
 
+    const [showAlertDate, setShowAlertDate] = useState(false);
+
     const handleStatistic = () => {
         if (new Date(fromDate) > new Date(toDate)) {
             setShowAlertDate(true)
             return;
         }
         setShowAlertDate(false)
-
         setConfirmedFromDate(fromDate);
         setConfirmedToDate(toDate);
         fetchDataStatisticCounter();
@@ -114,7 +121,7 @@ export const A_StatisticCounter = () => {
         return `${day}/${month}/${year}`;
     };
 
-    const totalRevenue = sortedData.reduce((sum, item) => sum + parseFloat(item.total_revenue), 0);
+    const totalRevenue = sortedData.reduce((sum, item) => sum + parseFloat(item.revenue), 0);
     const totalDiscount = totalRevenue * 15 / 100;
 
     //bảng màu 
@@ -138,7 +145,7 @@ export const A_StatisticCounter = () => {
         return `${name}: ${percentage}%`;
     };
 
-    const dataFilter = data.filter(item => item.total_revenue > 0);
+    const sortedDataChart = [...data].sort((a, b) => b.revenue - a.revenue);
 
     return (
 
@@ -151,7 +158,7 @@ export const A_StatisticCounter = () => {
 
                 <div className="flex flex-col md:flex-row items-center gap-4 mb-8 justify-center">
                     <div>
-                        <label className="mr-2 font-medium">Từ ngày:</label>
+                        <label className="mr-2 font-medium">Ngày bắt đầu:</label>
                         <input
                             type="date"
                             value={fromDate}
@@ -160,7 +167,7 @@ export const A_StatisticCounter = () => {
                         />
                     </div>
                     <div>
-                        <label className="mr-2 font-medium">Đến ngày:</label>
+                        <label className="mr-2 font-medium">Ngày kết thúc:</label>
                         <input
                             type="date"
                             value={toDate}
@@ -175,13 +182,11 @@ export const A_StatisticCounter = () => {
                     >
                         Xem thống kê
                     </button>
-
                 </div>
+
                 {showAlertDate && (
                     <div className='flex flex-col md:flex-row items-center gap-4 mb-8 justify-center '><div className='text-primary'>Ngày bắt đầu không được lớn hơn ngày kết thúc!</div></div>
-                )
-
-                }
+                )}
                 {/* Search and Add */}
                 <div className="flex flex-col md:flex-row justify-between items-center mb-6 space-y-3 md:space-y-0">
                     <div className="relative w-full md:w-64">
@@ -222,78 +227,6 @@ export const A_StatisticCounter = () => {
                 {/* Table */}
                 {isChart ? (
                     <div className=" gap-6 mb-6 mt-5">
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-lg font-semibold">Phân bổ doanh thu các quầy</h2>
-                                    <div className="text-gray-500">
-                                        <FaChartPie size={18} />
-                                    </div>
-                                </div>
-                                {data.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <PieChart>
-                                            <Pie
-                                                dataKey="total_revenue"
-                                                data={dataFilter}
-                                                nameKey="stall_name"
-                                                cx="50%"
-                                                cy="50%"
-                                                outerRadius={100}
-                                                label={renderCustomLabel}
-                                            >
-                                                {dataFilter.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip content={<CustomTooltip />} />
-                                        </PieChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <p>Không có dữ liệu để hiển thị</p>
-                                )}
-
-                            </div>
-
-                            <div className="bg-white rounded-lg shadow p-6">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h2 className="text-lg font-semibold">Doanh thu theo quầy</h2>
-                                    <div className="text-gray-500">
-                                        <FaChartBar size={18} />
-                                    </div>
-                                </div>
-                                {data.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height={300}>
-                                        <ComposedChart
-                                            layout="vertical"
-                                            width={500}
-                                            height={400}
-                                            data={data}
-                                            margin={{
-                                                top: 20,
-                                                right: 20,
-                                                bottom: 20,
-                                                left: 20,
-                                            }}
-                                        >
-                                            <CartesianGrid stroke="#f5f5f5" />
-                                            <XAxis type="number" />
-                                            <YAxis dataKey="name" type="category" scale="band" />
-                                            <Tooltip />
-                                            <Legend />
-                                            <Area dataKey="amt" fill="#8884d8" stroke="#8884d8" />
-                                            <Bar dataKey="pv" barSize={20} fill="#413ea0" />
-                                            <Line dataKey="uv" stroke="#ff7300" />
-                                        </ComposedChart>
-                                    </ResponsiveContainer>
-                                ) : (
-                                    <p>Không có dữ liệu để hiển thị</p>
-                                )}
-
-
-                            </div>
-                        </div>
-
                         <div className="bg-white rounded-lg shadow p-6 mt-5 ">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-lg font-semibold">Doanh thu theo quầy</h2>
@@ -301,37 +234,36 @@ export const A_StatisticCounter = () => {
                                     <FaChartBar size={18} />
                                 </div>
                             </div>
+
                             {data.length > 0 ? (
-                                <ResponsiveContainer width="100%" height={300}>
-                                    <BarChart
-                                        width={500}
-                                        height={300}
-                                        data={data}
-                                        margin={{
-                                            top: 5,
-                                            right: 30,
-                                            left: 20,
-                                            bottom: 5,
-                                        }}
+                                <ResponsiveContainer width="100%" height={Math.max(300, sortedDataChart.length * 60)}>
+                                    <ComposedChart
+                                        layout="vertical"
+                                        data={sortedDataChart}
+                                    // margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
                                     >
-                                        <CartesianGrid strokeDasharray="3 3" />
-                                        <XAxis dataKey="stall_name" />
-                                        <YAxis
-                                            tickFormatter={(value) =>
-                                                new Intl.NumberFormat('vi-VN').format(value)
-                                            }
-                                        />
+                                        <CartesianGrid stroke="#f5f5f5" />
+                                        <XAxis type="number" orientation="top" tickFormatter={(value) => new Intl.NumberFormat('vi-VN', {
+                                            style: 'currency',
+                                            currency: 'VND',
+                                            maximumFractionDigits: 0
+                                        }).format(value)} />
+                                        <YAxis dataKey="product_name" type="category" scale="band" width={250} />
                                         <Tooltip
                                             formatter={(value, name) => [
                                                 new Intl.NumberFormat('vi-VN').format(value),
-                                                name === "total_revenue" ? "Doanh thu" : name
+                                                name === "revenue" ? "Doanh thu" : name
                                             ]}
                                         />
                                         <Legend
-                                            formatter={(value) => value === "total_revenue" ? "Doanh thu" : value}
+                                            layout="horizontal"       // Dàn hàng ngang
+                                            verticalAlign="top"       // Nằm trên biểu đồ
+                                            align="center"            // Căn giữa
+                                            formatter={(name) => [name === "revenue" ? "Doanh thu" : name
+                                            ]}
                                         />
-                                        <Bar dataKey="total_revenue" fill="#82ca9d" activeBar={<Rectangle fill="#B6282C" stroke="purple" />} />
-                                    </BarChart>
+                                        <Bar dataKey="revenue" barSize={20} fill="#413ea0" activeBar={<Rectangle fill="#B6282C" stroke="purple" />} />
+                                    </ComposedChart>
                                 </ResponsiveContainer>
                             ) : (
                                 <p>Không có dữ liệu để hiển thị</p>
@@ -353,7 +285,7 @@ export const A_StatisticCounter = () => {
                                         onClick={() => handleSort('stall_name')}
                                     >
                                         <div className="flex items-center">
-                                            TÊN QUẦY
+                                            TÊN MÓN
                                             {sortField === 'stall_name' &&
                                                 (sortDirection === 'asc' ? <FaChevronUp size={16} /> : <FaChevronDown size={16} />)}
                                         </div>
@@ -363,7 +295,7 @@ export const A_StatisticCounter = () => {
                                         onClick={() => handleSort('owner_name')}
                                     >
                                         <div className="flex items-center">
-                                            TÊN CHỦ QUẦY
+                                            TÊN QUẦY
                                             {sortField === 'owner_name' &&
                                                 (sortDirection === 'asc' ? <FaChevronUp size={16} /> : <FaChevronDown size={16} />)}
                                         </div>
@@ -373,7 +305,7 @@ export const A_StatisticCounter = () => {
                                         onClick={() => handleSort('number_of_products')}
                                     >
                                         <div className="flex items-center">
-                                            SỐ MÓN
+                                            SL ĐÃ BÁN
                                             {sortField === 'number_of_products' &&
                                                 (sortDirection === 'asc' ? <FaChevronUp size={16} /> : <FaChevronDown size={16} />)}
                                         </div>
@@ -383,7 +315,7 @@ export const A_StatisticCounter = () => {
                                         onClick={() => handleSort('username')}
                                     >
                                         <div className="flex items-center">
-                                            SỐ ĐƠN
+                                            ĐƠN GIÁ
                                             {sortField === 'username' &&
                                                 (sortDirection === 'asc' ? <FaChevronUp size={16} /> : <FaChevronDown size={16} />)}
                                         </div>
@@ -393,7 +325,7 @@ export const A_StatisticCounter = () => {
                                         onClick={() => handleSort('total_revenue')}
                                     >
                                         <div className="flex items-center">
-                                            DOANH THU CỦA QUẦY
+                                            TỔNG TIỀN
                                             {sortField === 'total_revenue' &&
                                                 (sortDirection === 'asc' ? <FaChevronUp size={16} /> : <FaChevronDown size={16} />)}
                                         </div>
@@ -404,36 +336,38 @@ export const A_StatisticCounter = () => {
                             <tbody>
                                 {sortedData.length > 0 ? (
                                     sortedData.map((data, index) => (
-                                        <A_OneStatisticCounter key={data._id} data={data} index={index} />
+                                        <A_OneStatisticDish key={data._id} data={data} index={index} />
                                     ))
                                 ) : (
                                     <tr>
                                         <td colSpan="7" className="py-8 text-center text-gray-500">
-                                            Không tìm thấy người dùng nào.
+                                            Không có dữ liệu để hiển thị
                                         </td>
                                     </tr>
                                 )}
                             </tbody>
                         </table>
 
-                        {/* Phần tổng kết nằm dưới bảng */}
-                        <div className="h-5" /> {/* Spacer để không bị che bởi footer */}
-                        <div className="fixed left-100   bottom-0 right-0 bg-white border-t border-gray-300 shadow-lg p-4 flex justify-center gap-10 z-50">
-                            <div className="text-lg font-semibold text-gray-800">
-                                Tổng Doanh thu: <span className="text-green-600">{totalRevenue.toLocaleString('vi-VN')}₫</span>
-                            </div>
-                            <div className="text-lg font-semibold text-gray-800">
-                                Tổng Phí chiết khấu (15%): <span className="text-red-600">{totalDiscount.toLocaleString('vi-VN')}₫</span>
-                            </div>
-                        </div>
+
                     </div>
-                )}
+                )
+                }
+                {/* Phần tổng kết nằm dưới bảng */}
+                <div className="h-5" /> {/* Spacer để không bị che bởi footer */}
+                <div className="fixed left-100   bottom-0 right-0 bg-white border-t border-gray-300 shadow-lg p-4 flex justify-center gap-10 z-50">
+                    <div className="text-lg font-semibold text-gray-800">
+                        Tổng Doanh thu: <span className="text-green-600">{totalRevenue.toLocaleString('vi-VN')}₫</span>
+                    </div>
+                    <div className="text-lg font-semibold text-gray-800">
+                        Tổng Phí chiết khấu (15%): <span className="text-red-600">{totalDiscount.toLocaleString('vi-VN')}₫</span>
+                    </div>
+                </div>
 
 
 
-            </div>
+            </div >
 
-        </div>
+        </div >
 
 
     )
