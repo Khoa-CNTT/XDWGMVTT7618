@@ -126,17 +126,29 @@ const foodstallController = {
   updateFoodstall: async (req, res) => {
     try {
       const stallId = req.params.id;
-      const updateData = req.body;
-
+      const {stall_name,user} = req.body;
+  
       const updatedStall = await Foodstall.findByIdAndUpdate(
         stallId,
-        updateData,
+        req.body,
         { new: true }
       );
-
+  
       if (!updatedStall) {
         return res.status(404).json({ message: "Không tìm thấy quầy hàng." });
       }
+  
+      // Cập nhật stall_id cho user mới (nếu có truyền user)
+      if (req.body.user) {
+        // Xóa stall_id khỏi user cũ nếu cần (tùy logic hệ thống của bạn)
+  
+        await User.findByIdAndUpdate(req.body.user, {
+          $set: {
+            stall_id: stallId,
+          },
+        });
+      }
+  
       res.status(200).json({
         message: "Cập nhật quầy hàng thành công!",
         foodstall: updatedStall,
@@ -1467,6 +1479,70 @@ const foodstallController = {
     console.error("Lỗi thống kê:", err);
     return res.status(500).json({ message: "Lỗi máy chủ nội bộ!" });
   }
-}
+},
+getMonthlyRevenueAllStalls: async (req, res) => {
+    try {
+      const { year } = req.body;
+
+      if (!year) {
+        return res.status(400).json({ message: 'Thiếu năm cần thống kê (gửi trong body)' });
+      }
+
+      const start = new Date(`${year}-01-01`);
+      const end = new Date(`${year}-12-31T23:59:59.999Z`);
+
+      const result = await Order.aggregate([
+        {
+          $match: {
+            od_date: { $gte: start, $lte: end },
+            od_status: { $in: ['2', '3'] } // Chỉ tính đơn đã thanh toán
+          }
+        },
+        {
+          $lookup: {
+            from: 'ORDERDETAIL',
+            localField: 'orderdetail',
+            foreignField: '_id',
+            as: 'details'
+          }
+        },
+        { $unwind: '$details' },
+        {
+          $group: {
+            _id: { month: { $month: '$od_date' } },
+            totalRevenue: { $sum: '$details.total' },
+            totalOrders: { $addToSet: '$_id' }
+          }
+        },
+        {
+          $project: {
+            month: '$_id.month',
+            totalRevenue: 1,
+            totalOrders: { $size: '$totalOrders' },
+            _id: 0
+          }
+        }
+      ]);
+
+      // Bổ sung các tháng chưa có dữ liệu
+      const fullStats = Array.from({ length: 12 }, (_, i) => {
+        const monthData = result.find(item => item.month === i + 1);
+        return {
+          month: i + 1,
+          totalRevenue: monthData ? monthData.totalRevenue : 0,
+          totalOrders: monthData ? monthData.totalOrders : 0
+        };
+      });
+
+      return res.status(200).json({
+        year: parseInt(year),
+        monthlyStats: fullStats
+      });
+
+    } catch (error) {
+      console.error('Lỗi khi thống kê doanh thu theo tháng:', error);
+      return res.status(500).json({ message: 'Lỗi server', error: error.message });
+    }
+  }
 }
 module.exports = foodstallController;

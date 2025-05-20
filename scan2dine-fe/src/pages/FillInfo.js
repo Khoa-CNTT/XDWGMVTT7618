@@ -10,6 +10,7 @@ const CustomerLogin = ({ onSuccess }) => {
     const [name, setName] = useState("");
     const [message, setMessage] = useState("");
     const [isExisting, setIsExisting] = useState(false);
+    const [blocked, setBlocked] = useState(false);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const table = searchParams.get("table"); // lấy số bàn từ query
@@ -35,7 +36,13 @@ const CustomerLogin = ({ onSuccess }) => {
             setId(res.data.customer._id);
             setCustomerCart(res.data.customer.cart);
             setIsExisting(true);
-            setMessage(`Chào mừng trở lại, ${res.data.customer.name}!`);
+            setBlocked(res.data.blocked);
+            // setMessage(`Chào mừng trở lại, ${res.data.customer.name}!`);
+            if (res.data.blocked) {
+                setMessage(`Tài khoản của bạn đã bị chặn, không thể đăng nhập.`);
+            } else {
+                setMessage(`Chào mừng trở lại, ${res.data.customer.name}!`);
+            }
         } catch (err) {
             if (err.response?.status === 404) {
                 setName("");
@@ -90,10 +97,14 @@ const CustomerLogin = ({ onSuccess }) => {
             setMessage("Tên khách hàng chỉ cho phép nhập chữ.");
             return;
         }
-
+        // Nếu tên đã tồn tại và bị chặn không cho đăng nhập
+        if (blocked) {
+            setMessage("Tài khoản của bạn đã bị chặn, không thể đăng nhập.");
+            return;  // Dừng không cho đăng nhập
+        }
         // Kiểm tra số điện thoại nếu tồn tại
         if (isExisting) {
-            sessionStorage.setItem("customer", JSON.stringify({_id, phone, name, table, idTable, cart: customerCart }));
+            sessionStorage.setItem("customer", JSON.stringify({ _id, phone, name, table, idTable, cart: customerCart }));
             onSuccess?.(phone, name);
             navigate("/home");
             return;

@@ -14,41 +14,41 @@ export const Owner = () => {
   });
   const [stallName, setStallName] = useState('');
   const [currentStallId, setCurrentStallId] = useState(null);
+  const [editMode, setEditMode] = useState(false);
+  const [inputStallName, setInputStallName] = useState('');
+  const [foodstalls, setFoodstalls] = useState([]);
 
   useEffect(() => {
     const fetchStallInfo = async () => {
       try {
         const userString = localStorage.getItem('user');
-
         if (!userString) {
           navigate('/login');
           return;
         }
-
         const parsed = JSON.parse(userString);
-
-        // Kiểm tra parsed.user._id
         if (!parsed || !parsed.user || !parsed.user._id) {
           console.log('Invalid user structure:', parsed);
           navigate('/login');
           return;
         }
-
-        const user = parsed.user; // <- lấy đúng
+        const user = parsed.user;
         const response = await api.get('/s2d/foodstall');
         const foodstalls = response.data;
+        setFoodstalls(foodstalls);
 
-        const userStall = foodstalls.find(stall => {
-          const stallUserId = typeof stall.user === 'object' ? stall.user._id : stall.user;
-          return stallUserId?.toString() === user._id.toString();
-        });
-
+        // Sửa đoạn này: user là mảng
+        const userStall = foodstalls.find(stall =>
+          Array.isArray(stall.user) &&
+          stall.user.some(u => u?.toString() === user._id.toString())
+        );
 
         if (userStall) {
           setStallName(userStall.stall_name);
           setCurrentStallId(userStall._id);
         } else {
           setStallName('Chưa có quầy được chỉ định');
+          setCurrentStallId(null);
         }
       } catch (error) {
         console.error('Error fetching stall info:', error);
@@ -64,6 +64,36 @@ export const Owner = () => {
     setCurrentView('dashboard');
     localStorage.setItem('ownerCurrentView', 'dashboard');
   };
+
+
+  const handleConfirmStallName = async () => {
+    // Tìm lại đúng quầy của user (user là mảng)
+    const foundStall = foodstalls.find(stall =>
+      Array.isArray(stall.user) &&
+      stall.user.some(u => u?.toString() === currentStallId?.toString())
+    ) || foodstalls.find(stall => stall._id === currentStallId);
+
+    if (foundStall && inputStallName.trim()) {
+      try {
+        await api.put(`/s2d/foodstall/${foundStall._id}`, {
+          stall_name: inputStallName.trim()
+        });
+        const response = await api.get('/s2d/foodstall');
+        const updatedFoodstalls = response.data;
+        setFoodstalls(updatedFoodstalls);
+
+        const updatedStall = updatedFoodstalls.find(stall => stall._id === foundStall._id);
+        setStallName(updatedStall?.stall_name || inputStallName.trim());
+        setCurrentStallId(updatedStall?._id || foundStall._id);
+        setEditMode(false);
+      } catch (error) {
+        alert('Cập nhật tên quầy thất bại!');
+      }
+    } else {
+      alert('Không tìm thấy quầy hoặc tên quầy không hợp lệ!');
+    }
+  };
+
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -128,7 +158,43 @@ export const Owner = () => {
         {/* Header */}
         <header className="w-full px-6 py-4 bg-white border-b shadow-sm flex justify-center items-center">
           <div className='text-center'>
-            <span className="font-bold text-lg text-primary">Xin chào, {stallName}!</span>
+            <span className="font-bold text-lg text-primary">
+              Xin chào, {stallName}!
+              {/* Only show edit button if stallName is default */}
+              {!editMode && (
+                (stallName === 'Trống' || stallName === 'Chưa có tên quầy' || stallName === 'Chưa có quầy được chỉ định') && (
+                  <button
+                    className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded"
+                    onClick={() => setEditMode(true)}
+                  >
+                    Sửa
+                  </button>
+                )
+              )}
+            </span>
+            {editMode && (
+              <div className="mt-2 flex justify-center items-center">
+                <input
+                  type="text"
+                  className="border px-2 py-1 rounded mr-2"
+                  placeholder="Nhập tên quầy..."
+                  value={inputStallName}
+                  onChange={e => setInputStallName(e.target.value)}
+                />
+                <button
+                  className="px-2 py-1 bg-green-500 text-white rounded mr-2"
+                  onClick={handleConfirmStallName}
+                >
+                  Xác nhận
+                </button>
+                <button
+                  className="px-2 py-1 bg-gray-400 text-white rounded"
+                  onClick={() => setEditMode(false)}
+                >
+                  Hủy
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
