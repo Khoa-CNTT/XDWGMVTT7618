@@ -127,10 +127,11 @@ const customerSchema = new mongoose.Schema({
     type: String,
     // required: true
   },
-  // status: {
-  //   type: String,
-  //   // required: true
-  // },
+  status: {
+    type: String,
+    enum: ['0', '1'], // 0: trạng thái đc đăng nhập . 1 là trạng thái không đc đăng nhập
+    default: '0'
+  },
   cart: {
     type: mongoose.Types.ObjectId,
     // liên kết với bảng cart
@@ -148,12 +149,6 @@ const customerSchema = new mongoose.Schema({
       ref: "Payment",
     },
   ],
-  status: {
-    type: String,
-    // enum: ['Khách hàng mới', 'Khách hàng thân thiết'],  // danh sách các trạng thái hợp lệ
-    enum: ['1', '2'],  // danh sách các trạng thái hợp lệ
-    default: "1"
-  }
 }, { collection: 'CUSTOMER' });
 //ĐƠN HÀNG
 const orderSchema = new mongoose.Schema({
