@@ -121,40 +121,51 @@ const userController = {
             res.status(400).json({ error: error.message });
         }
     },
-
-    // đăng kí
+// đăng kí
     register: async (req, res) => {
-        try {
-            const { full_name, username, email, password, role_id } = req.body;
+    try {
+        const { full_name, username, email, password, role_id } = req.body;
 
-            console.log("Received data:", req.body);
+        console.log("Received data:", req.body);
 
-            // Kiểm tra nếu role_id có phải là ObjectId hợp lệ không
-            if (!mongoose.Types.ObjectId.isValid(role_id)) {
-                return res.status(400).json({ message: "Invalid role_id" });
-            }
-
-            // Kiểm tra email đã tồn tại chưa
-            const existingUser = await User.findOne({ email });
-            if (existingUser) {
-                return res.status(400).json({ message: 'Email đã được sử dụng' });
-            }
-
-            const hashedPassword = await bcrypt.hash(password, 10);
-            const newUser = new User({ full_name, username, email, password: hashedPassword, role_id });
-            await newUser.save();
-
-            // Gán user vào role
-            await Role.findByIdAndUpdate(role_id, {
-                $push: { user: newUser._id }
-            });
-
-            res.status(201).json({ message: 'Đăng ký thành công', user: newUser });
-        } catch (error) {
-            console.error('Lỗi trong hàm register:', error);
-            res.status(500).json({ error: error.message });
+        if (!mongoose.Types.ObjectId.isValid(role_id)) {
+            return res.status(400).json({ message: "Invalid role_id" });
         }
-    },
+
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ message: 'Email đã được sử dụng' });
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({ full_name, username, email, password: hashedPassword, role_id });
+        await newUser.save();
+
+        await Role.findByIdAndUpdate(role_id, {
+            $push: { user: newUser._id }
+        });
+
+        // Kiểm tra nếu role là "2" (chủ quầy) thì tạo quầy mới
+        const role = await Role.findById(role_id);
+        if (role && role.role_name === "2") {
+            const newStall = new Foodstall({
+                stall_name: "Trống", // ✅ tên quầy là "Trống"
+                user: newUser._id,
+                location: ""
+            });
+            await newStall.save();
+
+            newUser.stall_id = newStall._id;
+            await newUser.save();
+        }
+
+        res.status(201).json({ message: 'Đăng ký thành công', user: newUser });
+    } catch (error) {
+        console.error('Lỗi trong hàm register:', error);
+        res.status(500).json({ error: error.message });
+    }
+},
+
     // đăng nhập 
     login: async (req, res) => {
         try {

@@ -23,7 +23,7 @@ imap.once('ready', () => {
       return;
     }
 
-    console.log('📥Đã kết nối và đang theo dõi hộp thư.');
+    console.log('📥 Đã kết nối và đang theo dõi hộp thư.');
 
     imap.on('mail', () => {
       const today = moment().startOf('day');

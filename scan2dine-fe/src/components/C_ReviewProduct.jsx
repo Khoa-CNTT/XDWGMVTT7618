@@ -19,6 +19,7 @@ const ReviewProduct = () => {
     const [anonymous, setAnonymous] = useState(false);
     const [reviewData, setReviewData] = useState({});
     const [customerReviews, setCustomerReviews] = useState([]);
+    const [notification, setNotification] = useState(null);
     const [reviewedOrders, setReviewedOrders] = useState(() => {
         const saved = localStorage.getItem('reviewedOrders');
         return saved ? JSON.parse(saved) : [];
