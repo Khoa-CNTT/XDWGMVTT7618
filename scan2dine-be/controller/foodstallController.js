@@ -126,17 +126,29 @@ const foodstallController = {
   updateFoodstall: async (req, res) => {
     try {
       const stallId = req.params.id;
-      const updateData = req.body;
-
+      const {stall_name,user} = req.body;
+  
       const updatedStall = await Foodstall.findByIdAndUpdate(
         stallId,
-        updateData,
+        req.body,
         { new: true }
       );
-
+  
       if (!updatedStall) {
         return res.status(404).json({ message: "Không tìm thấy quầy hàng." });
       }
+  
+      // Cập nhật stall_id cho user mới (nếu có truyền user)
+      if (req.body.user) {
+        // Xóa stall_id khỏi user cũ nếu cần (tùy logic hệ thống của bạn)
+  
+        await User.findByIdAndUpdate(req.body.user, {
+          $set: {
+            stall_id: stallId,
+          },
+        });
+      }
+  
       res.status(200).json({
         message: "Cập nhật quầy hàng thành công!",
         foodstall: updatedStall,

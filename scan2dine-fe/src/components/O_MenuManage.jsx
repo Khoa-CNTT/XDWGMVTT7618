@@ -29,7 +29,12 @@ const O_MenuManage = ({ stallId }) => {
   const fetchProducts = async () => {
     try {
       const response = await api.get('/s2d/product');
-      setProducts(response.data);
+      // Thêm thuộc tính hasOrders để kiểm tra sản phẩm có chi tiết đơn hàng không
+      const productsWithOrderInfo = response.data.map(product => ({
+        ...product,
+        hasOrders: product.orderdetail && product.orderdetail.length > 0
+      }));
+      setProducts(productsWithOrderInfo);
     } catch (error) {
       console.error('Error fetching products:', error);
       toast.error('Không thể tải danh sách sản phẩm');
@@ -115,8 +120,18 @@ const O_MenuManage = ({ stallId }) => {
         await fetchProducts();
         toast.success('Xóa món ăn thành công');
       } catch (error) {
-        console.error('Error deleting product:', error);
-        toast.error('Không thể xóa món ăn');
+        // Log the backend error message for debugging
+        console.error('Error deleting product:', error.response?.data);
+
+        // Get the backend message (if any)
+        const backendMsg = (error.response?.data?.message || '').toLowerCase();
+
+        // Show a specific error if the message contains "đơn hàng" or "order"
+        if (backendMsg.includes('đơn hàng') || backendMsg.includes('order')) {
+          toast.error('Không thể xóa sản phẩm vì đã tồn tại trong đơn hàng!');
+        } else {
+          toast.error('Không thể xóa món ăn');
+        }
       }
     }
   };
@@ -254,13 +269,17 @@ const O_MenuManage = ({ stallId }) => {
                             setSelectedProduct(product);
                             setIsEditModalOpen(true);
                           }}
-                          className="text-blue-600 hover:text-blue-900 transition-colors"
+                          disabled={product.hasOrders}
+                          className={`transition-colors ${product.hasOrders ? 'text-gray-400 cursor-not-allowed' : 'text-blue-600 hover:text-blue-900'}`}
+                          title={product.hasOrders ? 'Không thể chỉnh sửa do sản phẩm có trong đơn hàng' : 'Chỉnh sửa'}
                         >
                           <FaEdit className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => handleDeleteProduct(product._id)}
-                          className="text-red-600 hover:text-red-900 transition-colors"
+                          disabled={product.hasOrders}
+                          className={`transition-colors ${product.hasOrders ? 'text-gray-400 cursor-not-allowed' : 'text-red-600 hover:text-red-900'}`}
+                          title={product.hasOrders ? 'Không thể xóa do sản phẩm có trong đơn hàng' : 'Xóa'}
                         >
                           <FaTrash className="w-5 h-5" />
                         </button>
@@ -283,9 +302,8 @@ const O_MenuManage = ({ stallId }) => {
             <button
               onClick={prevPage}
               disabled={currentPage === 1}
-              className={`px-3 py-1 rounded border ${
-                currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
+              className={`px-3 py-1 rounded border ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
             >
               Trước
             </button>
@@ -294,9 +312,8 @@ const O_MenuManage = ({ stallId }) => {
               <button
                 key={index}
                 onClick={() => paginate(index + 1)}
-                className={`px-3 py-1 rounded border ${
-                  currentPage === index + 1 ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
+                className={`px-3 py-1 rounded border ${currentPage === index + 1 ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
               >
                 {index + 1}
               </button>
@@ -305,11 +322,10 @@ const O_MenuManage = ({ stallId }) => {
             <button
               onClick={nextPage}
               disabled={currentPage === totalPages}
-              className={`px-3 py-1 rounded border ${
-                currentPage === totalPages
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
+              className={`px-3 py-1 rounded border ${currentPage === totalPages
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
             >
               Sau
             </button>

@@ -38,6 +38,7 @@ const productSchema = new mongoose.Schema({
 const foodstallsSchema = new mongoose.Schema({
   stall_name: {
     type: String,
+    default: 'Chưa có tên quầy',
   },
   location: { type: String },
   products: [

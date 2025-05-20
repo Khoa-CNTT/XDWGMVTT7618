@@ -14,7 +14,7 @@ const productController = {
             console.log("Request file:", req.file);
 
             // Kiểm tra nếu các giá trị bắt buộc không được cung cấp
-            const { pd_name, price, description, category, stall_id} = req.body;
+            const { pd_name, price, description, category, stall_id } = req.body;
             if (!pd_name || !price || !category || !stall_id) {
                 return res.status(400).json({ message: 'Missing required fields: pd_name, price, category, or stall_id.' });
             }
@@ -74,10 +74,14 @@ const productController = {
         try {
             const productId = req.params.id;
             const updatedData = req.body;
-
+            // Kiểm tra xem sản phẩm có tồn tại không
             const oldProduct = await Product.findById(productId);
             if (!oldProduct) {
                 return res.status(404).json({ message: "Product not found" });
+            }
+            // kiểm tra xem sản phẩm có tồn tại trong orderdetail không
+            if (oldProduct.orderdetail && oldProduct.orderdetail.length > 0) {
+                return res.status(400).json({ message: "Cannot update product with existing order details" });
             }
 
             // Nếu có file ảnh mới
@@ -137,11 +141,18 @@ const productController = {
     deleteProduct: async (req, res) => {
         try {
             const productId = req.params.id;
-            const deletedProduct = await Product.findByIdAndDelete(productId);
+            const product = await Product.findById(productId);
 
-            if (!deletedProduct) {
+            if (!product) {
                 return res.status(404).json({ message: "Product not found" });
             }
+
+            // Kiểm tra nếu sản phẩm đã có orderdetail thì không cho xóa
+            if (product.orderdetail && product.orderdetail.length > 0) {
+                return res.status(303).json({ message: "Cannot delete product with existing order details" });
+            }
+
+            const deletedProduct = await Product.findByIdAndDelete(productId);
 
             //  Xóa ảnh trong thư mục nếu có
             if (deletedProduct.image) {
@@ -163,11 +174,12 @@ const productController = {
             res.status(500).json({ error: error.message });
         }
     },
+
     filterProductsByPrice: async (req, res) => {
         try {
             const { min, max } = req.body;
             const query = {};
-    
+
             if (min !== undefined && max !== undefined) {
                 query.price = { $gte: Number(min), $lte: Number(max) };
             } else if (min !== undefined) {
@@ -175,22 +187,22 @@ const productController = {
             } else if (max !== undefined) {
                 query.price = { $lte: Number(max) };
             }
-    
+
             console.log("Query:", query);
-    
+
             const products = await Product.find(query).select("-orderdetail -cartdetail");
-    
+
             console.log("Tổng số:", products.length);
             products.forEach(p => {
                 console.log("->", p.pd_name, "-", p.price);
             });
-    
+
             res.status(200).json(products);
         } catch (error) {
             res.status(500).json({ error: error.message });
         }
     }
-    
+
 }
 
 module.exports = productController;
