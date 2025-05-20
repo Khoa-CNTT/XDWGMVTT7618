@@ -7,6 +7,7 @@ import TableManagementSystem from '../components/A_TableManagementSystem';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import UserManagementSystem from '../components/A_UserManagementSystem';
 import CustomerManagement from '../components/A_CustomerManagement';
+import { A_StatisticCounter } from '../components/A_StatisticCounter';
 export const AdminPage = () => {
 
     // Trạng thái để theo dõi trang đang được hiển thị
@@ -46,6 +47,7 @@ export const AdminPage = () => {
                         <Route path="tables-management" element={<TableManagementSystem />} />
                         <Route path="users-management" element={<UserManagementSystem />} />
                         <Route path="customers-management" element={<CustomerManagement />} />
+                        <Route path="statistic-counter" element={<A_StatisticCounter />} />
 
                     </Routes>
                 </main>

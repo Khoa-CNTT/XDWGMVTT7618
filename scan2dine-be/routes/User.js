@@ -10,7 +10,7 @@ router.post('/register', userController.register);
 router.post('/login', userController.login);
 router.post('/', userController.addUser);
 
-// ROUTES CÓ THAM SỐ — đặt SAU CÙNG
+// ROUTES CÓ THAM SỐ — đặt SAU CÙNGa
 router.patch('/:id', userController.updateUser);
 router.delete('/:id', userController.deleteUser);
 module.exports = router;

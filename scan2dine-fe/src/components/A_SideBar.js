@@ -65,7 +65,7 @@ export const A_SideBar = ({ setCurrentPage }) => {
                 {/* THỐNG KÊ */}
                 <div className="mt-4 px-4 py-2 text-xs font-semibold text-gray-400">THỐNG KÊ</div>
                 <div className="mt-2">
-                    <NavLink to="/admin/statisticsbycounter" className={linkClass}>
+                    <NavLink to="/admin/statistic-counter" className={linkClass}>
                         <FaStore size={16} className="mr-3" />
                         <span>Theo Quầy</span>
                     </NavLink>

@@ -178,13 +178,10 @@ export default function UserManagementSystem() {
                             <tr className="bg-gray-100 border-b border-gray-200">
                                 <th
                                     className="text-left py-3 px-4 font-semibold text-sm text-gray-600 cursor-pointer"
-                                    onClick={() => handleSort('id')}
                                 >
                                     <div className="flex items-center">
                                         STT
-                                        {sortField === 'id' && (
-                                            sortDirection === 'asc' ? <FaChevronUp size={16} /> : <FaChevronDown size={16} />
-                                        )}
+
                                     </div>
                                 </th>
                                 <th
@@ -234,13 +231,9 @@ export default function UserManagementSystem() {
                                 </th>
                                 <th
                                     className="text-left py-3 px-4 font-semibold text-sm text-gray-600 cursor-pointer"
-                                    onClick={() => handleSort('role_name')}
                                 >
                                     <div className="flex items-center">
                                         Vai Trò
-                                        {sortField === 'role_name' && (
-                                            sortDirection === 'asc' ? <FaChevronUp size={16} /> : <FaChevronDown size={16} />
-                                        )}
                                     </div>
                                 </th>
                                 <th className="text-left py-3 px-4 font-semibold text-sm text-gray-600">Thao tác</th>

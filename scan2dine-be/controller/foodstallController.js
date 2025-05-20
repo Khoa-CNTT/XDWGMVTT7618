@@ -1329,6 +1329,8 @@ const foodstallController = {
   getStatistics113: async (req, res) => {
     try {
       const { type, filter, value } = req.body;
+      console.log('Dữ liệu từ FE', type, filter, value);
+
 
       let startDate, endDate;
       const now = new Date();
