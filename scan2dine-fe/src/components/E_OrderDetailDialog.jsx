@@ -93,8 +93,11 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     // Hoàn thành đơn hàng
     const handleCompleteOrder = async () => {
         try {
-            await api.patch(`/s2d/table/${tableId}`, { status: '1' });
-            await api.patch(`/s2d/order/${tableInfo.orderId}`, { od_status: '3' });
+            await Promise.all([
+                api.patch(`/s2d/table/${tableId}`, { status: '1' }),
+                api.patch(`/s2d/order/${tableInfo.orderId}`, { od_status: '3' })
+            ]);
+            sessionStorage.removeItem("infoOrder");
             fetchInfoOrder();
             fetchTables();
             debouncedToast('Đơn hàng hoàn thành!', 'success');
@@ -121,6 +124,7 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     const handleCancel = async () => {
         try {
             await api.delete(`/s2d/order/removestatus/${tableInfo.orderId}`);
+            sessionStorage.removeItem("infoOrder");
             fetchInfoOrder();
             fetchTables();
             debouncedToast('Đã hủy đơn hàng!', 'success');

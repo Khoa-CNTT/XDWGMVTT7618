@@ -3,6 +3,9 @@ import { MdPerson, MdRestaurantMenu, MdHistory, MdNotifications, MdSettings, } f
 import { FaSearch, FaUserPlus, FaQrcode, FaFileAlt, FaEdit, FaTrashAlt, FaCheck, FaTimes, FaSortAmountDown, FaEllipsisV } from 'react-icons/fa';
 import api from '../server/api';
 import ToggleSwitch from './ToggleSwitch';
+import Swal from 'sweetalert2';
+
+
 
 export default function CustomerManagement() {
 
@@ -51,51 +54,22 @@ export default function CustomerManagement() {
 
 
 
-    const handleToggle = (_id, newStatus) => {
+    const handleToggle = async (_id, newStatus) => {
         const updated = customers.map((customer) =>
             customer.customer_id === _id ? { ...customer, status: newStatus } : customer
         );
         setCustomers(updated);
 
-        // Gọi API cập nhật nếu cần
-        console.log(`Khách hàng ${customers.customer_id} -> status = ${newStatus}`);
-    };
-
-    const handleAddCustomer = () => {
-        if (!newCustomer.name || !newCustomer.phone) return;
-
-        const newId = customers.length > 0 ? Math.max(...customers.map(c => c.id)) + 1 : 1;
-        const customerToAdd = {
-            ...newCustomer,
-            id: newId,
-            visits: 0,
-            totalSpent: 0,
-            lastVisit: new Date().toISOString().split('T')[0],
-            status: 'active'
-        };
-
-        setCustomers([...customers, customerToAdd]);
-        setNewCustomer({ name: '', phone: '', email: '' });
-        setIsAddingCustomer(false);
-    };
-
-    const handleEditSave = () => {
-        setCustomers(customers.map(c => c.id === editingCustomer.id ? editingCustomer : c));
-        setEditingCustomer(null);
-    };
-
-    const handleDeleteCustomer = (id) => {
-        setCustomers(customers.filter(c => c.id !== id));
-        setShowDeleteConfirm(null);
-    };
-
-    const toggleSelectCustomer = (id) => {
-        if (selectedCustomers.includes(id)) {
-            setSelectedCustomers(selectedCustomers.filter(cId => cId !== id));
-        } else {
-            setSelectedCustomers([...selectedCustomers, id]);
+        try {
+            await api.patch(`/s2d/customer/${_id}`, {
+                status: newStatus,
+            });
+            console.log(`Cập nhật trạng thái khách hàng ${_id} -> ${newStatus === "1" ? "Bị chặn" : "Hoạt động"}`);
+        } catch (error) {
+            console.error('Lỗi khi cập nhật trạng thái:', error);
         }
     };
+
 
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
@@ -156,20 +130,9 @@ export default function CustomerManagement() {
                         <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                                 <tr>
-                                    {/* <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        <input
-                                            type="checkbox"
-                                            className="h-4 w-4 text-blue-600 rounded"
-                                            onChange={() => {
-                                                if (selectedCustomers.length === filteredCustomers.length) {
-                                                    setSelectedCustomers([]);
-                                                } else {
-                                                    setSelectedCustomers(filteredCustomers.map(c => c.id));
-                                                }
-                                            }}
-                                            checked={selectedCustomers.length === filteredCustomers.length && filteredCustomers.length > 0}
-                                        />
-                                    </th> */}
+                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                        STT
+                                    </th>
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Khách hàng
                                     </th>
@@ -192,16 +155,11 @@ export default function CustomerManagement() {
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
-                                {filteredCustomers.map((customer) => (
+                                {filteredCustomers.map((customer, index) => (
                                     <tr key={customer.customer_id} className="hover:bg-gray-50">
-                                        {/* <td className="px-6 py-4 whitespace-nowrap">
-                                            <input
-                                                type="checkbox"
-                                                className="h-4 w-4 text-blue-600 rounded"
-                                                checked={selectedCustomers.includes(customer.customer_id)}
-                                                onChange={() => toggleSelectCustomer(customer.customer_id)}
-                                            />
-                                        </td> */}
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                            {index + 1}
+                                        </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center">
                                                 <div className="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
@@ -229,7 +187,34 @@ export default function CustomerManagement() {
                                         <td className="px-6 py-4 whitespace-nowrap justify-center items-center text-sm font-medium">
                                             <ToggleSwitch
                                                 status={customer.status}
-                                                onToggle={(newStatus) => handleToggle(customer.customer_id, newStatus)}></ToggleSwitch>
+                                                onToggle={(newStatus) => {
+                                                    if (newStatus === "1") {
+                                                        // CHẶN khách hàng → cần xác nhận
+                                                        Swal.fire({
+                                                            title: 'Xác nhận chặn khách hàng',
+                                                            text: `Bạn có chắc chắn muốn chặn "${customer.name}" không?`,
+                                                            icon: 'warning',
+                                                            showCancelButton: true,
+                                                            confirmButtonColor: '#d33',
+                                                            cancelButtonColor: '#3085d6',
+                                                            confirmButtonText: 'Chặn',
+                                                            cancelButtonText: 'Huỷ'
+                                                        }).then((result) => {
+                                                            if (result.isConfirmed) {
+                                                                handleToggle(customer.customer_id, newStatus);
+                                                                Swal.fire('Đã chặn!', 'Khách hàng đã bị chặn.', 'success');
+                                                            }
+                                                        });
+                                                    } else {
+                                                        // BỎ CHẶN → không cần xác nhận
+                                                        handleToggle(customer.customer_id, newStatus);
+                                                    }
+                                                }}
+                                            />
+
+
+
+
                                         </td>
                                     </tr>
                                 ))}
@@ -250,151 +235,18 @@ export default function CustomerManagement() {
                         <div className="text-sm text-gray-700">
                             Hiển thị <span className="font-medium">{filteredCustomers.length}</span> trong tổng số <span className="font-medium">{customers.length}</span> khách hàng
                         </div>
-                        <div className="flex space-x-2">
+                        {/* <div className="flex space-x-2">
                             <button className="px-4 py-2 border rounded-md bg-white hover:bg-gray-50">Trước</button>
                             <button className="px-4 py-2 border rounded-md bg-blue-600 text-white">1</button>
                             <button className="px-4 py-2 border rounded-md bg-white hover:bg-gray-50">2</button>
                             <button className="px-4 py-2 border rounded-md bg-white hover:bg-gray-50">3</button>
                             <button className="px-4 py-2 border rounded-md bg-white hover:bg-gray-50">Sau</button>
-                        </div>
+                        </div> */}
                     </div>
                 </main>
             </div>
 
-            {/* Add Customer Modal */}
-            {isAddingCustomer && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold">Thêm khách hàng mới</h2>
-                            <button onClick={() => setIsAddingCustomer(false)} className="text-gray-500 hover:text-gray-700">
-                                <FaTimes className="h-5 w-5" />
-                            </button>
-                        </div>
 
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Họ tên</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={newCustomer.name}
-                                    onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={newCustomer.phone}
-                                    onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                <input
-                                    type="email"
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={newCustomer.email}
-                                    onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                                />
-                            </div>
-                        </div>
-
-                        <div className="mt-6 flex justify-end space-x-3">
-                            <button
-                                onClick={() => setIsAddingCustomer(false)}
-                                className="px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
-                            >
-                                Hủy
-                            </button>
-                            <button
-                                onClick={handleAddCustomer}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-                                disabled={!newCustomer.name || !newCustomer.phone}
-                            >
-                                Thêm
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Customer Modal */}
-            {editingCustomer && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-xl font-bold">Chỉnh sửa thông tin khách hàng</h2>
-                            <button onClick={() => setEditingCustomer(null)} className="text-gray-500 hover:text-gray-700">
-                                <FaTimes className="h-5 w-5" />
-                            </button>
-                        </div>
-
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Họ tên</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={editingCustomer.name}
-                                    onChange={(e) => setEditingCustomer({ ...editingCustomer, name: e.target.value })}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Số điện thoại</label>
-                                <input
-                                    type="text"
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={editingCustomer.phone}
-                                    onChange={(e) => setEditingCustomer({ ...editingCustomer, phone: e.target.value })}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                                <input
-                                    type="email"
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={editingCustomer.email}
-                                    onChange={(e) => setEditingCustomer({ ...editingCustomer, email: e.target.value })}
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Trạng thái</label>
-                                <select
-                                    className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    value={editingCustomer.status}
-                                    onChange={(e) => setEditingCustomer({ ...editingCustomer, status: e.target.value })}
-                                >
-                                    <option value="active">Hoạt động</option>
-                                    <option value="inactive">Không hoạt động</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 flex justify-end space-x-3">
-                            <button
-                                onClick={() => setEditingCustomer(null)}
-                                className="px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
-                            >
-                                Hủy
-                            </button>
-                            <button
-                                onClick={handleEditSave}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
-                            >
-                                Lưu thay đổi
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

@@ -1,16 +1,11 @@
 import React, { useState, useEffect } from "react";
 
 const ToggleSwitch = ({ status, onToggle }) => {
-    const [isOn, setIsOn] = useState(status === "1");
-
-    useEffect(() => {
-        setIsOn(status === "1");
-    }, [status]);
+    const isOn = status === "1";
 
     const handleClick = () => {
-        const newStatus = isOn ? "0" : "1"; // Trả về string "0" hoặc "1"
-        setIsOn(!isOn);
-        onToggle?.(newStatus); // Callback với chuỗi
+        const newStatus = isOn ? "0" : "1";
+        onToggle?.(newStatus); // Giao toàn quyền điều khiển cho cha
     };
 
     return (
