@@ -237,6 +237,7 @@ checkCustomerByPhone: async (req, res) => {
             customer_id: '$_id',
             name: '$customerInfo.name',
             phone: '$customerInfo.phone',
+            status: '$customerInfo.status',
             totalOrders: 1,
             totalSpent: 1,
             latestOrderDate: '$latestOrder.od_date',
