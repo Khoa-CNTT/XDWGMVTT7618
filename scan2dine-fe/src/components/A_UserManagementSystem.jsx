@@ -17,7 +17,7 @@ export default function UserManagementSystem() {
 
     const [showModal, setShowModal] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [currentUser, setCurrentUser] = useState({ full_name: '', username: '', role_id: '67fccd928de55697fbc965a9' });
+    const [currentUser, setCurrentUser] = useState({ full_name: '', username: '', role_id: '' });
     const [searchTerm, setSearchTerm] = useState('');
     const [sortField, setSortField] = useState('id');
     const [sortDirection, setSortDirection] = useState('asc');
@@ -43,7 +43,7 @@ export default function UserManagementSystem() {
 
 
     const resetForm = () => {
-        setCurrentUser({ full_name: '', email: '', password: '', username: '', role_id: '67fccd928de55697fbc965a9' });
+        setCurrentUser({ full_name: '', email: '', password: '', username: '', role_id: '' });
         setIsEditing(false);
     };
 
@@ -143,6 +143,7 @@ export default function UserManagementSystem() {
         return roleMap[roleName] || { text: 'Unknown', color: 'bg-gray-100 text-gray-800' };
     };
 
+
     return (
         <div className=" mx-auto bg-white rounded-lg shadow">
             <div className="p-6">
@@ -164,7 +165,7 @@ export default function UserManagementSystem() {
                     </div>
                     <button
                         onClick={() => handleOpenModal()}
-                        className="w-full md:w-auto flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                        className="w-full md:w-auto flex items-center justify-center bg-primary hover:bg-red-500 text-white px-4 py-2 rounded-lg transition-colors"
                     >
                         <FaUserPlus size={18} className="mr-2" />
                         Thêm người dùng

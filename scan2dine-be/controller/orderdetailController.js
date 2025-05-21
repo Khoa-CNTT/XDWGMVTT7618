@@ -25,7 +25,7 @@ const orderdetailCOntroller = {
                     }
                 })
             }
-            
+
             return res.status(200).json({
                 message: upProduttoorderdetail.updated ? "Tăng số lượng sản phẩm trong đơn hàng " : "Thêm sản phẩm vào đơn hàng ",
                 order: upProduttoorderdetail
@@ -48,6 +48,10 @@ const orderdetailCOntroller = {
                         path: "stall_id",
                         select: "stall_name" // chỉ lấy tên quầy hàng
                     }
+                }
+                ).populate({
+                    path: "order",
+                    select: "od_status",
                 });
             console.log("OrderDetail:", getOrderdetail);
             if (getOrderdetail.length <= 0) return "không có order detail"
@@ -82,7 +86,7 @@ const orderdetailCOntroller = {
                     }
                 }
             );
-            
+
             res.status(200).json({ message: "Delete successfully", delete: deleteOrderdetail });
         } catch (error) {
             console.error("Error in DELETEREVIEW:", error);
@@ -136,7 +140,7 @@ const orderdetailCOntroller = {
             const updateOrderdetial = await Orderdetail.findByIdAndUpdate(req.params.id, req.body, {
                 new: true
             })
-            
+
             res.status(200).json({ message: "Update successfully", update: updateOrderdetial });
         } catch (error) {
             console.error("Error in DELETEREVIEW:", error);
@@ -144,7 +148,7 @@ const orderdetailCOntroller = {
         }
     },
     // quyền làm
-    updateOrderDetail : async (req, res) => {
+    updateOrderDetail: async (req, res) => {
         try {
             const { id } = req.params; // lấy _id của orderdetail từ URL
             const { quantity, status, note, total } = req.body;
@@ -179,7 +183,7 @@ const orderdetailCOntroller = {
             }
 
             const downQuantity = await decreaseOrderQuantity(order, products, quantity || 1);
-        
+
             // Nếu số lượng về 0 thì xoá luôn CartDetail và xoá liên kết
             if (downQuantity.quantity === 0) {
                 await Orderdetail.findByIdAndDelete(downQuantity._id);
@@ -208,7 +212,7 @@ const orderdetailCOntroller = {
             const { orderdetail } = req.params;
             const { order, newStatus } = req.body;
             const updateStatus = await updateOrderDetailStatus(order, orderdetail, newStatus);
-            
+
             return res.status(200).json({
                 message: "Cập nhật trạng thái thành công",
                 detail: updateStatus
@@ -234,7 +238,7 @@ const orderdetailCOntroller = {
                 return res.status(404).json({ message: "Không tìm thấy orderdetail để cập nhật" });
             }
 
-            
+
             return res.status(200).json({
                 message: "Cập nhật trạng thái thành công",
                 detail: confirmStatus
@@ -260,7 +264,7 @@ const orderdetailCOntroller = {
                 return res.status(404).json({ message: "Không tìm thấy orderdetail để cập nhật" });
             }
 
-            
+
             return res.status(200).json({
                 message: "Cập nhật trạng thái 'Hoàn thành' thành công",
                 detail: confirmStatus

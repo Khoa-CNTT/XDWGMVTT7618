@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { FaPlus, FaSearch, FaEdit, FaTrash } from 'react-icons/fa';
 import api from '../server/api';
@@ -19,7 +20,6 @@ const O_MenuManage = ({ stallId }) => {
   const [itemsPerPage] = useState(5);
 
   useEffect(() => {
-    // Save current view to localStorage
     localStorage.setItem('ownerCurrentView', 'menu');
     fetchProducts();
     fetchCategories();
@@ -29,6 +29,7 @@ const O_MenuManage = ({ stallId }) => {
   const fetchProducts = async () => {
     try {
       const response = await api.get('/s2d/product');
+      console.log('Products from API:', response.data); // Debug dữ liệu từ API
       setProducts(response.data);
     } catch (error) {
       console.error('Error fetching products:', error);
@@ -57,15 +58,12 @@ const O_MenuManage = ({ stallId }) => {
 
   const handleAddProduct = async (formData) => {
     try {
-      // Ensure formData is a FormData object
       if (!(formData instanceof FormData)) {
         throw new Error('formData is not a FormData object');
       }
 
-      // Append stall_id to the FormData
       formData.append('stall_id', stallId);
 
-      // Log FormData entries for debugging
       console.log('FormData entries:');
       for (let pair of formData.entries()) {
         console.log(`${pair[0]}: ${pair[1]}`);
@@ -115,8 +113,13 @@ const O_MenuManage = ({ stallId }) => {
         await fetchProducts();
         toast.success('Xóa món ăn thành công');
       } catch (error) {
-        console.error('Error deleting product:', error);
-        toast.error('Không thể xóa món ăn');
+        console.error('Error deleting product:', error.response?.data);
+        const backendMsg = (error.response?.data?.message || '').toLowerCase();
+        if (backendMsg.includes('đơn hàng') || backendMsg.includes('order')) {
+          toast.error('Không thể xóa sản phẩm vì đã tồn tại trong đơn hàng!');
+        } else {
+          toast.error('Không thể xóa món ăn');
+        }
       }
     }
   };
@@ -144,7 +147,6 @@ const O_MenuManage = ({ stallId }) => {
     return 0;
   });
 
-  // Pagination calculations
   const totalPages = Math.ceil(sortedProducts.length / itemsPerPage);
   const indexOfLastItem = currentPage * itemsPerPage;
   const indexOfFirstItem = indexOfLastItem - itemsPerPage;
@@ -223,6 +225,12 @@ const O_MenuManage = ({ stallId }) => {
               {currentItems.map((product, index) => {
                 const category = categories.find((c) => c._id === product.category);
 
+                // Debug giá trị isDisabled và orderdetail
+                console.log(`${product.pd_name}:`, {
+                  isDisabled: product.isDisabled,
+                  orderdetail: product.orderdetail,
+                });
+
                 return (
                   <tr key={product._id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -254,13 +262,31 @@ const O_MenuManage = ({ stallId }) => {
                             setSelectedProduct(product);
                             setIsEditModalOpen(true);
                           }}
-                          className="text-blue-600 hover:text-blue-900 transition-colors"
+                          disabled={product.isDisabled}
+                          className={`transition-colors ${product.isDisabled
+                              ? 'text-gray-400 cursor-not-allowed'
+                              : 'text-blue-600 hover:text-blue-900'
+                            }`}
+                          title={
+                            product.isDisabled
+                              ? 'Không thể chỉnh sửa do sản phẩm có trong đơn hàng chưa hoàn thành'
+                              : 'Chỉnh sửa'
+                          }
                         >
                           <FaEdit className="w-5 h-5" />
                         </button>
                         <button
                           onClick={() => handleDeleteProduct(product._id)}
-                          className="text-red-600 hover:text-red-900 transition-colors"
+                          disabled={product.isDisabled}
+                          className={`transition-colors ${product.isDisabled
+                              ? 'text-gray-400 cursor-not-allowed'
+                              : 'text-red-600 hover:text-red-900'
+                            }`}
+                          title={
+                            product.isDisabled
+                              ? 'Không thể xóa do sản phẩm có trong đơn hàng chưa hoàn thành'
+                              : 'Xóa'
+                          }
                         >
                           <FaTrash className="w-5 h-5" />
                         </button>
@@ -273,7 +299,6 @@ const O_MenuManage = ({ stallId }) => {
           </table>
         </div>
 
-        {/* Pagination */}
         <div className="flex justify-between items-center mt-4 px-4">
           <div className="text-sm text-gray-500">
             Hiển thị {indexOfFirstItem + 1} đến {Math.min(indexOfLastItem, sortedProducts.length)} trong tổng số{' '}
@@ -283,9 +308,8 @@ const O_MenuManage = ({ stallId }) => {
             <button
               onClick={prevPage}
               disabled={currentPage === 1}
-              className={`px-3 py-1 rounded border ${
-                currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
+              className={`px-3 py-1 rounded border ${currentPage === 1 ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-white text-gray-700 hover:bg-gray-50'
+                }`}
             >
               Trước
             </button>
@@ -294,9 +318,8 @@ const O_MenuManage = ({ stallId }) => {
               <button
                 key={index}
                 onClick={() => paginate(index + 1)}
-                className={`px-3 py-1 rounded border ${
-                  currentPage === index + 1 ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
-                }`}
+                className={`px-3 py-1 rounded border ${currentPage === index + 1 ? 'bg-blue-600 text-white' : 'bg-white text-gray-700 hover:bg-gray-50'
+                  }`}
               >
                 {index + 1}
               </button>
@@ -305,11 +328,10 @@ const O_MenuManage = ({ stallId }) => {
             <button
               onClick={nextPage}
               disabled={currentPage === totalPages}
-              className={`px-3 py-1 rounded border ${
-                currentPage === totalPages
+              className={`px-3 py-1 rounded border ${currentPage === totalPages
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-white text-gray-700 hover:bg-gray-50'
-              }`}
+                }`}
             >
               Sau
             </button>
