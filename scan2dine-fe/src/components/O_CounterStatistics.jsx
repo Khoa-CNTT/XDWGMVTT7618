@@ -39,6 +39,7 @@ const O_CounterStatistics = ({ stallId }) => {
   const [fromDate, setFromDate] = useState('');
   const [toDate, setToDate] = useState('');
   const [customStats, setCustomStats] = useState(null);
+  const [dateError, setDateError] = useState('');
 
   const [filteredData, setFilteredData] = useState({
     total_orders: 0,
@@ -401,22 +402,28 @@ const O_CounterStatistics = ({ stallId }) => {
 
   const handleCustomRange = async () => {
     if (!fromDate || !toDate) {
-      setError('Vui lòng chọn đủ ngày bắt đầu và kết thúc!');
+      alert('Vui lòng chọn đủ ngày bắt đầu và kết thúc!');
       return;
     }
+
+    if (fromDate > toDate) {
+      alert('"Từ ngày" không được lớn hơn "Đến ngày".');
+      return;
+    }
+
     setLoading(true);
-    setError(null);
+
     try {
-      // You need to implement this API in your backend
       const res = await fetchOrderStats(stallId, fromDate, toDate);
       console.log('Custom range API response:', res);
       setCustomStats(res);
-      setLoading(false);
     } catch (err) {
-      setError('Không thể lấy dữ liệu cho khoảng ngày này!');
+      alert('Không thể lấy dữ liệu cho khoảng ngày này!');
+    } finally {
       setLoading(false);
     }
   };
+  
   if (loading) return <div className="p-4 text-center">Đang tải dữ liệu...</div>;
   if (error) return <div className="p-4 text-center text-red-500">Lỗi: {error}</div>;
 
@@ -503,6 +510,7 @@ const O_CounterStatistics = ({ stallId }) => {
           >
             Xem thống kê
           </button>
+
         </div>
       )}
 
