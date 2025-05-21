@@ -235,33 +235,35 @@ const ReviewProduct = () => {
                 ) : orders.length === 0 ? (
                     <div className="text-center py-8">Không có đơn hàng nào để đánh giá.</div>
                 ) : selectedOrderIdx === null ? (
-                    <div className="space-y-4 mt-4">
-                        {orders.map((order, idx) => (
-                            <div
-                                key={order._id || idx}
-                                className="bg-white rounded-xl shadow border border-gray-200 cursor-pointer hover:shadow-lg transition"
-                                onClick={() => setSelectedOrderIdx(idx)}
-                            >
-                                <div className="flex items-center justify-between p-4 border-b">
-                                    <div>
-                                        <div className="font-semibold text-base text-primary">Mã đơn: <span className="text-black">{order._id}</span></div>
-                                        <div className="text-xs text-gray-500 mt-1">
-                                            Ngày: {order.od_date ? new Date(order.od_date).toLocaleString() : ''}
+                    <div className="bg-gray-100 p-2 rounded-lg">
+                        <div className="space-y-2">
+                            {orders.map((order, idx) => (
+                                <div
+                                    key={order._id || idx}
+                                    className="bg-white rounded-lg shadow border border-gray-200 cursor-pointer hover:shadow-lg transition mb-2 p-3"
+                                    onClick={() => setSelectedOrderIdx(idx)}
+                                >
+                                    <div className="flex items-center justify-between p-2 border-b">
+                                        <div>
+                                            <div className="font-semibold text-base text-primary">Mã đơn: <span className="text-black">{order._id}</span></div>
+                                            <div className="text-xs text-gray-500 mt-1">
+                                                Ngày: {order.od_date ? new Date(order.od_date).toLocaleString() : ''}
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-green-600 font-semibold text-sm mb-1">
+                                                {reviewedOrders.includes(order._id) ? 'Đã đánh giá' : 'Hoàn thành'}
+                                            </span>
+                                            <span className="text-xs text-gray-400">{order.orderdetail?.length || 0} món</span>
                                         </div>
                                     </div>
-                                    <div className="flex flex-col items-end">
-                                        <span className="text-green-600 font-semibold text-sm mb-1">
-                                            {reviewedOrders.includes(order._id) ? 'Đã đánh giá' : 'Hoàn thành'}
-                                        </span>
-                                        <span className="text-xs text-gray-400">{order.orderdetail?.length || 0} món</span>
+                                    <div className="p-2 flex justify-between items-center">
+                                        <div className="font-semibold">Tổng tiền:</div>
+                                        <div className="font-bold text-lg text-primary">{formatCurrency(order.total_amount || order.total || 0)}</div>
                                     </div>
                                 </div>
-                                <div className="p-4 flex justify-between items-center">
-                                    <div className="font-semibold">Tổng tiền:</div>
-                                    <div className="font-bold text-lg text-primary">{formatCurrency(order.total_amount || order.total || 0)}</div>
-                                </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 ) : (
                     <div className="bg-white rounded-xl shadow border border-gray-200 mt-4">

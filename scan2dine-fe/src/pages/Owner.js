@@ -5,7 +5,7 @@ import O_OrderManage from '../components/O_OrderManage';
 import O_MenuManage from '../components/O_MenuManage';
 import api from '../server/api';
 import O_CounterStatistics from '../components/O_CounterStatistics';
-import { FaHome, FaClipboardList, FaUtensils, FaSignOutAlt } from 'react-icons/fa';
+import { FaHome, FaClipboardList, FaUtensils, FaSignOutAlt, FaPen } from 'react-icons/fa';
 
 export const Owner = () => {
   const navigate = useNavigate();
@@ -17,6 +17,7 @@ export const Owner = () => {
   const [editMode, setEditMode] = useState(false);
   const [inputStallName, setInputStallName] = useState('');
   const [foodstalls, setFoodstalls] = useState([]);
+  const [inputStallLocation, setInputStallLocation] = useState('');
 
   useEffect(() => {
     const fetchStallInfo = async () => {
@@ -46,9 +47,11 @@ export const Owner = () => {
         if (userStall) {
           setStallName(userStall.stall_name);
           setCurrentStallId(userStall._id);
+          setInputStallLocation(userStall.location || '');
         } else {
           setStallName('Chưa có quầy được chỉ định');
           setCurrentStallId(null);
+          setInputStallLocation('');
         }
       } catch (error) {
         console.error('Error fetching stall info:', error);
@@ -65,7 +68,6 @@ export const Owner = () => {
     localStorage.setItem('ownerCurrentView', 'dashboard');
   };
 
-
   const handleConfirmStallName = async () => {
     // Tìm lại đúng quầy của user (user là mảng)
     const foundStall = foodstalls.find(stall =>
@@ -76,7 +78,8 @@ export const Owner = () => {
     if (foundStall && inputStallName.trim()) {
       try {
         await api.put(`/s2d/foodstall/${foundStall._id}`, {
-          stall_name: inputStallName.trim()
+          stall_name: inputStallName.trim(),
+          location: inputStallLocation.trim()
         });
         const response = await api.get('/s2d/foodstall');
         const updatedFoodstalls = response.data;
@@ -85,15 +88,15 @@ export const Owner = () => {
         const updatedStall = updatedFoodstalls.find(stall => stall._id === foundStall._id);
         setStallName(updatedStall?.stall_name || inputStallName.trim());
         setCurrentStallId(updatedStall?._id || foundStall._id);
+        setInputStallLocation(updatedStall?.location || inputStallLocation.trim());
         setEditMode(false);
       } catch (error) {
-        alert('Cập nhật tên quầy thất bại!');
+        alert('Cập nhật tên quầy/thông tin thất bại!');
       }
     } else {
       alert('Không tìm thấy quầy hoặc tên quầy không hợp lệ!');
     }
   };
-
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -113,7 +116,7 @@ export const Owner = () => {
               setCurrentView('dashboard');
               localStorage.setItem('ownerCurrentView', 'dashboard');
             }}
-            className={`w-full flex items-center p-2 rounded-lg transition hover:bg-gray-800 ${currentView === 'dashboard' ? 'bg-gray-800' : ''}`}
+            className={`w-full flex items-center p-2 rounded-lg transition hover:bg-gray-800 ${currentView === 'dashboard' ? 'bg-primary' : ''}`}
           >
             <FaHome className="mr-2" /> Thống kê tổng quan
           </button>
@@ -127,7 +130,7 @@ export const Owner = () => {
                 setCurrentView('orders');
                 localStorage.setItem('ownerCurrentView', 'orders');
               }}
-              className={`w-full flex items-center p-2 rounded-lg transition hover:bg-gray-800 ${currentView === 'orders' ? 'bg-gray-800' : ''}`}
+              className={`w-full flex items-center p-2 rounded-lg transition hover:bg-gray-800 ${currentView === 'orders' ? 'bg-primary' : ''}`}
             >
               <FaClipboardList className="mr-2" /> Đơn hàng
             </button>
@@ -136,7 +139,7 @@ export const Owner = () => {
                 setCurrentView('menu');
                 localStorage.setItem('ownerCurrentView', 'menu');
               }}
-              className={`w-full flex items-center p-2 rounded-lg transition hover:bg-gray-800 ${currentView === 'menu' ? 'bg-red-700' : ''}`}
+              className={`w-full flex items-center p-2 rounded-lg transition hover:bg-gray-800 ${currentView === 'menu' ? 'bg-primary' : ''}`}
             >
               <FaUtensils className="mr-2" /> Thực đơn
             </button>
@@ -158,22 +161,21 @@ export const Owner = () => {
         {/* Header */}
         <header className="w-full px-6 py-4 bg-white border-b shadow-sm flex justify-center items-center">
           <div className='text-center'>
-            <span className="font-bold text-lg text-primary">
+            <span className="font-bold text-lg text-primary flex items-center justify-center">
               Xin chào, {stallName}!
-              {/* Only show edit button if stallName is default */}
               {!editMode && (
-                (stallName === 'Trống' || stallName === 'Chưa có tên quầy' || stallName === 'Chưa có quầy được chỉ định') && (
-                  <button
-                    className="ml-2 px-2 py-1 text-xs bg-blue-500 text-white rounded"
-                    onClick={() => setEditMode(true)}
-                  >
-                    Sửa
-                  </button>
-                )
+                <button
+                className=" p-2 rounded-full hover:bg-gray-100 flex items-center justify-center transition"
+                style={{ verticalAlign: 'middle' }}
+                onClick={() => setEditMode(true)}
+                title="Chỉnh sửa thông tin quầy"
+              >
+                <FaPen color="text-primary" />
+              </button>
               )}
             </span>
             {editMode && (
-              <div className="mt-2 flex justify-center items-center">
+              <div className="mt-2 flex flex-col justify-center items-center gap-2">
                 <input
                   type="text"
                   className="border px-2 py-1 rounded mr-2"
@@ -181,18 +183,27 @@ export const Owner = () => {
                   value={inputStallName}
                   onChange={e => setInputStallName(e.target.value)}
                 />
-                <button
-                  className="px-2 py-1 bg-green-500 text-white rounded mr-2"
-                  onClick={handleConfirmStallName}
-                >
-                  Xác nhận
-                </button>
-                <button
-                  className="px-2 py-1 bg-gray-400 text-white rounded"
-                  onClick={() => setEditMode(false)}
-                >
-                  Hủy
-                </button>
+                <input
+                  type="text"
+                  className="border px-2 py-1 rounded mr-2"
+                  placeholder="Nhập vị trí quầy..."
+                  value={inputStallLocation}
+                  onChange={e => setInputStallLocation(e.target.value)}
+                />
+                <div>
+                  <button
+                    className="px-2 py-1 bg-green-500 text-white rounded mr-2"
+                    onClick={handleConfirmStallName}
+                  >
+                    Xác nhận
+                  </button>
+                  <button
+                    className="px-2 py-1 bg-gray-400 text-white rounded"
+                    onClick={() => setEditMode(false)}
+                  >
+                    Hủy
+                  </button>
+                </div>
               </div>
             )}
           </div>

@@ -30,11 +30,27 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     const fetchInfoOrder = useCallback(async () => {
         try {
             const res = await api.get(`/s2d/table/current/${tableId}`);
+            // Kiểm tra nếu không có đơn hợp lệ
+            if (!res.data.orders || res.data.orders.length === 0) {
+                setTableInfo(null);
+                setOrderItems([]);
+                setError('Bàn trống.');
+                return;
+            }
             const order = res.data.orders[0];
+            // Nếu đơn đã bị hủy (ví dụ: kiểm tra trạng thái đơn)
+            if (order.od_status === '4' || order.isCanceled) { // Tùy vào API trả về
+                setTableInfo(null);
+                setOrderItems([]);
+                setError('Bàn trống.');
+                return;
+            }
             setTableInfo(order);
             setOrderItems(order.products);
             setError(null);
         } catch (error) {
+            setTableInfo(null);
+            setOrderItems([]);
             setError('Bàn trống.');
         }
     }, [tableId]);
@@ -98,6 +114,7 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
             fetchInfoOrder();
             fetchTables();
             debouncedToast('Đơn hàng hoàn thành!', 'success');
+            onClose();
         } catch (error) {
             console.error('Lỗi hoàn thành đơn hàng:', error);
             debouncedToast('Hoàn thành đơn hàng thất bại!', 'error');
@@ -124,6 +141,7 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
             fetchInfoOrder();
             fetchTables();
             debouncedToast('Đã hủy đơn hàng!', 'success');
+            onClose();
         } catch (error) {
             console.error('Lỗi hủy đơn hàng:', error);
             debouncedToast('Hủy đơn hàng thất bại!', 'error');
