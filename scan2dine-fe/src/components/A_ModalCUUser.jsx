@@ -1,7 +1,7 @@
-
 import React, { useEffect, useState } from 'react'
 import { FaCheck } from 'react-icons/fa';
 import { MdClose } from "react-icons/md";
+
 export const A_ModalCUUser = ({
     isEditing,
     currentUser,
@@ -9,10 +9,49 @@ export const A_ModalCUUser = ({
     handleInputChange,
     handleSubmit,
 }) => {
+    // State để lưu trữ thông báo lỗi
+    const [errors, setErrors] = useState({});
 
-    //hàm chứa dữ liệu role
-    const roles = [{ _id: "67fccd928de55697fbc965a9", role_name: "1" }, { _id: "67fdd1582dea67c40c432609", role_name: "2" }, { _id: "6801d910e28d9b75cccdeffa", role_name: "3" }]
+    // Hàm chứa dữ liệu role
+    const roles = [
+        { _id: "67fccd928de55697fbc965a9", role_name: "1" },
+        { _id: "67fdd1582dea67c40c432609", role_name: "2" },
+        { _id: "6801d910e28d9b75cccdeffa", role_name: "3" }
+    ];
 
+    // Hàm kiểm tra dữ liệu đầu vào
+    const validateForm = () => {
+        const newErrors = {};
+        if (!currentUser.full_name?.trim()) {
+            newErrors.full_name = "Họ và tên là bắt buộc";
+        }
+        if (!currentUser.email?.trim()) {
+            newErrors.email = "Email là bắt buộc";
+        } else if (!/\S+@\S+\.\S+/.test(currentUser.email)) {
+            newErrors.email = "Email không hợp lệ";
+        }
+        if (!isEditing && !currentUser.username?.trim()) {
+            newErrors.username = "Tên đăng nhập là bắt buộc";
+        }
+        if (!isEditing && !currentUser.password?.trim()) {
+            newErrors.password = "Mật khẩu là bắt buộc";
+        }
+        if (!currentUser.role_id) {
+            newErrors.role_id = "Vui lòng chọn một vai trò";
+        }
+        return newErrors;
+    };
+
+    // Hàm xử lý khi submit
+    const onSubmit = () => {
+        const validationErrors = validateForm();
+        if (Object.keys(validationErrors).length > 0) {
+            setErrors(validationErrors);
+            return;
+        }
+        setErrors({});
+        handleSubmit();
+    };
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -32,11 +71,12 @@ export const A_ModalCUUser = ({
                         <input
                             type="text"
                             name="full_name"
-                            value={currentUser.full_name}
+                            value={currentUser.full_name || ''}
                             onChange={handleInputChange}
                             placeholder="Nhập họ và tên"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className={`w-full px-3 py-2 border ${errors.full_name ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                         />
+                        {errors.full_name && <p className="text-red-500 text-sm mt-1">{errors.full_name}</p>}
                     </div>
 
                     <div>
@@ -44,50 +84,51 @@ export const A_ModalCUUser = ({
                         <input
                             type="email"
                             name="email"
-                            value={currentUser.email}
+                            value={currentUser.email || ''}
                             onChange={handleInputChange}
                             placeholder="Nhập email"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className={`w-full px-3 py-2 border ${errors.email ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                         />
+                        {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email}</p>}
                     </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Tên đăng nhập</label>
                         <input
                             type="text"
                             name="username"
-                            value={currentUser.username}
+                            value={currentUser.username || ''}
                             onChange={handleInputChange}
                             placeholder="Nhập username"
                             disabled={isEditing}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className={`w-full px-3 py-2 border ${errors.username ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                         />
+                        {errors.username && <p className="text-red-500 text-sm mt-1">{errors.username}</p>}
                     </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
                         <input
                             type="password"
                             name="password"
-                            value={currentUser.password}
+                            value={currentUser.password || ''}
                             onChange={handleInputChange}
                             placeholder="Nhập mật khẩu"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className={`w-full px-3 py-2 border ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                         />
+                        {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password}</p>}
                     </div>
-
-
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Vai trò</label>
                         <select
                             name="role_id"
-                            value={currentUser?.role_id || ""}
-                            onChange={handleInputChange}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={currentUser?.role_id || ""} onChange={handleInputChange}
+                            className={`w-full px-3 py-2 border ${errors.role_id ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                         >
+                            <option value="">Chọn vai trò</option>
                             {roles.map((role, index) => (
-                                <option key={index}
-                                    name="role_id"
-                                    value={role._id}>
+                                <option key={index} value={role._id}>
                                     {role.role_name === "1"
                                         ? "Nhân viên"
                                         : role.role_name === "2"
@@ -98,6 +139,7 @@ export const A_ModalCUUser = ({
                                 </option>
                             ))}
                         </select>
+                        {errors.role_id && <p className="text-red-500 text-sm mt-1">{errors.role_id}</p>}
                     </div>
 
                     <div className="flex justify-end space-x-3 mt-6">
@@ -108,7 +150,7 @@ export const A_ModalCUUser = ({
                             Hủy
                         </button>
                         <button
-                            onClick={handleSubmit}
+                            onClick={onSubmit}
                             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 flex items-center"
                         >
                             <FaCheck size={18} className="mr-1" />
@@ -116,7 +158,6 @@ export const A_ModalCUUser = ({
                         </button>
                     </div>
                 </div>
-
             </div>
         </div>
     )
