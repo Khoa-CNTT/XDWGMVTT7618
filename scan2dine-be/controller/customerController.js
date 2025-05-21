@@ -206,53 +206,128 @@ checkCustomerByPhone: async (req, res) => {
 },
 
   // Get customer statistics
-  getCustomerStatistics: async (req, res) => {
-    try {
-      const data = await Order.aggregate([
-        {
-          $sort: { _id: -1 } // Sort by _id descending (newest first)
-        },
-        {
-          $group: {
-            _id: '$customer',
-            totalOrders: { $sum: 1 },
-            totalSpent: { $sum: { $toDouble: '$total_amount' } },
-            latestOrder: { $first: '$$ROOT' }
-          }
-        },
-        {
-          $lookup: {
-            from: 'CUSTOMER', // Sửa 'CUSTOMER' thành 'customers' (tên collection thường là chữ thường)
-            localField: '_id',
-            foreignField: '_id',
-            as: 'customerInfo'
-          }
-        },
-        {
-          $unwind: '$customerInfo'
-        },
-        {
-          $project: {
-            _id: 0,
-            customer_id: '$_id',
-            name: '$customerInfo.name',
-            phone: '$customerInfo.phone',
-            status: '$customerInfo.status',
-            totalOrders: 1,
-            totalSpent: 1,
-            latestOrderDate: '$latestOrder.od_date',
-            latestOrderAmount: { $toDouble: '$latestOrder.total_amount' },
-            latestOrderNote: '$latestOrder.od_note'
+  // getCustomerStatistics: async (req, res) => {
+  //   try {
+  //     const data = await Order.aggregate([
+  //       {
+  //         $sort: { _id: -1 } // Sort by _id descending (newest first)
+  //       },
+  //       {
+  //         $group: {
+  //           _id: '$customer',
+  //           totalOrders: { $sum: 1 },
+  //           totalSpent: { $sum: { $toDouble: '$total_amount' } },
+  //           latestOrder: { $first: '$$ROOT' }
+  //         }
+  //       },
+  //       {
+  //         $lookup: {
+  //           from: 'CUSTOMER', // Sửa 'CUSTOMER' thành 'customers' (tên collection thường là chữ thường)
+  //           localField: '_id',
+  //           foreignField: '_id',
+  //           as: 'customerInfo'
+  //         }
+  //       },
+  //       {
+  //         $unwind: '$customerInfo'
+  //       },
+  //       {
+  //         $project: {
+  //           _id: 0,
+  //           customer_id: '$_id',
+  //           name: '$customerInfo.name',
+  //           phone: '$customerInfo.phone',
+  //           status: '$customerInfo.status',
+  //           totalOrders: 1,
+  //           totalSpent: 1,
+  //           latestOrderDate: '$latestOrder.od_date',
+  //           latestOrderAmount: { $toDouble: '$latestOrder.total_amount' },
+  //           latestOrderNote: '$latestOrder.od_note'
+  //         }
+  //       }
+  //     ]);
+
+  //     return res.status(200).json({ success: true, data });
+  //   } catch (error) {
+  //     console.error('Error in getCustomerStatistics:', error);
+  //     return res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  //   }
+  // }
+getCustomerStatistics: async (req, res) => {
+  try {
+    const data = await Customer.aggregate([
+      {
+        $lookup: {
+          from: Order.collection.collectionName, // Lấy đúng tên collection 'orders'
+          localField: '_id',
+          foreignField: 'customer',
+          as: 'orders'
+        }
+      },
+      {
+        $addFields: {
+          totalOrders: { $size: '$orders' },
+          totalSpent: {
+            $sum: {
+              $map: {
+                input: '$orders',
+                as: 'order',
+                in: { $toDouble: '$$order.total_amount' }
+              }
+            }
+          },
+          latestOrder: {
+            $arrayElemAt: [
+              {
+                $slice: [
+                  {
+                    $reverseArray: {
+                      $sortArray: {
+                        input: '$orders',
+                        sortBy: { _id: -1 }
+                      }
+                    }
+                  },
+                  1
+                ]
+              },
+              0
+            ]
           }
         }
-      ]);
+      },
+      {
+        $project: {
+          _id: 0,
+          customer_id: '$_id',
+          name: 1,
+          phone: 1,
+          status: 1,
+          totalOrders: 1,
+          totalSpent: 1,
+          latestOrderDate: '$latestOrder.od_date',
+          latestOrderAmount: {
+            $cond: {
+              if: '$latestOrder',
+              then: { $toDouble: '$latestOrder.total_amount' },
+              else: null
+            }
+          },
+          latestOrderNote: '$latestOrder.od_note'
+        }
+      }
+    ]);
 
-      return res.status(200).json({ success: true, data });
-    } catch (error) {
-      console.error('Error in getCustomerStatistics:', error);
-      return res.status(500).json({ success: false, message: 'Server error', error: error.message });
-    }
+    return res.status(200).json({ success: true, data });
+  } catch (error) {
+    console.error('Error in getCustomerStatistics:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
   }
+}
 };
 
 module.exports = customerController;
