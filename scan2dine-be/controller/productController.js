@@ -61,17 +61,43 @@ const productController = {
   //  GET ALL PRODUCT
   getAllProduct: async (req, res) => {
     try {
-      const products = await Product.find().populate({
-        path: "orderdetail",
-        match: { od_status: "3" }, // chỉ lấy các orderdetail đã hoàn thành
+      const products = await Product.find()
+        .populate({
+          path: "orderdetail",
+          populate: { path: "order" }, // Populate thêm Order để lấy od_status
+        })
+        .lean();
+
+      const productsWithFlags = products.map(product => {
+        // Nếu không có orderdetail, cho phép chỉnh sửa/xóa
+        if (!product.orderdetail || product.orderdetail.length === 0) {
+          return {
+            ...product,
+            isEditable: true,
+            isDisabled: false,
+          };
+        }
+
+        // Kiểm tra od_status từ Order thông qua Orderdetail
+        const hasCompletedOrder = product.orderdetail.some(detail =>
+          detail.order && detail.order.od_status === "3"
+        );
+        const hasPendingOrder = product.orderdetail.some(detail =>
+          detail.order && detail.order.od_status !== "3"
+        );
+
+        return {
+          ...product,
+          isEditable: hasCompletedOrder, // true nếu có đơn hàng hoàn thành (od_status = "3")
+          isDisabled: hasPendingOrder, // true nếu có đơn hàng chưa hoàn thành (od_status !== "3")
+        };
       });
-      res.status(200).json(products);
+
+      res.status(200).json(productsWithFlags);
     } catch (err) {
       res.status(500).json(err);
     }
   },
-
-
 
   updateProduct: async (req, res) => {
     try {
