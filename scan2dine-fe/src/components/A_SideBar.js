@@ -74,7 +74,7 @@ export const A_SideBar = ({ setCurrentPage }) => {
                         <FaHome size={16} className="mr-3" />
                         <span>Theo Món Ăn</span>
                     </NavLink>
-                    <NavLink to="/admin/revenue" className={linkClass}>
+                    <NavLink to="/admin/statistic-revenue" className={linkClass}>
                         <FaHome size={16} className="mr-3" />
                         <span>Doanh Thu</span>
                     </NavLink>

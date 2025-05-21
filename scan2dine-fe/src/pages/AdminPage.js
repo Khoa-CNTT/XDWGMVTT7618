@@ -9,6 +9,7 @@ import UserManagementSystem from '../components/A_UserManagementSystem';
 import CustomerManagement from '../components/A_CustomerManagement';
 import { A_StatisticCounter } from '../components/A_StatisticCounter';
 import { A_StatisticDish } from '../components/A_StatisticDish';
+import { A_StatisticRevenue } from '../components/A_StatisticRevenue';
 export const AdminPage = () => {
 
     // Trạng thái để theo dõi trang đang được hiển thị
@@ -53,6 +54,7 @@ export const AdminPage = () => {
                         <Route path="customers-management" element={<CustomerManagement />} />
                         <Route path="statistic-counter" element={<A_StatisticCounter />} />
                         <Route path="statistic-dish" element={<A_StatisticDish />} />
+                        <Route path="statistic-revenue" element={<A_StatisticRevenue />} />
 
 
                     </Routes>
