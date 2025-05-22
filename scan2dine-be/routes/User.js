@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 // router.get('/',userController.getAllUser);
 // ROUTES CỤ THỂ — đặt TRƯỚC
 router.get('/', userController.getAllUsers);
+router.get('/username', userController.getAllUserName);
 router.post('/register', userController.register);
 router.post('/login', userController.login);
 router.post('/', userController.addUser);
