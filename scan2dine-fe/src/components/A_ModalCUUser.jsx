@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { FaCheck } from 'react-icons/fa';
 import { MdClose } from "react-icons/md";
+import api from '../server/api';
 
 export const A_ModalCUUser = ({
     isEditing,
@@ -11,7 +12,20 @@ export const A_ModalCUUser = ({
 }) => {
     // State để lưu trữ thông báo lỗi
     const [errors, setErrors] = useState({});
+    const [listUsername, setListUsername] = useState([]);
 
+    useEffect(() => {
+        const fetchListUsername = async () => {
+            try {
+                const getList = await api.get('/s2d/user/username');
+                setListUsername(getList.data)
+
+            } catch (error) {
+                console.error('Lỗi khi tải danh mục sản phẩm:', error);
+            }
+        };
+        fetchListUsername();
+    }, []);
     // Hàm chứa dữ liệu role
     const roles = [
         { _id: "67fccd928de55697fbc965a9", role_name: "1" },
@@ -22,17 +36,45 @@ export const A_ModalCUUser = ({
     // Hàm kiểm tra dữ liệu đầu vào
     const validateForm = () => {
         const newErrors = {};
-        if (!currentUser.full_name?.trim()) {
+        //họ và tên
+        const fullName = currentUser.full_name?.trim() || '';
+        if (!fullName) {
             newErrors.full_name = "Họ và tên là bắt buộc";
+        } else if (fullName.length < 2 || fullName.length > 50) {
+            newErrors.full_name = "Họ và tên phải từ 2 đến 50 ký tự";
+        } else if (/\d/.test(fullName)) {
+            newErrors.full_name = "Họ và tên không được chứa số";
         }
+
+        //email
         if (!currentUser.email?.trim()) {
             newErrors.email = "Email là bắt buộc";
+        } else if (currentUser.email.length > 40) {
+            newErrors.email = "Email không được vượt quá 40 ký tự";
         } else if (!/\S+@\S+\.\S+/.test(currentUser.email)) {
             newErrors.email = "Email không hợp lệ";
         }
-        if (!isEditing && !currentUser.username?.trim()) {
+
+
+        //username
+        const username = currentUser.username?.trim() || '';
+
+        if (!isEditing && !username) {
             newErrors.username = "Tên đăng nhập là bắt buộc";
+        } else if (username.length < 4 || username.length > 30) {
+            newErrors.username = "Tên đăng nhập phải từ 4 đến 30 ký tự";
+        } else if (/\s/.test(username)) {
+            newErrors.username = "Tên đăng nhập không được chứa khoảng trắng";
+        } else if (!/^[a-zA-Z0-9._]+$/.test(username)) {
+            newErrors.username = "Tên đăng nhập không được chứa ký tự đặc biệt";
+        } else if (/^\d+$/.test(username)) {
+            newErrors.username = "Tên đăng nhập không được phép chỉ gồm số";
+
+        } else if (listUsername.includes(username)) {
+            newErrors.username = "Tên đăng nhập đã tồn tại, vui lòng chọn tên khác";
         }
+
+
         if (!isEditing && !currentUser.password?.trim()) {
             newErrors.password = "Mật khẩu là bắt buộc";
         }
@@ -67,7 +109,7 @@ export const A_ModalCUUser = ({
 
                 <div className="space-y-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Họ và tên <span className='text-red-600'>*</span></label>
                         <input
                             type="text"
                             name="full_name"
@@ -80,7 +122,7 @@ export const A_ModalCUUser = ({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className='text-red-600'>*</span></label>
                         <input
                             type="email"
                             name="email"
@@ -93,7 +135,7 @@ export const A_ModalCUUser = ({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Tên đăng nhập</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Tên đăng nhập <span className='text-red-600'>*</span></label>
                         <input
                             type="text"
                             name="username"
@@ -107,7 +149,7 @@ export const A_ModalCUUser = ({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Mật khẩu <span className='text-red-600'>*</span></label>
                         <input
                             type="password"
                             name="password"
@@ -120,7 +162,7 @@ export const A_ModalCUUser = ({
                     </div>
 
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Vai trò</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Vai trò <span className='text-red-600'>*</span></label>
                         <select
                             name="role_id"
                             value={currentUser?.role_id || ""} onChange={handleInputChange}

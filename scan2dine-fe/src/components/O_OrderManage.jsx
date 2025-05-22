@@ -20,6 +20,14 @@ const O_OrderManage = ({ stallId }) => {
 
     useEffect(() => {
         if (stallId) fetchOrders();
+        const handleStorage = (event) => {
+            if (event.key === 'owner-refresh') {
+                fetchOrders();
+            }
+        };
+
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
     }, [stallId]);
 
     // const fetchOrders = async () => {
@@ -112,16 +120,22 @@ const O_OrderManage = ({ stallId }) => {
                 await api.patch(`/s2d/orderdetail/confirm/prepare/${orderdetailId}`, {
                     order: orderId,
                 });
+                localStorage.setItem('order-refresh', Date.now());
+                localStorage.setItem('orderEmployee-refresh', Date.now());
             } else if (newStatus === '4') {
                 // Đã hoàn thành - gọi đúng API như backend bạn gửi
                 await api.patch(`/s2d/orderdetail/confirm/complete/${orderdetailId}`, {
                     order: orderId,
                 });
+                localStorage.setItem('order-refresh', Date.now());
+                localStorage.setItem('orderEmployee-refresh', Date.now());
             } else {
                 // Các trạng thái khác (nếu có)
                 await api.patch(`/s2d/orderdetail/newStatus/${orderdetailId}`, {
                     status: newStatus
                 });
+                localStorage.setItem('order-refresh', Date.now());
+                localStorage.setItem('orderEmployee-refresh', Date.now());
             }
 
             fetchOrders();
@@ -130,9 +144,11 @@ const O_OrderManage = ({ stallId }) => {
         }
     };
 
+
     const filteredOrders = orders.filter(order =>
         order.order_id.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
 
 
     const formatDateTime = (dateString) => {
@@ -161,17 +177,25 @@ const O_OrderManage = ({ stallId }) => {
                     <FaSearch className="absolute left-3 top-3 text-gray-400" />
                 </div>
                 <div className="space-y-2">
-                    {filteredOrders.map((order) => (
-                        <div
-                            key={order.order_id}
-                            onClick={() => setSelectedOrder(order)}
-                            className={`p-3 border rounded-lg cursor-pointer ${selectedOrder?.order_id === order.order_id ? 'bg-red-100 border-red-400' : 'hover:bg-gray-100'}`}
-                        >
-                            <div>Đơn #{order.order_id.slice(-6)}</div>
-                            <div className="text-sm text-gray-500">Bàn: {order.table_number}</div>
-                            <div className="text-sm">{renderStatusBadge(order.order_status)}</div>
-                        </div>
-                    ))}
+                    {filteredOrders.length > 0 ? (
+                        filteredOrders.map((order) => (
+                            <div
+                                key={order.order_id}
+                                onClick={() => setSelectedOrder(order)}
+                                className={`p-3 border rounded-lg cursor-pointer ${selectedOrder?.order_id === order.order_id
+                                    ? 'bg-red-100 border-red-400'
+                                    : 'hover:bg-gray-100'
+                                    }`}
+                            >
+                                <div>Đơn #{order.order_id.slice(-6)}</div>
+                                <div className="text-sm text-gray-500">Bàn: {order.table_number}</div>
+                                <div className="text-sm">{renderStatusBadge(order.order_status)}</div>
+                            </div>
+                        ))
+                    ) : (
+                        <div className="text-center text-gray-500 py-4">Không có đơn hàng</div>
+                    )}
+
                 </div>
             </div>
 
@@ -228,6 +252,10 @@ const O_OrderManage = ({ stallId }) => {
                                                         onClick={() => {
                                                             if (itemId) {
                                                                 updateOrderItemStatus(itemId, '3', selectedOrder.order_id);
+
+
+
+
                                                             } else {
                                                                 alert("Không tìm thấy ID của món ăn này!");
                                                             }

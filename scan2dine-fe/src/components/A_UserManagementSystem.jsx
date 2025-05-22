@@ -112,12 +112,19 @@ export default function UserManagementSystem() {
             setSortDirection('asc');
         }
     };
+    function normalizeString(str) {
+        if (typeof str !== "string") return ""; // hoặc str?.toString() nếu cần
+        return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    }
 
-    const filteredUsers = users.filter(user =>
-        user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        user.role_name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredUsers = users.filter(users => {
+        const normalizedSearch = normalizeString(searchTerm);
+        return (
+            normalizeString(users.full_name).includes(normalizedSearch) ||
+            normalizeString(users.username).includes(normalizedSearch) ||
+            normalizeString(users.role_name).includes(normalizedSearch)
+        );
+    });
 
     const sortedUsers = [...filteredUsers].sort((a, b) => {
         if (sortField === 'id') {

@@ -70,10 +70,19 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     // Load dữ liệu khi dialog mở
     useEffect(() => {
         if (isOpen && tableId) {
-            setLoading(true);
-            setTimeout(() => {
-                fetchInfoOrder().finally(() => setLoading(false));
-            }, 500);
+            fetchInfoOrder()
+            const handleStorage = (event) => {
+                if (event.key === 'orderEmployee-refresh') {
+                    fetchInfoOrder();
+                }
+            };
+
+            window.addEventListener('storage', handleStorage);
+            return () => window.removeEventListener('storage', handleStorage);
+            // setLoading(true);
+            // setTimeout(() => {
+            //     fetchInfoOrder().finally(() => setLoading(false));
+            // }, 500);
         }
     }, [isOpen, tableId, fetchInfoOrder]);
 
@@ -86,6 +95,9 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                     item.id === itemId ? { ...item, quantity: newQuantity } : item
                 )
             );
+            localStorage.setItem('order-refresh', Date.now());
+            localStorage.setItem('owner-refresh', Date.now());
+
             debouncedToast('Cập nhật số lượng thành công!', 'success');
         } catch (error) {
             console.error('Lỗi cập nhật số lượng:', error);
@@ -100,6 +112,8 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
             setOrderItems((prevItems) => prevItems.filter((item) => item.id !== itemId));
             debouncedToast('Đã xóa sản phẩm!', 'success');
             fetchInfoOrder();
+            localStorage.setItem('order-refresh', Date.now());
+            localStorage.setItem('owner-refresh', Date.now());
         } catch (error) {
             console.error('Lỗi xóa sản phẩm:', error);
             throw new Error('Xóa sản phẩm thất bại');
@@ -113,9 +127,13 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
                 api.patch(`/s2d/table/${tableId}`, { status: '1' }),
                 api.patch(`/s2d/order/${tableInfo.orderId}`, { od_status: '3' })
             ]);
-            sessionStorage.removeItem("infoOrder");
+            localStorage.removeItem("infoOrder");
             fetchInfoOrder();
             fetchTables();
+            localStorage.setItem('order-refresh', Date.now());
+            localStorage.setItem('owner-refresh', Date.now());
+
+
             debouncedToast('Đơn hàng hoàn thành!', 'success');
             onClose();
         } catch (error) {
@@ -130,6 +148,9 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
             await api.patch(`/s2d/order/confirm-all/${tableInfo.orderId}`);
             fetchInfoOrder();
             fetchTables();
+            localStorage.setItem('order-refresh', Date.now());
+            localStorage.setItem('owner-refresh', Date.now());
+
             debouncedToast('Xác nhận món thành công!', 'success');
         } catch (error) {
             console.error('Lỗi xác nhận:', error);
@@ -141,9 +162,11 @@ const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
     const handleCancel = async () => {
         try {
             await api.delete(`/s2d/order/removestatus/${tableInfo.orderId}`);
-            sessionStorage.removeItem("infoOrder");
+            localStorage.removeItem("infoOrder");
             fetchInfoOrder();
             fetchTables();
+            localStorage.setItem('order-refresh', Date.now());
+
             debouncedToast('Đã hủy đơn hàng!', 'success');
             onClose();
         } catch (error) {

@@ -106,9 +106,12 @@ const CartDetails = () => {
         idOrder: res.data.order._id
 
       }
-      sessionStorage.setItem('infoOrder', JSON.stringify(InfoOrder));
+      localStorage.setItem('infoOrder', JSON.stringify(InfoOrder));
 
       await api.patch(`/s2d/table/${customer.idTable}`, { status: '3' });
+      localStorage.setItem('employee-refresh', Date.now());
+      localStorage.setItem('orderEmployee-refresh', Date.now());
+
 
       // Cập nhật trạng thái bàn ngay trong giao diện (chắc chắn đã cập nhật thành công)
       // setOrderResult(res.data);

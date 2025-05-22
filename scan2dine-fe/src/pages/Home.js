@@ -15,6 +15,9 @@ import api from '../server/api';
 import { BiDish } from "react-icons/bi";
 import { useContext } from "react";
 import { AppContext } from "../components/AppContext";
+import Swal from 'sweetalert2';
+
+
 
 
 const Home = () => {
@@ -22,9 +25,14 @@ const Home = () => {
     const [showStaffForm, setShowStaffForm] = useState(false);
     const [showConfirmLogout, setShowConfirmLogout] = useState(false);
 
+
     //Hàm chạy fetchTable của nhân viên
     const { triggerEmployeeRefresh } = useContext(AppContext);
     const navigate = useNavigate();
+
+    //Có đơn hàng hay ko
+    const [haveOrder, setHaveOrder] = useState(false);
+
 
     //Hàm chuyển hướng đến trang menu
     const onNavigateToMenu = () => {
@@ -77,9 +85,11 @@ const Home = () => {
                 idTable: res.data.idTable,
                 idOrder: res.data.orders[0].orderId
             }
-            sessionStorage.setItem('infoOrder', JSON.stringify(infoOrder));
-        } catch (error) {
+            localStorage.setItem('infoOrder', JSON.stringify(infoOrder));
+            setHaveOrder(true)
 
+        } catch (error) {
+            setHaveOrder(false)
         }
     }
 
@@ -137,10 +147,20 @@ const Home = () => {
 
     const cancelCallStaff = async (idTable) => {
         try {
-            await api.patch(`/s2d/table/${idTable}`, {
-                status: '2',
-            })
-            localStorage.setItem('employee-refresh', Date.now()); setShowStaffForm(false)
+            if (haveOrder) {
+                await api.patch(`/s2d/table/${idTable}`, {
+                    status: '2',
+                })
+                localStorage.setItem('employee-refresh', Date.now()); setShowStaffForm(false)
+            }
+            else {
+                await api.patch(`/s2d/table/${idTable}`, {
+                    status: '1',
+                })
+                localStorage.setItem('employee-refresh', Date.now());
+                setShowStaffForm(false)
+            }
+
 
         } catch (error) {
 
@@ -165,6 +185,22 @@ const Home = () => {
         setIsLoggedIn(false);
         navigate(`/?table=${customer.table}&id=${customer.idTable}`);
     };
+
+    //Nút Thanh toán
+
+    const HandlePay = () => {
+        if (haveOrder) {
+            setShowPaymentForm(true);
+            callPayment(customer.idTable);
+        } else {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Chưa gọi món',
+                text: 'Bạn chưa gọi món. Hãy gọi món trước khi gọi thanh toán!',
+                confirmButtonText: 'OK'
+            });
+        }
+    }
 
     return (
         <div>
@@ -243,11 +279,7 @@ const Home = () => {
                                     src={imgBtnThanhToan}
                                     alt="Gọi thanh toán"
                                     className="w-full max-w-[250px] aspect-square rounded-lg shadow-md cursor-pointer hover:scale-105 transition-transform duration-200"
-                                    onClick={() => {
-                                        setShowPaymentForm(true);
-                                        callPayment(customer.idTable)
-                                    }
-                                    }
+                                    onClick={HandlePay}
                                 />
                             </div>
 

@@ -124,22 +124,53 @@ const O_MenuManage = ({ stallId }) => {
     }
   };
 
+  const normalizeText = (str) =>
+    str
+      .toLowerCase()
+      .trim()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
   const filteredProducts = products.filter((product) => {
     const productStallId =
-      typeof product.stall_id === 'object' && product.stall_id !== null
+      typeof product.stall_id === "object" && product.stall_id !== null
         ? product.stall_id._id
         : product.stall_id;
 
     const productCategoryId =
-      typeof product.category === 'object' && product.category !== null
+      typeof product.category === "object" && product.category !== null
         ? product.category._id
         : product.category;
 
     const matchesStall = productStallId === stallId;
-    const matchesSearch = product.pd_name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || productCategoryId === selectedCategory;
+
+    const productName = product.pd_name || "";
+    const matchesSearch = normalizeText(productName).includes(
+      normalizeText(searchTerm || "")
+    );
+
+    const matchesCategory =
+      selectedCategory === "all" || productCategoryId === selectedCategory;
+
     return matchesStall && matchesSearch && matchesCategory;
   });
+
+  // const filteredProducts = products.filter((product) => {
+  //   const productStallId =
+  //     typeof product.stall_id === 'object' && product.stall_id !== null
+  //       ? product.stall_id._id
+  //       : product.stall_id;
+
+  //   const productCategoryId =
+  //     typeof product.category === 'object' && product.category !== null
+  //       ? product.category._id
+  //       : product.category;
+
+  //   const matchesStall = productStallId === stallId;
+  //   const matchesSearch = product.pd_name.toLowerCase().includes(searchTerm.toLowerCase());
+  //   const matchesCategory = selectedCategory === 'all' || productCategoryId === selectedCategory;
+  //   return matchesStall && matchesSearch && matchesCategory;
+  // });
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
     if (priceSort === 'asc') return parseFloat(a.price) - parseFloat(b.price);
@@ -264,8 +295,8 @@ const O_MenuManage = ({ stallId }) => {
                           }}
                           disabled={product.isDisabled}
                           className={`transition-colors ${product.isDisabled
-                              ? 'text-gray-400 cursor-not-allowed'
-                              : 'text-blue-600 hover:text-blue-900'
+                            ? 'text-gray-400 cursor-not-allowed'
+                            : 'text-blue-600 hover:text-blue-900'
                             }`}
                           title={
                             product.isDisabled
@@ -279,8 +310,8 @@ const O_MenuManage = ({ stallId }) => {
                           onClick={() => handleDeleteProduct(product._id)}
                           disabled={product.isDisabled}
                           className={`transition-colors ${product.isDisabled
-                              ? 'text-gray-400 cursor-not-allowed'
-                              : 'text-red-600 hover:text-red-900'
+                            ? 'text-gray-400 cursor-not-allowed'
+                            : 'text-red-600 hover:text-red-900'
                             }`}
                           title={
                             product.isDisabled
@@ -329,8 +360,8 @@ const O_MenuManage = ({ stallId }) => {
               onClick={nextPage}
               disabled={currentPage === totalPages}
               className={`px-3 py-1 rounded border ${currentPage === totalPages
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-white text-gray-700 hover:bg-gray-50'
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-white text-gray-700 hover:bg-gray-50'
                 }`}
             >
               Sau
