@@ -25,7 +25,7 @@ const OrderDetail = () => {
         totalItems: 0,
     });
     const [showPaymentForm, setShowPaymentForm] = useState(false);
-    const InfoOrder = JSON.parse(sessionStorage.getItem('infoOrder'));
+    const InfoOrder = JSON.parse(localStorage.getItem('infoOrder'));
 
 
     // Debounce thông báo để tránh spam
@@ -38,14 +38,23 @@ const OrderDetail = () => {
 
     useEffect(() => {
         fetchOrderDetails();
+        const handleStorage = (event) => {
+            if (event.key === 'order-refresh') {
+                fetchOrderDetails();
+            }
+        };
+
+        window.addEventListener('storage', handleStorage);
+        return () => window.removeEventListener('storage', handleStorage);
     }, []);
+
 
 
     const fetchOrderDetails = useCallback(async () => {
 
 
         try {
-            setLoading(true);
+            // setLoading(true);
             setError(null);
 
             const { data: orderRes } = await api.get(`/s2d/order/${InfoOrder.idOrder}`);
@@ -108,6 +117,8 @@ const OrderDetail = () => {
         try {
             await api.patch(`/s2d/table/${InfoOrder.idTable}`, { status: '5' });
             debouncedToast('Yêu cầu thanh toán đã được gửi thành công!', 'success');
+            localStorage.setItem('employee-refresh', Date.now());
+
         } catch (error) {
             console.error('Lỗi khi yêu cầu thanh toán:', error);
             debouncedToast('Yêu cầu thanh toán thất bại!', 'error');

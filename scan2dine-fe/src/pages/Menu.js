@@ -8,6 +8,7 @@ import { PiScanBold } from "react-icons/pi";
 import { CategoryFilter } from '../components/C_CategoryFilter';
 import { useNavigate } from 'react-router-dom';
 import { useLocation } from 'react-router-dom';
+import TeachableComponent from '../components/TeachableComponent';
 
 
 export const Menu = () => {
@@ -80,10 +81,19 @@ export const Menu = () => {
     }, []);
 
     //Tìm kiếm món ăn
+    // const filteredMenuItems = menuItems.filter(item =>
+    //     (selectedCategory === 'all' || item.category === selectedCategory) &&
+    //     typeof item.pd_name === 'string' &&
+    //     item.pd_name.toLowerCase().includes(searchTerm.toLowerCase())
+    // );
+
+    const removeDiacritics = str =>
+        str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
     const filteredMenuItems = menuItems.filter(item =>
         (selectedCategory === 'all' || item.category === selectedCategory) &&
         typeof item.pd_name === 'string' &&
-        item.pd_name.toLowerCase().includes(searchTerm.toLowerCase())
+        removeDiacritics(item.pd_name).includes(removeDiacritics(searchTerm))
     );
 
     //Chức năng thêm vào giỏ hàng
@@ -173,18 +183,17 @@ export const Menu = () => {
         return cartItem ? cartItem.quantity : 0;
     };
 
-    const handleCameraClick = () => {
-        if (fileInputRef.current) {
-            fileInputRef.current.click();
-        }
-    };
-
     const handleImageChange = (event) => {
         const file = event.target.files[0];
         if (file) {
             // Xử lý file ảnh tại đây (ví dụ: gửi lên server, nhận diện món ăn, ...)
             console.log('Ảnh đã chọn:', file);
         }
+    };
+
+    const [showCamera, setShowCamera] = useState(false);
+    const handleCameraClick = () => {
+        setShowCamera(!showCamera); // Bật/tắt mô hình camera
     };
     return (
         <div>
@@ -208,15 +217,21 @@ export const Menu = () => {
                             onClick={handleCameraClick}
                         />
                         {/* Input file ẩn để mở camera */}
-                        <input
+                        {/* <input
                             type="file"
                             accept="image/*"
                             capture="environment"
                             ref={fileInputRef}
                             style={{ display: 'none' }}
                             onChange={handleImageChange}
-                        />
+                        /> */}
                     </div>
+                    {/* Camera sẽ hiển thị ở đây khi được bật */}
+                    {showCamera && (
+                        <div className="mt-4">
+                            <TeachableComponent />
+                        </div>
+                    )}
                 </div>
 
                 <CategoryFilter
