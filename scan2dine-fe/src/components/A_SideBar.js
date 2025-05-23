@@ -2,9 +2,9 @@ import React from 'react';
 import {
     FaUser,
     FaSignInAlt,
-    FaHome, FaStore
+    FaHome, FaStore, FaCoins
 } from 'react-icons/fa';
-import { MdTableRestaurant } from "react-icons/md";
+import { MdTableRestaurant, MdFastfood } from "react-icons/md";
 import { IoMdCash } from "react-icons/io";
 
 import { NavLink, useNavigate } from 'react-router-dom';
@@ -71,11 +71,11 @@ export const A_SideBar = ({ setCurrentPage }) => {
                     </NavLink>
 
                     <NavLink to="/admin/statistic-dish" className={linkClass}>
-                        <FaHome size={16} className="mr-3" />
+                        <MdFastfood size={16} className="mr-3" />
                         <span>Theo Món Ăn</span>
                     </NavLink>
                     <NavLink to="/admin/statistic-revenue" className={linkClass}>
-                        <FaHome size={16} className="mr-3" />
+                        <FaCoins size={16} className="mr-3" />
                         <span>Doanh Thu</span>
                     </NavLink>
                 </div>

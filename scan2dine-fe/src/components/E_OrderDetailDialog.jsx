@@ -6,7 +6,7 @@ import { E_ItemOrderDetail } from './E_ItemOrderDetail';
 import debounce from 'lodash/debounce'; // Dùng lodash để debounce thông báo
 
 const E_OrderDetailDialog = ({ tableId, isOpen, onClose, fetchTables }) => {
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [tableInfo, setTableInfo] = useState(null);
     const [orderItems, setOrderItems] = useState([]);
