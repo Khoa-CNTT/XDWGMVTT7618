@@ -9,6 +9,7 @@ import api from '../server/api';
 import { A_OneUser } from './A_OneUser';
 import { A_ModalCUUser } from './A_ModalCUUser';
 import ConfirmModal from './ConfirmModal';
+import Swal from 'sweetalert2';
 
 
 
@@ -76,32 +77,111 @@ export default function UserManagementSystem() {
 
 
     //
+    // const handleSubmit = async () => {
+    //     if (!currentUser.full_name || !currentUser.username) return;
+
+    //     try {
+    //         if (isEditing) {
+    //             await api.patch(`/s2d/user/${currentUser._id}`, currentUser);
+    //         } else {
+    //             await api.post('/s2d/user/register', currentUser);
+    //         }
+
+    //         fetchUser();
+    //         handleCloseModal();
+    //     } catch (error) {
+    //         console.error('Lỗi khi lưu người dùng:', error);
+    //     }
+    // };
+
     const handleSubmit = async () => {
         if (!currentUser.full_name || !currentUser.username) return;
 
         try {
             if (isEditing) {
                 await api.patch(`/s2d/user/${currentUser._id}`, currentUser);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Cập nhật thành công',
+                    text: 'Thông tin người dùng đã được cập nhật.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
             } else {
                 await api.post('/s2d/user/register', currentUser);
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Thêm mới thành công',
+                    text: 'Người dùng đã được tạo mới.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
             }
 
             fetchUser();
             handleCloseModal();
         } catch (error) {
             console.error('Lỗi khi lưu người dùng:', error);
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: 'Đã có lỗi xảy ra khi lưu người dùng!',
+                confirmButtonColor: '#d33'
+            });
         }
     };
 
+
+
+    // const handleDelete = async (id) => {
+    //     try {
+    //         await api.delete(`/s2d/user/${id}`);
+    //         fetchUser()
+    //     } catch (error) {
+
+    //     }
+    // };
 
     const handleDelete = async (id) => {
-        try {
-            await api.delete(`/s2d/user/${id}`);
-            fetchUser()
-        } catch (error) {
+        const result = await Swal.fire({
+            title: 'Bạn có chắc muốn xóa người dùng này?',
+            text: "Hành động này sẽ không thể hoàn tác!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Xóa',
+            cancelButtonText: 'Hủy'
+        });
 
+        if (result.isConfirmed) {
+            try {
+                await api.delete(`/s2d/user/${id}`);
+                fetchUser();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Đã xóa!',
+                    text: 'Người dùng đã được xóa thành công.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+            } catch (error) {
+                console.error(error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Không thể xóa người dùng!',
+                    confirmButtonColor: '#d33'
+                });
+            }
         }
     };
+
 
 
     const handleSort = (field) => {
@@ -259,6 +339,7 @@ export default function UserManagementSystem() {
                                         getRoleInfo={getRoleInfo}
                                         setShowConfirm={setShowConfirm}
                                         setUserToDelete={setUserToDelete}
+                                        userToDelete={userToDelete}
                                     />
                                 ))
                             ) : (
@@ -282,7 +363,7 @@ export default function UserManagementSystem() {
                     handleInputChange={handleInputChange}
                     handleSubmit={handleSubmit}
                 />)}
-            {showConfirm && (
+            {/* {showConfirm && (
                 <ConfirmModal
                     title="Xóa user"
                     message="Bạn có chắc chắn muốn xóa user này không?"
@@ -296,7 +377,7 @@ export default function UserManagementSystem() {
                 />
             )
 
-            }
+            } */}
         </div>
 
 

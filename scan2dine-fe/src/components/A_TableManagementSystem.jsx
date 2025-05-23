@@ -5,6 +5,8 @@ import api from '../server/api';
 import { A_TableDetail } from './A_TableDetail';
 import ConfirmModal from './ConfirmModal';
 import Alert from './Alert';
+import Swal from 'sweetalert2';
+
 
 export default function TableManagementSystem() {
     const [tables, setTables] = useState([]);
@@ -69,31 +71,81 @@ export default function TableManagementSystem() {
     };
 
     //thêm bàn
+
     const createNewTable = async () => {
         try {
             const res = await api.post('/s2d/table');
             fetchTable();
-            setAlert({ type: 'success', message: 'Thêm bàn thành công!' });
 
+            Swal.fire({
+                icon: 'success',
+                title: 'Thành công',
+                text: 'Thêm bàn thành công!',
+                confirmButtonColor: '#3085d6',
+            });
         } catch (error) {
             console.error(error);
-            setAlert({ type: 'success', message: 'Thêm bàn thành công!' });
 
+            Swal.fire({
+                icon: 'error',
+                title: 'Lỗi',
+                text: 'Thêm bàn thất bại!',
+                confirmButtonColor: '#d33',
+            });
         }
     };
+
 
     //xóa bàn
-    const handleDeleteTable = async (id) => {
-        try {
-            await api.delete(`/s2d/table/status/${id}`);
-            setAlert({ type: 'success', message: 'Xóa bàn thành công!' });
-            fetchTable()
+    // const handleDeleteTable = async (id) => {
+    //     try {
+    //         await api.delete(`/s2d/table/status/${id}`);
+    //         setAlert({ type: 'success', message: 'Xóa bàn thành công!' });
+    //         fetchTable()
 
-        } catch (error) {
-            console.error(error);
-            alert('Xóa bàn thất bại!');
+    //     } catch (error) {
+    //         console.error(error);
+    //         alert('Xóa bàn thất bại!');
+    //     }
+    // };
+
+    const handleDeleteTable = async (id) => {
+        const result = await Swal.fire({
+            title: 'Bạn có chắc muốn xóa bàn này?',
+            text: "Hành động này không thể hoàn tác!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Xóa',
+            cancelButtonText: 'Hủy'
+        });
+
+        if (result.isConfirmed) {
+            try {
+                await api.delete(`/s2d/table/status/${id}`);
+                fetchTable();
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Đã xóa!',
+                    text: 'Bàn đã được xóa thành công.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+            } catch (error) {
+                console.error(error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: 'Xóa bàn thất bại!',
+                    confirmButtonColor: '#d33'
+                });
+            }
         }
     };
+
 
 
     return (

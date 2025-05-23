@@ -1,7 +1,7 @@
 import React from 'react'
 import { FaEdit, FaTrash } from 'react-icons/fa';
 
-export const A_OneUser = ({ user, index, handleOpenModal, handleDelete, getRoleInfo, setShowConfirm, setUserToDelete }) => {
+export const A_OneUser = ({ user, userToDelete, index, handleOpenModal, handleDelete, getRoleInfo, setShowConfirm, setUserToDelete }) => {
     return (
         <tr key={user._id} className="border-b border-gray-200 hover:bg-gray-50">
             {/* STT */}
@@ -54,8 +54,9 @@ export const A_OneUser = ({ user, index, handleOpenModal, handleDelete, getRoleI
                     <button
                         onClick={() => {
                             if (user.role_id?.role_name != 3) {
-                                setUserToDelete(user);
-                                setShowConfirm(true);
+                                // setUserToDelete(user);
+                                // setShowConfirm(true);
+                                handleDelete(user._id)
                             }
                         }}
                         className={`${user.role_id?.role_name == 3
