@@ -127,6 +127,8 @@ const OrderDetail = () => {
     const cancelCallPayment = async () => {
         await api.patch(`/s2d/table/${InfoOrder.idTable}`, { status: '2' });
         setShowPaymentForm(false);
+        localStorage.setItem('employee-refresh', Date.now());
+
     };
 
     const renderStatusBadge = useCallback((status) => {

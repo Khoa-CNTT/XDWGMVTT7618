@@ -229,7 +229,7 @@ export const A_StatisticDish = () => {
                     <div className=" gap-6 mb-6 mt-5">
                         <div className="bg-white rounded-lg shadow p-6 mt-5 ">
                             <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-lg font-semibold">Doanh thu theo quầy</h2>
+                                <h2 className="text-lg font-semibold">Doanh thu theo món ăn</h2>
                                 <div className="text-gray-500">
                                     <FaChartBar size={18} />
                                 </div>

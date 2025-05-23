@@ -255,7 +255,7 @@ export const A_StatisticCounter = () => {
 
                             </div>
 
-                            <div className="bg-white rounded-lg shadow p-6">
+                            {/* <div className="bg-white rounded-lg shadow p-6">
                                 <div className="flex justify-between items-center mb-4">
                                     <h2 className="text-lg font-semibold">Doanh thu theo quầy</h2>
                                     <div className="text-gray-500">
@@ -291,7 +291,7 @@ export const A_StatisticCounter = () => {
                                 )}
 
 
-                            </div>
+                            </div> */}
                         </div>
 
                         <div className="bg-white rounded-lg shadow p-6 mt-5 ">
