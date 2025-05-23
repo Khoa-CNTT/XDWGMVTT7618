@@ -69,8 +69,7 @@ export const A_ModalCUUser = ({
             newErrors.username = "Tên đăng nhập không được chứa ký tự đặc biệt";
         } else if (/^\d+$/.test(username)) {
             newErrors.username = "Tên đăng nhập không được phép chỉ gồm số";
-
-        } else if (listUsername.includes(username)) {
+        } else if (!isEditing && listUsername.includes(username)) {
             newErrors.username = "Tên đăng nhập đã tồn tại, vui lòng chọn tên khác";
         }
 
