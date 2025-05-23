@@ -30,7 +30,7 @@ export const A_ModalCUUser = ({
     const roles = [
         { _id: "67fccd928de55697fbc965a9", role_name: "1" },
         { _id: "67fdd1582dea67c40c432609", role_name: "2" },
-        { _id: "6801d910e28d9b75cccdeffa", role_name: "3" }
+        // { _id: "6801d910e28d9b75cccdeffa", role_name: "3" }
     ];
 
     // Hàm kiểm tra dữ liệu đầu vào

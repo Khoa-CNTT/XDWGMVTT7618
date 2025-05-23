@@ -105,14 +105,14 @@ export default function Dashboard() {
                         <div>
                             <p className="text-gray-500 text-sm font-medium">{stat.title}</p>
                             <h3 className="text-2xl font-bold">{stat.value}</h3>
-                            <p className={`text-sm ${stat.change.includes('+') ? 'text-green-500' : 'text-red-500'} flex items-center mt-1`}>
+                            {/* <p className={`text-sm ${stat.change.includes('+') ? 'text-green-500' : 'text-red-500'} flex items-center mt-1`}>
                                 {stat.change.includes('+') ? (
                                     <FaArrowUp size={12} className="mr-1" />
                                 ) : (
                                     <FaArrowDown size={12} className="mr-1" />
                                 )}
                                 {stat.change} so với tháng trước
-                            </p>
+                            </p> */}
                         </div>
                     </div>
                 ))}
